@@ -2,10 +2,11 @@
   "name": "prasad-cleaning-llc",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "browser-sync start --server --files '*.html, *.css, assets/**'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "repository": {
     "type": "git",
@@ -14,12 +15,17 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/SIMPL3IFY/Prasad-cleaning-LLC/issues"
   },
   "homepage": "https://github.com/SIMPL3IFY/Prasad-cleaning-LLC#readme",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
   "devDependencies": {
-    "browser-sync": "^3.0.4"
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8"
   }
 }
