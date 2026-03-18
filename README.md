@@ -6,7 +6,7 @@
 
 # Contributors
 
-- ThinH Nguyen
+- Thinh Nguyen
 - Avneet Singh
 - Larry Vang
 - Rahul Chand
