@@ -1,6 +1,15 @@
 import { Link } from 'react-router-dom'
 
+import { SERVICES_LIST } from '../data/ServicesData';
+
 export default function Home() {
+
+  const featuredServices = SERVICES_LIST.filter(service => 
+    service.name === "Residential Cleaning" || 
+    service.name === "Commercial Cleaning" || 
+    service.name === "Special Offers"
+  );
+
   return (
     <>
       <section className="hero">
@@ -19,9 +28,12 @@ export default function Home() {
           <h2 className="section-title">Our Services</h2>
           <p className="section-subtitle">We offer a range of cleaning solutions tailored to your needs.</p>
           <ul className="services-grid">
-            <li className="service-card">Residential cleaning — placeholder</li>
-            <li className="service-card">Commercial cleaning — placeholder</li>
-            <li className="service-card">Deep cleaning — placeholder</li>
+            {featuredServices.map((service, index) => (
+              <li key={index} className="service-card">
+                <img src={service.img} alt={service.name} className="service-card-img" />
+                <h3 className="service-card-title">{service.name}</h3>
+              </li>
+            ))}
           </ul>
           <div style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>
             <Link className="btn btn-secondary" to="/services">View all services</Link>
