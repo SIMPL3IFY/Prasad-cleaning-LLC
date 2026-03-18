@@ -263,6 +263,22 @@ ul {
   gap: var(--space-sm);
 }
 
+/* EDITED for pictures in services */
+.service-card-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  margin-bottom: var(--space-sm);
+}
+
+.service-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+/*End edit for service pictures*/
+
 /* ========== ABOUT ========== */
 .about-inner {
   display: grid;

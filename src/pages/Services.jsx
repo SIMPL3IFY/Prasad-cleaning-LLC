@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 
+import { SERVICES_LIST } from '../data/ServicesData';
+
 export default function Services() {
+
   return (
     <section className="section">
       <div className="container">
@@ -8,12 +11,12 @@ export default function Services() {
         <p className="section-subtitle">Choose the cleaning service that fits your home or business.</p>
 
         <ul className="services-grid">
-          <li className="service-card">Residential cleaning — placeholder</li>
-          <li className="service-card">Commercial cleaning — placeholder</li>
-          <li className="service-card">Move-in / move-out — placeholder</li>
-          <li className="service-card">Deep cleaning — placeholder</li>
-          <li className="service-card">Recurring maintenance — placeholder</li>
-          <li className="service-card">Custom requests — placeholder</li>
+        {SERVICES_LIST.map((service, index) => (
+            <li key={index} className="service-card">
+              <img src={service.img} alt={service.name} className="service-card-img" />
+              <h3 className="service-card-title">{service.name}</h3>
+            </li>
+          ))}
         </ul>
 
         <div style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>
