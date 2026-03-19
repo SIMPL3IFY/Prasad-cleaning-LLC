@@ -507,11 +507,3 @@ ul {
 .signin-footer a:hover {
   color: var(--color-primary-dark);
 }
-
-/* ========== SKELETON PLACEHOLDERS (optional) ========== */
-/*
-.hero-title::before { content: "Your Headline Here"; }
-.hero-subtitle::before { content: "Short value proposition or tagline."; }
-.service-card::before { content: "Service name + short description"; display: block; }
-.testimonial-card::before { content: "Customer quote"; display: block; }
-*/
