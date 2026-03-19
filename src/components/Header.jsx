@@ -4,6 +4,7 @@ const navLinks = [
   { to: '/services', label: 'Services' },
   { to: '/about', label: 'About' },
   { to: '/testimonials', label: 'Reviews' },
+  { to: '/service-area', label: 'Service Areas' },
   { to: '/contact', label: 'Contact' },
 ]
 
