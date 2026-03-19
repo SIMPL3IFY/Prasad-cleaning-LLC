@@ -404,6 +404,94 @@ ul {
   }
 }
 
+/* ========== SIGN IN ========== */
+.signin-section {
+  background: var(--color-bg-alt);
+  min-height: calc(100vh - var(--header-height));
+  display: flex;
+  align-items: center;
+}
+
+.signin-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+  padding: var(--space-3xl);
+  max-width: 28rem;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.signin-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.form-group input {
+  padding: var(--space-md);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  font: inherit;
+  color: var(--color-text);
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.form-footer-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.forgot-link {
+  font-size: 0.875rem;
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.forgot-link:hover {
+  color: var(--color-primary-dark);
+}
+
+.signin-btn {
+  width: 100%;
+  margin-top: var(--space-sm);
+}
+
+.signin-footer {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.signin-footer a {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.signin-footer a:hover {
+  color: var(--color-primary-dark);
+}
+
 /* ========== SKELETON PLACEHOLDERS (optional) ========== */
 /*
 .hero-title::before { content: "Your Headline Here"; }
