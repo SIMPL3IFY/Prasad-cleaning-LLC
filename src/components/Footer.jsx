@@ -13,7 +13,7 @@ export default function Footer() {
         </div>
         <div className="footer-contact">Phone · Email</div>
       </div>
-      <div className="footer-bottom">© Prasad's Cleaning LLC. All rights reserved.</div>
+      <div className="footer-bottom">@ Prasad's Cleaning LLC. All rights reserved.</div>
     </footer>
   )
 }

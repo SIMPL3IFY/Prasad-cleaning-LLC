@@ -1,15 +1,24 @@
 import { Link } from 'react-router-dom'
 
+import { SERVICES_LIST } from '../data/ServicesData';
+
 export default function Home() {
+
+  const featuredServices = SERVICES_LIST.filter(service => 
+    service.name === "Residential Cleaning" || 
+    service.name === "Commercial Cleaning" || 
+    service.name === "Special Offers"
+  );
+
   return (
     <>
-      <section className="hero">
-        <div className="container hero-inner">
-          <h1 className="hero-title">Professional Cleaning Services</h1>
-          <p className="hero-subtitle">Trusted, reliable cleaning for your home or business. Get a free quote today.</p>
-          <div className="hero-cta">
-            <Link to="/contact" className="btn btn-primary btn-lg">Book Now</Link>
-            <Link to="/services" className="btn btn-secondary btn-lg">Our Services</Link>
+      <section className="banner">
+        <div className="container banner-content">
+          <h1 className="page-title">Professional Cleaning Services</h1>
+          <p className="page-subtitle">Trusted, reliable cleaning for your home or business. Get a free quote today.</p>
+          <div className="banner-buttons">
+            <Link to="/contact" className="buttonbutton-main button-big">Book Now</Link>
+            <Link to="/services" className="buttonbutton-alt button-big">Our Services</Link>
           </div>
         </div>
       </section>
@@ -19,12 +28,15 @@ export default function Home() {
           <h2 className="section-title">Our Services</h2>
           <p className="section-subtitle">We offer a range of cleaning solutions tailored to your needs.</p>
           <ul className="services-grid">
-            <li className="service-card">Residential cleaning — placeholder</li>
-            <li className="service-card">Commercial cleaning — placeholder</li>
-            <li className="service-card">Deep cleaning — placeholder</li>
+            {featuredServices.map((service, index) => (
+              <li key={index} className="service-card">
+                <img src={service.img} alt={service.name} className="service-card-img" />
+                <h3 className="service-card-title">{service.name}</h3>
+              </li>
+            ))}
           </ul>
           <div style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>
-            <Link className="btn btn-secondary" to="/services">View all services</Link>
+            <Link className="buttonbutton-alt" to="/services">View all services</Link>
           </div>
         </div>
       </section>
@@ -50,16 +62,16 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="contact" className="section cta">
-        <div className="container cta-inner">
+      <section id="contact" className="section action-section">
+        <div className="container action-section-content">
           <h2 className="section-title">Get Your Free Quote</h2>
-          <p className="cta-text">Tell us what you need and we'll get back to you shortly.</p>
+          <p className="action-text">Tell us what you need and we'll get back to you shortly.</p>
           <form className="contact-form" action="#" method="post">
             <input type="text" name="name" placeholder="Name" required />
             <input type="email" name="email" placeholder="Email" required />
             <input type="tel" name="phone" placeholder="Phone" />
             <textarea name="message" placeholder="How can we help?" rows="4"></textarea>
-            <button type="submit" className="btn btn-primary">Send Message</button>
+            <button type="submit" className="buttonbutton-main">Send Message</button>
           </form>
         </div>
       </section>
