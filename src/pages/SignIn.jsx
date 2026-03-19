@@ -23,7 +23,7 @@ export default function SignIn() {
               <a href="#" className="forgot-link">Forgot password?</a>
             </div>
 
-            <button type="submit" className="btn btn-primary btn-lg signin-btn">
+            <button type="submit" className="button button-main button-big signin-btn">
               Sign In
             </button>
 

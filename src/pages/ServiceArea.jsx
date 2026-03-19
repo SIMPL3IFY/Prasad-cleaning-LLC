@@ -8,7 +8,7 @@ export default function ServiceArea() {
   return (
     <section className="section">
       <div className="container">
-        <h1 className="hero-title" style={{ textAlign: 'center' }}>Service Area</h1>
+        <h1 className="page-title" style={{ textAlign: 'center' }}>Service Area</h1>
         <p className="section-subtitle">
           We provide cleaning services to most of Northern California — including the Bay Area,
           Modesto, Sacramento, and El Dorado Hills.
@@ -77,7 +77,7 @@ export default function ServiceArea() {
         </p>
 
         <div style={{ textAlign: 'center', marginTop: 'var(--space-xl)' }}>
-          <a className="btn btn-primary" href="/contact">
+          <a className="button button-main" href="/contact">
             Get a Free Quote
           </a>
         </div>

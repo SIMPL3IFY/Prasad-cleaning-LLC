@@ -7,7 +7,7 @@ export default function Services() {
   return (
     <section className="section">
       <div className="container">
-        <h1 className="hero-title" style={{ textAlign: 'center' }}>Services</h1>
+        <h1 className="page-title" style={{ textAlign: 'center' }}>Services</h1>
         <p className="section-subtitle">Choose the cleaning service that fits your home or business.</p>
 
         <ul className="services-grid">
@@ -20,7 +20,7 @@ export default function Services() {
         </ul>
 
         <div style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>
-          <Link className="btn btn-primary" to="/contact">Request a quote</Link>
+          <Link className="button button-main" to="/contact">Request a quote</Link>
         </div>
       </div>
     </section>

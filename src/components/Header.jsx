@@ -31,8 +31,8 @@ export default function Header() {
         </nav>
 
         <div className="header-actions">
-          <Link to="/contact" className="btn btn-primary">Get a Quote</Link>
-          <Link to="/signin" className="btn btn-secondary">Sign In</Link>
+          <Link to="/contact" className="button button-main">Get a Quote</Link>
+          <Link to="/signin" className="button button-alt">Sign In</Link>
         </div>
       </div>
     </header>

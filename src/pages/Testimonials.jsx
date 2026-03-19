@@ -4,7 +4,7 @@ export default function Testimonials() {
   return (
     <section className="section">
       <div className="container">
-        <h1 className="hero-title" style={{ textAlign: 'center' }}>Customer Reviews</h1>
+        <h1 className="page-title" style={{ textAlign: 'center' }}>Customer Reviews</h1>
         <p className="section-subtitle">Real feedback from customers we've helped.</p>
 
         <ul className="testimonials-list" style={{ paddingTop: 'var(--space-2xl)' }}>
@@ -17,7 +17,7 @@ export default function Testimonials() {
         </ul>
 
         <div style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>
-          <Link className="btn btn-primary" to="/contact">Book a cleaning</Link>
+          <Link className="button button-main" to="/contact">Book a cleaning</Link>
         </div>
       </div>
     </section>

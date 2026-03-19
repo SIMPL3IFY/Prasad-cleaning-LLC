@@ -137,7 +137,7 @@ ul {
   flex-shrink: 0;
 }
 
-.header-buttons .btn {
+.header-buttons .button {
   white-space: nowrap;
 }
 
@@ -148,7 +148,7 @@ ul {
 }
 
 /* ========== BUTTONS ========== */
-.btn {
+.button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -160,44 +160,44 @@ ul {
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.btn-primary {
+.button-main {
   background: var(--color-primary);
   color: white;
 }
 
-.btn-primary:hover {
+.button-main:hover {
   background: var(--color-primary-dark);
 }
 
-.btn-secondary {
+.button-alt {
   background: transparent;
   color: var(--color-primary);
   border: 2px solid var(--color-primary);
 }
 
-.btn-secondary:hover {
+.button-alt:hover {
   background: var(--color-primary);
   color: white;
 }
 
-.btn-lg {
+.button-big {
   padding: var(--space-md) var(--space-xl);
   font-size: 1.0625rem;
 }
 
-/* ========== HERO ========== */
-.hero {
+/* ========== BANNER ========== */
+.banner {
   padding: var(--section-padding) 0;
   background: var(--color-bg-alt);
   text-align: center;
 }
 
-.hero-inner {
+.banner-content {
   max-width: 42rem;
   margin-inline: auto;
 }
 
-.hero-title {
+.page-title {
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
   line-height: 1.2;
@@ -205,13 +205,13 @@ ul {
   margin-bottom: var(--space-lg);
 }
 
-.hero-subtitle {
+.page-subtitle {
   font-size: 1.125rem;
   color: var(--color-text-muted);
   margin-bottom: var(--space-xl);
 }
 
-.hero-cta {
+.banner-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-md);
@@ -316,18 +316,18 @@ ul {
   gap: var(--space-sm);
 }
 
-/* ========== CTA / CONTACT ========== */
-.cta {
+/* ========== ACTION-SECTION / CONTACT ========== */
+.action-section {
   background: var(--color-primary);
   color: white;
 }
 
-.cta .section-title,
-.cta-text {
+.action-section .section-title,
+.action-text {
   color: inherit;
 }
 
-.cta-text {
+.action-text {
   text-align: center;
   margin-bottom: var(--space-xl);
   opacity: 0.95;
@@ -349,12 +349,12 @@ ul {
   font: inherit;
 }
 
-.contact-form .btn-primary {
+.contact-form .button-main {
   background: white;
   color: var(--color-primary);
 }
 
-.contact-form .btn-primary:hover {
+.contact-form .button-main:hover {
   background: var(--color-bg-alt);
 }
 
@@ -398,7 +398,7 @@ ul {
     gap: var(--space-xs);
   }
 
-  .header-buttons .btn {
+  .header-buttons .button {
     padding: 0.45rem 0.85rem;
     font-size: 0.9rem;
   }
@@ -506,4 +506,9 @@ ul {
 
 .signin-footer a:hover {
   color: var(--color-primary-dark);
+<<<<<<< HEAD
 }
+=======
+}
+
+>>>>>>> 335b8979d8abed8d0044983b28d4fb6671a2aea1
