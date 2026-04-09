@@ -44,15 +44,6 @@ export default function About() {
         <div style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>
           <Link className="button button-main" to="/services">View all services</Link>
         </div>
-
-        {/* Scrum 83: Adding a call-to-action section button to explore services page */}
-        <div style={{ textAlign: 'center', paddingTop: 'var(--space-2xl)' }}>
-          <h2 className="section-title">Our Services</h2>
-          <p>Placeholder: Explore the full range of cleaning services we offer .</p>
-          <Link to="/services" className="button button-main">
-            View Our Services
-          </Link>
-        </div>
       </div>
     </section>
   </>
