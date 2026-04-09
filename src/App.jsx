@@ -8,6 +8,7 @@ import Testimonials from './pages/Testimonials'
 import Contact from './pages/Contact'
 import SignIn from './pages/SignIn'
 import ServiceArea from './pages/ServiceArea'
+import CustomerPortal from './pages/CustomerPortal'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/service-area" element={<ServiceArea />} /> 
+          <Route path="/portal" element={<CustomerPortal />} />
         </Routes>
       </main>
       <Footer />
