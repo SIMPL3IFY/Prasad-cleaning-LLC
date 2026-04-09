@@ -1,0 +1,5 @@
+[
+  { "id": 1, "customerName": "Bobby B", "comment": "Did my sectional and ottoman and left it like new. I'm very satisfied with the work done and would recommend to anyone looking to get their couch cleaned.", "rating": 5 },
+  { "id": 2, "customerName": "John D", "comment": "Did a great job with my carpet and upholstery.", "rating": 4 },
+  { "id": 3, "customerName": "Jane D", "comment": "Would recommend to a friend", "rating": 5 }
+]
