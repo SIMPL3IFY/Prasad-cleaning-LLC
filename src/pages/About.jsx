@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 
+import { SERVICES_LIST } from '../data/ServicesData';
+
 export default function About() {
 
   //const for scrum 80 to show a sample of services provided
@@ -11,10 +13,12 @@ export default function About() {
     service.name === "Special Offers"
   );
   return (
+    <>
     <section className="section">
       <div className="container">
         <h1 className="page-title" style={{ textAlign: 'center' }}>About Us</h1>
         <p className="section-subtitle">Place holder: A little about our team, our values, and how we work.</p>
+      </div>
 
         <div className="about-inner" style={{ paddingTop: 'var(--space-2xl)' }}>
           <div className="about-content">
