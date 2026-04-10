@@ -87,6 +87,26 @@ export default function CustomerPortal() {
         }
     }
 
+    // Validation logic
+    const validateSchedule = () => {
+        const newErrors = {}
+
+        if (startDate.trim() === '') {
+            newErrors.startDate = 'Please select a start date.'
+        }
+
+        if (endDate.trim() === '') {
+            newErrors.endDate = 'Please select an end date.'
+        }
+
+        if (startDate && endDate && endDate < startDate) {
+            newErrors.dateRange = 'End date cannot be ealier than start date.'
+        }
+
+        setScheduleErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
     return(
         <div>
         {/*scrum 39 to navigate to landing page from logo
