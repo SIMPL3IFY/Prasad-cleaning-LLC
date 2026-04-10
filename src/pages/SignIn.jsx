@@ -1,4 +1,11 @@
+import { useNavigate } from "react-router-dom"
 export default function SignIn() {
+  const navigate = useNavigate()
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    navigate('/portal')
+  }
   return (
     <section className="section signin-section">
       <div className="container">
@@ -8,7 +15,7 @@ export default function SignIn() {
             Access your account to manage bookings and services.
           </p>
 
-          <form className="signin-form">
+          <form className="signin-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="email">Email Address</label>
               <input id="email" type="email" placeholder="you@example.com" required />
