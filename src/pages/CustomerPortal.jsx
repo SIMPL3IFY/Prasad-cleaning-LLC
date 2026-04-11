@@ -183,7 +183,7 @@ export default function CustomerPortal() {
              <button
                 onClick={toggleContactModal}
                 style={{
-                    backgroundColor: '#f5a623',
+                    backgroundColor: '#8db87a',
                     color: 'white',
                     border: 'none',
                     borderRadius: '12px',
@@ -471,6 +471,69 @@ export default function CustomerPortal() {
             </div>
             </div>
         </div>
+        )}
+        {/* SCRUM-76: contact information modal */}
+        {isContactModalOpen && (
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000
+            }}>
+            <div style={{
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                padding: '2rem',
+                width: '90%',
+                maxWidth: '460px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                textAlign: 'center'
+            }}>
+            <p style={{
+                fontSize: '0.8rem',
+                color: '#888',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: '0.25rem'
+            }}>
+                Contact Us
+            </p>
+
+            <h2 style={{
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                marginBottom: '1rem'
+            }}>
+                Contact Information
+            </h2>
+
+            <div style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.8' }}>
+                <p><strong>Owner's Name:</strong> Nigel Prasad</p>
+                <p><strong>Phone Number:</strong> (xxx) xxx-xxxx</p> {/*TO BE CHANGED*/}
+                <p><strong>Email:</strong> PrasadsCleaning@gmail.com</p>
+            </div>
+
+            <div>
+                <span
+                    onClick={toggleContactModal}
+                    style={{
+                        fontSize: '0.85rem',
+                        color: '#888',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                    }}
+                >
+                    Close
+                </span>
+            </div>
+            </div>
+            </div>
         )}
     </div>
     )
