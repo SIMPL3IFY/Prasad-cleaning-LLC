@@ -9,12 +9,14 @@ export default function CustomerPortal() {
     const [rating, setRating] = useState(0)
     const [errors, setErrors] = useState({})
 
-    //SCRUM 75: State Variables
+    // SCRUM 75: State Variables
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
     const [scheduleErrors, setScheduleErrors] = useState({})
 
+    // SCRUM 76: State for contact modal
+    const [isContactModalOpen, setIsContactModalOpen] = useState(false)
 
     // SCRUM 33 Review methods
     // Opens and closes the modal
@@ -114,6 +116,11 @@ export default function CustomerPortal() {
         }
         console.log({ startDate, endDate })
         toggleScheduleModal()
+    }
+
+    // SCRUM-76: Functions to open and close contact modal
+    const toggleContactModal = () => {
+        setIsContactModalOpen(prev => !prev)
     }
 
     return(
