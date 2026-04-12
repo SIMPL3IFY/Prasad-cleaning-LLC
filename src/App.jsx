@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Home from './pages/Home'
@@ -10,10 +10,23 @@ import SignIn from './pages/SignIn'
 import ServiceArea from './pages/ServiceArea'
 import CustomerPortal from './pages/CustomerPortal'
 
+/* Scrum 39 for exporting the page */
 export default function App() {
   return (
     <BrowserRouter>
-      <Header />
+      <AppContent />
+    </BrowserRouter>
+  )
+}
+
+/* Scrum 39 to add header depending on the page */
+function AppContent() {
+  const { pathname } = useLocation()
+  const removeHeader = ['/portal']
+  return (
+    <>
+      {/* Scrum 39 check if page should have a header */}
+      {!removeHeader.includes(pathname) && <Header />}
       <main style={{ minHeight: '81vh' }}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -27,6 +40,6 @@ export default function App() {
         </Routes>
       </main>
       <Footer />
-    </BrowserRouter>
+    </>
   )
 }

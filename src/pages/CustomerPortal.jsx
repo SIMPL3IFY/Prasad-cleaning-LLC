@@ -129,14 +129,13 @@ export default function CustomerPortal() {
     return(
         <div>
         {/*scrum 39 to navigate to landing page from logo
-        //create the header for the page
-        //the header contains the company logo and when clicked, will redirect to Home.jsx
-        //here the logo png is added and the to Home.jsx link is in App.jsx
-        //the logo png is in assests and is named logo.png */}
-        <header className="header">
-            <div className="container header-inner">
+        the logo is at the top center of the page
+        the header contains the company logo and when clicked, will redirect to Home.jsx
+        the logo png is in assests and is named logo.png */}
+        <header style={{ backgroundColor: 'transparent'}}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2.5rem 0', width: '100%'}}>
                  <Link to="/" className="logo" aria-label="Prasad's Cleaning Services LLC">
-                    <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" />
+                    <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
                 </Link>
             </div>
         </header>
