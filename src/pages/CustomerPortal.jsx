@@ -9,12 +9,17 @@ export default function CustomerPortal() {
     const [rating, setRating] = useState(0)
     const [errors, setErrors] = useState({})
 
-    //SCRUM 75: State Variables
+    // SCRUM 75: State Variables
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
     const [scheduleErrors, setScheduleErrors] = useState({})
 
+    // SCRUM 76: State for contact modal and variables
+    const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+    const ownerName = 'Nigel Prasad'
+    const phoneNumber = '(XXX) XXX-XXXX' // To be changed
+    const email = 'PrasadsCleaning@gmail.com'
 
     // SCRUM 33 Review methods
     // Opens and closes the modal
@@ -116,17 +121,21 @@ export default function CustomerPortal() {
         toggleScheduleModal()
     }
 
+    // SCRUM-76: Functions to open and close contact modal
+    const toggleContactModal = () => {
+        setIsContactModalOpen(prev => !prev)
+    }
+
     return(
         <div>
         {/*scrum 39 to navigate to landing page from logo
-        //create the header for the page
-        //the header contains the company logo and when clicked, will redirect to Home.jsx
-        //here the logo png is added and the to Home.jsx link is in App.jsx
-        //the logo png is in assests and is named logo.png */}
-        <header className="header">
-            <div className="container header-inner">
+        the logo is at the top center of the page
+        the header contains the company logo and when clicked, will redirect to Home.jsx
+        the logo png is in assests and is named logo.png */}
+        <header style={{ backgroundColor: 'transparent'}}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2.5rem 0', width: '100%'}}>
                  <Link to="/" className="logo" aria-label="Prasad's Cleaning Services LLC">
-                    <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" />
+                    <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
                 </Link>
             </div>
         </header>
@@ -169,6 +178,26 @@ export default function CustomerPortal() {
                 }}
             >
                 Schedule Appointment
+            </button>
+        </div>
+        {/* SCRUM-76: contact information button */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+             <button
+                onClick={toggleContactModal}
+                style={{
+                    backgroundColor: '#8db87a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}
+            >
+                Contact Information
             </button>
         </div>
         {/*CREATE REMAINING BUTTONS UNDER HERE*/}
@@ -342,7 +371,7 @@ export default function CustomerPortal() {
             maxWidth: '460px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
             textAlign: 'center'
-        }}>
+            }}>
             <p style={{
                 fontSize: '0.8rem',
                 color: '#888',
@@ -444,7 +473,70 @@ export default function CustomerPortal() {
             </div>
             </div>
         </div>
-    )}
+        )}
+        {/* SCRUM-76: contact information modal */}
+        {isContactModalOpen && (
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000
+            }}>
+            <div style={{
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                padding: '2rem',
+                width: '90%',
+                maxWidth: '460px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                textAlign: 'center'
+            }}>
+            <p style={{
+                fontSize: '0.8rem',
+                color: '#888',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: '0.25rem'
+            }}>
+                Contact Us
+            </p>
+
+            <h2 style={{
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                marginBottom: '1rem'
+            }}>
+                Contact Information
+            </h2>
+
+            <div style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.8' }}>
+                <p><strong>Owner's Name:</strong> {ownerName}</p>
+                <p><strong>Phone Number:</strong> {phoneNumber}</p>
+                <p><strong>Email:</strong> {email}</p>
+            </div>
+
+            <div>
+                <span
+                    onClick={toggleContactModal}
+                    style={{
+                        fontSize: '0.85rem',
+                        color: '#888',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                    }}
+                >
+                    Close
+                </span>
+            </div>
+            </div>
+            </div>
+        )}
     </div>
     )
 }
