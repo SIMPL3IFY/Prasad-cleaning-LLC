@@ -9,6 +9,7 @@ import Contact from './pages/Contact'
 import SignIn from './pages/SignIn'
 import ServiceArea from './pages/ServiceArea'
 import CustomerPortal from './pages/CustomerPortal'
+import Settings from './pages/Settings'
 
 /* Scrum 39 for exporting the page */
 export default function App() {
@@ -37,6 +38,7 @@ function AppContent() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/service-area" element={<ServiceArea />} /> 
           <Route path="/portal" element={<CustomerPortal />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </main>
       <Footer />
