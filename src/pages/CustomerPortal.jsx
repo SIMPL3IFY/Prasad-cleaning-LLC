@@ -145,9 +145,6 @@ export default function CustomerPortal() {
                     <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
                 </Link>
             </div>
-            <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', paddingBottom: '1.5rem' }}>
-                {renderSettingsLink()}
-            </nav>
         </header>
 
         {/* scrum 33: leave a review button*/}
