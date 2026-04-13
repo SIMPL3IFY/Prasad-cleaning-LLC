@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export default function ServiceArea() {
   const cities = [
     'Sacramento', 'El Dorado Hills', 'Folsom', 'Roseville',
@@ -80,6 +82,13 @@ export default function ServiceArea() {
           <a className="button button-main" href="/contact">
             Get a Free Quote
           </a>
+        </div>
+
+        {/* SCRUM-22: Sign In button for existing customers */}
+        <div style={{ textAlign: 'center', marginTop: 'var(--space-md)' }}>
+          <Link className="button button-main" to="/signin">
+            Sign In
+          </Link>
         </div>
       </div>
     </section>
