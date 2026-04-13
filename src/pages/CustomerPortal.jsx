@@ -5,6 +5,7 @@ export default function CustomerPortal() {
     const navigate = useNavigate()
     const [isSettingsAccessible, setIsSettingsAccessible] = useState(true)
 
+    
     // SCRUM 33: State Variables
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [customerName, setCustomerName] = useState('')
@@ -180,6 +181,10 @@ export default function CustomerPortal() {
                 </svg>
             </button>
         )
+}
+    // Logout function to navigate back to landing page
+    const handleLogout = () => {
+        navigate('/')
     }
 
     return(
@@ -259,6 +264,28 @@ export default function CustomerPortal() {
                 Contact Information
             </button>
         </div>
+        {/* SCRUM-32: Logout button */}
+        <button
+            onClick={handleLogout}
+            style={{
+                position: 'fixed',
+                top: '1.5rem',
+                right: '1.5rem',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '0.75rem 1.5rem',
+                fontWeight: 'bold',
+                fontSize: '0.85rem',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                zIndex: 999
+            }}
+        >
+            Logout
+        </button>
         {/*CREATE REMAINING BUTTONS UNDER HERE*/}
 
 
