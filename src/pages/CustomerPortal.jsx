@@ -1,4 +1,6 @@
 import { useState } from 'react'
+//import { Link } from 'react-router-dom'
+import { SERVICES_LIST } from '../data/ServicesData';
 import { Link, useNavigate } from 'react-router-dom'
 
 export default function CustomerPortal() {
@@ -24,6 +26,13 @@ export default function CustomerPortal() {
     const ownerName = 'Nigel Prasad'
     const phoneNumber = '(XXX) XXX-XXXX' // To be changed
     const email = 'PrasadsCleaning@gmail.com'
+
+    //Scrum 41: State for services modal
+    const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
+    //Scrum 41: Toggle services modal
+    const toggleServicesModal = () => {
+        setIsServicesModalOpen(prev => !prev);
+    };
 
     // SCRUM 33 Review methods
     // Opens and closes the modal
@@ -262,6 +271,27 @@ export default function CustomerPortal() {
                 }}
             >
                 Contact Information
+            </button>
+        </div>
+
+        {/* Scrum 41: View services button */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <button
+                onClick={toggleServicesModal}
+                style={{
+                    backgroundColor: '#7ec8e3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}
+            >
+                View Our Services
             </button>
         </div>
         {/* SCRUM-32: Logout button */}
@@ -621,6 +651,64 @@ export default function CustomerPortal() {
                 </span>
             </div>
             </div>
+            </div>
+        )}
+        
+        {/* Scrum 41: View Services modal */}
+        {isServicesModalOpen && (
+            <div style={{
+                position: 'fixed',
+                top: 0, left: 0,
+                width: '100%', height: '100%',
+                backgroundColor: '#333333',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000,
+                padding: '1rem'
+            }}>
+                <div style={{
+                    backgroundColor: 'var(--color-bg)',
+                    borderRadius: '1rem',
+                    padding: 'var(--space-xl)',
+                    width: '100%',
+                    maxWidth: '900px',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                    boxShadow: '0 10px 25px #1a1a1a'
+                }}>
+                    <h2 className="section-title">Our Services</h2>
+                    <p className="section-subtitle">Here is a list of the cleaning services we provide.</p>
+
+                    <div className="services-grid" style={{ marginTop: 'var(--space-xl)' }}>
+                        {SERVICES_LIST.map((service, index) => (
+                            <div key={index} className="service-card" style={{ padding: 'var(--space-md)' }}>
+                                <img 
+                                    src={service.img} 
+                                    alt={service.name} 
+                                    className="service-card-img" 
+                                />
+                                <h3 className="service-card-title" style={{ textAlign: 'center' }}>
+                                    {service.name}
+                                </h3>
+                            </div>
+                        ))}
+                    </div>
+                    <div>
+                        <span
+                            onClick={toggleServicesModal}
+                            style={{
+                                textAlign: 'center',
+                                fontSize: '0.85rem',
+                                color: '#888',
+                                cursor: 'pointer',
+                                textDecoration: 'underline'
+                            }}
+                        >
+                            Close
+                        </span>
+                    </div>
+                </div>
             </div>
         )}
     </div>
