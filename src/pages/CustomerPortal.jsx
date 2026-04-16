@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
 //import { Link } from 'react-router-dom'
 import { SERVICES_LIST } from '../data/ServicesData';
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function CustomerPortal() {
     const navigate = useNavigate()
@@ -271,6 +271,27 @@ export default function CustomerPortal() {
                 }}
             >
                 Contact Information
+            </button>
+        </div>
+
+        {/* Scrum 41: View services button */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <button
+                onClick={toggleServicesModal}
+                style={{
+                    backgroundColor: '#7ec8e3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}
+            >
+                View Our Services
             </button>
         </div>
         {/* SCRUM-32: Logout button */}
