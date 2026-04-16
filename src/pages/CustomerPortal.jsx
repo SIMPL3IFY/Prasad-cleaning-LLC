@@ -146,7 +146,7 @@ export default function CustomerPortal() {
                 </Link>
             </div>
             <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', paddingBottom: '1.5rem' }}>
-                {renderSettingsLink()}
+                <Link to="/settings" style={{ color: '#555', textDecoration: 'none', fontWeight: '500' }}>Settings</Link>
             </nav>
         </header>
 
