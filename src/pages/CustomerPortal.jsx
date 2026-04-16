@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 
 export default function CustomerPortal() {
     const navigate = useNavigate()
+    const [isSettingsAccessible, setIsSettingsAccessible] = useState(true)
+
     
     // SCRUM 33: State Variables
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -128,6 +130,58 @@ export default function CustomerPortal() {
         setIsContactModalOpen(prev => !prev)
     }
 
+    const handleSettingsNavigation = () => {
+        navigate('/settings')
+    }
+
+    const renderFallback = () => {
+        return (
+            <span style={{ color: '#cc0000', fontSize: '0.9rem', padding: '0.5rem 1rem' }}>
+                Settings unavailable
+            </span>
+        )
+    }
+
+    const renderSettingsLink = () => {
+        if (!isSettingsAccessible) {
+            return renderFallback()
+        }
+        return (
+            <button
+                onClick={handleSettingsNavigation}
+                aria-label="Settings"
+                title="Settings"
+                style={{
+                    backgroundColor: 'transparent',
+                    color: '#6aa84f',
+                    border: '2px solid #6aa84f',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    padding: 0
+                }}
+            >
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                >
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        )
+}
     // Logout function to navigate back to landing page
     const handleLogout = () => {
         navigate('/')
@@ -145,6 +199,9 @@ export default function CustomerPortal() {
                     <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
                 </Link>
             </div>
+            <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', paddingBottom: '1.5rem' }}>
+                {renderSettingsLink()}
+            </nav>
         </header>
 
         {/* scrum 33: leave a review button*/}
