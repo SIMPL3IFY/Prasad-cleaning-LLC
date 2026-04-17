@@ -14,7 +14,7 @@ export default function Header() {
   return (
     <header className="header">
       <div className="container header-inner">
-        <Link to="/" className="logo" aria-label="Prasad's Cleaning Services LLC">
+        <Link to="/" className="logo" aria-label="Go to homepage">
           <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" />
         </Link>
 
@@ -31,8 +31,9 @@ export default function Header() {
         </nav>
 
         <div className="header-actions">
-          <Link to="/contact" className="button button-main">Get a Quote</Link>
-          <Link to="/signin" className="button button-alt">Sign In</Link>
+          <Link to="/signin" className="button button-alt">
+            Sign In
+          </Link>
         </div>
       </div>
     </header>
