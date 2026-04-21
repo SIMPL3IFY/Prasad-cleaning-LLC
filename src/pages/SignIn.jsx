@@ -1,10 +1,20 @@
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+
+// SCRUM-119: admin email routes to admin dashboard.
+const ADMIN_EMAIL = 'admin@prasad'
+
 export default function SignIn() {
   const navigate = useNavigate()
+  const [email, setEmail] = useState('')
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    navigate('/portal')
+    if (email.trim().toLowerCase() === ADMIN_EMAIL) {
+      navigate('/admin')
+    } else {
+      navigate('/portal')
+    }
   }
   return (
     <section className="section signin-section">
@@ -18,7 +28,14 @@ export default function SignIn() {
           <form className="signin-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="email">Email Address</label>
-              <input id="email" type="email" placeholder="you@example.com" required />
+              <input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
 
             <div className="form-group">

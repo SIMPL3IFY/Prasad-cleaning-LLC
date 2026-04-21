@@ -10,6 +10,8 @@ import SignIn from './pages/SignIn'
 import ServiceArea from './pages/ServiceArea'
 import CustomerPortal from './pages/CustomerPortal'
 import Settings from './pages/Settings'
+// SCRUM-119: Admin dashboard page
+import AdminDashboard from './pages/AdminDashboard'
 
 /* Scrum 39 for exporting the page */
 export default function App() {
@@ -23,7 +25,7 @@ export default function App() {
 /* Scrum 39 to add header depending on the page */
 function AppContent() {
   const { pathname } = useLocation()
-  const removeHeader = ['/portal']
+  const removeHeader = ['/portal', '/admin']
   return (
     <>
       {/* Scrum 39 check if page should have a header */}
@@ -39,6 +41,7 @@ function AppContent() {
           <Route path="/service-area" element={<ServiceArea />} /> 
           <Route path="/portal" element={<CustomerPortal />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </main>
       <Footer />
