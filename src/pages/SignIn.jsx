@@ -18,7 +18,7 @@ export default function SignIn() {
   }
 
   const handleAdminSignIn = () => {
-    navigate('/AdminDashboard')
+    navigate('/admin')
   }
 
   return (
