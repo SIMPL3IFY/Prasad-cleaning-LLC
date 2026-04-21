@@ -16,6 +16,11 @@ export default function SignIn() {
       navigate('/portal')
     }
   }
+
+  const handleAdminSignIn = () => {
+    navigate('/AdminDashboard')
+  }
+  
   return (
     <section className="section signin-section">
       <div className="container">
