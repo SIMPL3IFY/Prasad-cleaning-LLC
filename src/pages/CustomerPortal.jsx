@@ -316,6 +316,27 @@ export default function CustomerPortal() {
         >
             Logout
         </button>
+
+        {/* Scrum 41: View services button */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <button
+                onClick={toggleServicesModal}
+                style={{
+                    backgroundColor: '#7ec8e3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}
+            >
+                View Our Services
+            </button>
+        </div>
         {/*CREATE REMAINING BUTTONS UNDER HERE*/}
 
 
