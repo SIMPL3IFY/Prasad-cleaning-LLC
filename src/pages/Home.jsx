@@ -17,8 +17,8 @@ export default function Home() {
           <h1 className="page-title">Professional Cleaning Services</h1>
           <p className="page-subtitle">Trusted, reliable cleaning for your home or business. Get a free quote today.</p>
           <div className="banner-buttons">
-            <Link to="/contact" className="buttonbutton-main button-big">Book Now</Link>
-            <Link to="/services" className="buttonbutton-alt button-big">Our Services</Link>
+            <Link to="/contact" className="button button-main button-big">Book Now</Link>
+            <Link to="/services" className="button button-alt button-big">Our Services</Link>
           </div>
         </div>
       </section>
