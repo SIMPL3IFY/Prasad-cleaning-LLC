@@ -1,5 +1,7 @@
 [
   { "id": 1, "customerName": "Bobby B", "comment": "Did my sectional and ottoman and left it like new. I'm very satisfied with the work done and would recommend to anyone looking to get their couch cleaned.", "rating": 5 },
-  { "id": 2, "customerName": "John D", "comment": "Did a great job with my carpet and upholstery.", "rating": 4 },
-  { "id": 3, "customerName": "Jane D", "comment": "Would recommend to a friend", "rating": 5 }
+  { "id": 2, "customerName": "John C", "comment": "Did a great job with my carpet and upholstery.", "rating": 4 },
+  { "id": 3, "customerName": "Richard D", "comment": "Would recommend to a friend", "rating": 5 },
+  { "id": 4, "customerName": "Randy M", "comment": "He cleaned all of my 15 windows and also came back to do touch ups on a few of the higher windows.", "rating": 4 },
+  { "id": 5, "customerName": "Melissa S", "comment": "I recently hired Nigel for carpet cleaning, and I am really impressed with the results. The team was professional, arrived on time, and explained the whole process clearly before getting started", "rating": 5 }
 ]
