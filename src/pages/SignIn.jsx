@@ -16,6 +16,11 @@ export default function SignIn() {
       navigate('/portal')
     }
   }
+
+  const handleAdminSignIn = () => {
+    navigate('/admin')
+  }
+
   return (
     <section className="section signin-section">
       <div className="container">
@@ -49,6 +54,15 @@ export default function SignIn() {
 
             <button type="submit" className="button button-main button-big signin-btn">
               Sign In
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAdminSignIn}
+              className="button button-main button-big signin-btn"
+              style={{ marginTop: '1rem' }}
+            >
+              Sign in as Admin
             </button>
 
             <p className="signin-footer">

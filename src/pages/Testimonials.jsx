@@ -17,7 +17,7 @@ export default function Testimonials() {
   }
 
   const limitReviews = (reviewsArray) => {
-    return reviewsArray.slice(0,3)
+    return reviewsArray.slice(0,5)
   }
 
   const renderReviewCard = (review) => {
