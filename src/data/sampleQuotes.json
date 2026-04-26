@@ -1,0 +1,41 @@
+[
+    {
+        "id": 1,
+        "customerName": "Jane Smith",
+        "email": "Jane.Smith@email.com",
+        "phone": "XXX-XXX-XXXX",
+        "service": "Deep Cleaning",
+        "property": "Commercial",
+        "appointmentDate": "02/13/26",
+        "appointmentTime": "12:34 PM",
+        "address": "5810 Folsom Blvd, Sacramento, CA 95819",
+        "message": "Big spill we need lots of cleaner",
+        "status": "pending"
+    },
+    {
+        "id": 2,
+        "customerName": "David Cervantes",
+        "email": "David.Cervantes@email.com",
+        "phone": "XXX-XXX-XXXX",
+        "service": "Standard Cleaning",
+        "property": "Residential",
+        "appointmentDate": "03/05/26",
+        "appointmentTime": "10:00 AM",
+        "address": "207 E St, Davis, CA 95616",
+        "message": "Please bring eco-friendly products.",
+        "status": "pending"
+    },
+    {
+        "id": 3,
+        "customerName": "Stephen Curry",
+        "email": "Stephen.Curry@email.com",
+        "phone": "XXX-XXX-XXXX",
+        "service": "Move-Out Cleaning",
+        "property": "Residential",
+        "appointmentDate": "03/20/26",
+        "appointmentTime": "09:00 AM",
+        "address": "1209 L St, Sacramento, CA 95814",
+        "message": "Full move-out clean needed before new tenants.",
+        "status": "pending"
+    }
+]
