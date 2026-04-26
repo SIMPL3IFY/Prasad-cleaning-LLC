@@ -316,7 +316,7 @@ export default function CustomerPortal() {
         >
             Logout
         </button>
-        {/*CREATE REMAINING BUTTONS UNDER HERE*/}
+
         {/* SCRUM-34: Navigate to Service Area page */}
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <Link to="/service-area">
@@ -331,29 +331,30 @@ export default function CustomerPortal() {
                     letterSpacing: '0.05em',
                     textTransform: 'uppercase',
                     cursor: 'pointer'
-             }}>
-                 Service Area
-              </button>
-         </Link>
+                }}>
+                    Service Area
+                </button>
+            </Link>
         </div>
+
         {/* SCRUM-35: Navigate to Get a Quote page */}
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <Link to="/contact">
-              <button style={{
-                  backgroundColor: '#7ec8e3',
-                  color: 'white',
-                 border: 'none',
-                 borderRadius: '12px',
-                  padding: '1rem 2rem',
-                  fontWeight: 'bold',
-                  fontSize: '0.85rem',
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer'
-               }}>
-                  Get a Quote
-               </button>
-        </Link>
+                <button style={{
+                    backgroundColor: '#7ec8e3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}>
+                    Get a Quote
+                </button>
+            </Link>
         </div>
 
         {/*scrum 33: review modal*/}
