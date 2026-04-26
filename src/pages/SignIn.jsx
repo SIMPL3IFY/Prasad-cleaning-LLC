@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 
 // SCRUM-119: admin email routes to admin dashboard.
 const ADMIN_EMAIL = 'admin@prasad'
@@ -52,7 +52,7 @@ export default function SignIn() {
             </button>
 
             <p className="signin-footer">
-              Don't have an account? <a href="#">Create one</a>
+              Don't have an account? <Link to="/signup">Create one</Link>
             </p>
           </form>
         </div>
