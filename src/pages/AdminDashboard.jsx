@@ -3,12 +3,16 @@ import { useState, useEffect } from 'react'
 import sampleQuotes from '../data/sampleQuotes'
 
 const QUOTES_PER_PAGE = 1
+const APPOINTMENTS_PER_PAGE = 1 // Scrum 84: Appointments pagination
 // SCRUM-119: Admin landing page shown after admin login
 export default function AdminDashboard() {
     const navigate = useNavigate()
      // SCRUM-85: Constants
     const [quotes, setQuotes] = useState([])
     const [currentQuotePage, setCurrentQuotePage] = useState(1)
+    const [currentAppointmentPage, setCurrentAppointmentPage] = useState(1) // Scrum 84: Appointment page state
+    const [editingAppointmentId, setEditingAppointmentId] = useState(null) // Scrum 84: Editing appointment state
+    const [appointmentMessage, setAppointmentMessage] = useState('') // Scrum 84: Appointment message state
 
 // SCRUM-85: Manage Quotes box and supporting methods
     const fetchQuotes = () =>{
@@ -23,10 +27,23 @@ export default function AdminDashboard() {
         const start = (currentQuotePage - 1) * QUOTES_PER_PAGE
         return quotes.slice(start, start + QUOTES_PER_PAGE)
     }
-    // Scrum 128 method: Navigates between pages
+    // Scrum 84 method: Returns the appointments for current page
+    const paginateAppointments = () => {
+        const start = (currentAppointmentPage - 1) * APPOINTMENTS_PER_PAGE
+        return quotes.slice(start, start + APPOINTMENTS_PER_PAGE)
+    }
+    // Scrum 128 method: Navigates between quote pages
     const handleNextPage = (direction) => {
         const totalPages = Math.ceil(quotes.length / QUOTES_PER_PAGE)
         setCurrentQuotePage(prev => {
+            if(direction === 'next') return Math.min(prev + 1, totalPages)
+            if(direction === 'prev') return Math.max(prev - 1, 1)
+        })
+    }
+    // Scrum 84 method: Navigates between appointment pages
+    const handleAppointmentPage = (direction) => {
+        const totalPages = Math.ceil(quotes.length / APPOINTMENTS_PER_PAGE)
+        setCurrentAppointmentPage(prev => {
             if(direction === 'next') return Math.min(prev + 1, totalPages)
             if(direction === 'prev') return Math.max(prev - 1, 1)
         })
@@ -43,6 +60,79 @@ export default function AdminDashboard() {
             prev.map(q => q.id === quoteID ? { ...q, status: 'declined' } : q)
         )
     }
+    // Scrum 84 method: Edit appointment 
+    const handleEditAppointment = (quoteID) => {
+        setEditingAppointmentId(prev => prev === quoteID ? null : quoteID)
+        setAppointmentMessage('')
+    }
+    // Scrum 84 method: Update appointment 
+    const handleUpdateAppointment = (quoteID) => {
+        const quote = quotes.find(q => q.id === quoteID)
+        if (!quote) return
+        setAppointmentMessage(`Appointment updated for ${quote.customerName}.`)
+        setEditingAppointmentId(null)
+    }
+    // Scrum 84 method: Renders and displays each appointment card on screen
+    const renderAppointmentCard = (quote) => (
+        <div key={quote.id} style={{ width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Customer Name:</p>
+                    <p style={{ fontSize: '0.9rem' }}>{quote.customerName}</p>
+                </div>
+                <button
+                    onClick={() => handleEditAppointment(quote.id)}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#1a73e8',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
+                    }}
+                >
+                    Edit
+                </button>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Contact Info:</p>
+                <p style={{ fontSize: '0.85rem' }}>Email: {quote.email}</p>
+                <p style={{ fontSize: '0.85rem' }}>Phone #: {quote.phone}</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+                <div>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Service:</p>
+                    <p style={{ fontSize: '0.85rem' }}>{quote.service}</p>
+                </div>
+                <div>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Property:</p>
+                    <p style={{ fontSize: '0.85rem' }}>{quote.property}</p>
+                </div>
+                <div>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Appointment:</p>
+                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentDate}</p>
+                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentTime}</p>
+                </div>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Address:</p>
+                <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
+            </div>
+            <div>
+                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Message</p>
+                <span style={{ fontSize: '0.85rem' }}>{quote.message}</span>
+            </div>
+            {editingAppointmentId === quote.id && (
+                <p style={{ marginTop: '0.8rem', color: '#1a73e8', fontSize: '0.9rem' }}>
+                    Editing appointment details for {quote.customerName}.
+                </p>
+            )}
+            {appointmentMessage && (
+                <p style={{ marginTop: '0.8rem', color: '#155724', fontSize: '0.9rem' }}>
+                    {appointmentMessage}
+                </p>
+            )}
+        </div>
+    )
     // Scrum 128 method: Renders and displays each quote card on screen
     const renderQuoteCard = (quote) => (
         <div key={quote.id} style={{ width: '100%' }}>
@@ -140,12 +230,12 @@ export default function AdminDashboard() {
     )
 
     // Scrum 128 method: Shows the arrows to navigate
-    const renderPagination = (currentPage, totalItems) => {
-        const totalPages = Math.ceil(totalItems / QUOTES_PER_PAGE)
+    const renderPagination = (currentPage, totalItems, itemsPerPage, onPageChange) => {
+        const totalPages = Math.ceil(totalItems / itemsPerPage)
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
                 <button
-                    onClick={() => handleNextPage('prev')}
+                    onClick={() => onPageChange('prev')}
                     disabled={currentPage === 1}
                     style={{
                         background: 'none',
@@ -163,7 +253,7 @@ export default function AdminDashboard() {
                     Page {currentPage}/{totalPages}
                 </span>
                 <button
-                    onClick={() => handleNextPage('next')}
+                    onClick={() => onPageChange('next')}
                     disabled={currentPage === totalPages}
                     style={{
                         background: 'none',
@@ -186,6 +276,7 @@ export default function AdminDashboard() {
     }
    
     const visibleQuotes = paginateQuotes()
+    const visibleAppointments = paginateAppointments()
 
     // Main return
     return (
@@ -229,6 +320,56 @@ export default function AdminDashboard() {
                 justifyContent: 'center',
                 flexWrap: 'wrap'
             }}>
+                {/* Manage Appointments Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* Manage Appointments Card */}
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        padding: '1.5rem',
+                        minWidth: '300px',
+                        maxWidth: '360px',
+                        flex: '1',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        border: '2px solid #5ba3d0'
+                    }}>
+                        <h2 style={{
+                            fontWeight: 'bold',
+                            fontSize: '1.1rem',
+                            textAlign: 'center',
+                            marginBottom: '1.25rem'
+                        }}>
+                            Manage Appointments
+                        </h2>
+     
+                        {quotes.length === 0 ? (
+                            <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No appointments available.</p>
+                        ) : (
+                            <>
+                                {visibleAppointments.map(quote => renderAppointmentCard(quote))}
+                                {renderPagination(currentAppointmentPage, quotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
+                            </>
+                        )}
+                    </div>
+                    {/* Update Appointment Button */}
+                    <button
+                        onClick={() => visibleAppointments[0] && handleUpdateAppointment(visibleAppointments[0].id)}
+                        disabled={quotes.length === 0}
+                        style={{
+                            backgroundColor: quotes.length === 0 ? '#ccc' : 'white',
+                            color: quotes.length === 0 ? '#888' : '#333',
+                            border: '2px solid #5ba3d0',
+                            borderRadius: '50px',
+                            padding: '0.9rem 1.5rem',
+                            fontWeight: 'bold',
+                            cursor: quotes.length === 0 ? 'not-allowed' : 'pointer',
+                            textTransform: 'uppercase',
+                            textAlign: 'center'
+                        }}
+                    >
+                        Update Appointment
+                    </button>
+                </div>
                 {/* Manage Quotes Card */}
                 <div style={{
                     backgroundColor: 'white',
@@ -254,7 +395,7 @@ export default function AdminDashboard() {
                     ) : (
                         <>
                             {visibleQuotes.map(quote => renderQuoteCard(quote))}
-                            {renderPagination(currentQuotePage, quotes.length)}
+                            {renderPagination(currentQuotePage, quotes.length, QUOTES_PER_PAGE, handleNextPage)}
                         </>
                     )}
                 </div>
