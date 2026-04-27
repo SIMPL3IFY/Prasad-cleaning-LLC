@@ -7,6 +7,7 @@ import Services from './pages/Services'
 import Testimonials from './pages/Testimonials'
 import Contact from './pages/Contact'
 import SignIn from './pages/SignIn'
+import SignUp from './pages/SignUp'
 import ServiceArea from './pages/ServiceArea'
 import CustomerPortal from './pages/CustomerPortal'
 import Settings from './pages/Settings'
@@ -38,6 +39,7 @@ function AppContent() {
           <Route path="/testimonials" element={<Testimonials />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
           <Route path="/service-area" element={<ServiceArea />} /> 
           <Route path="/portal" element={<CustomerPortal />} />
           <Route path="/settings" element={<Settings />} />
