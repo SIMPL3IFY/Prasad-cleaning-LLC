@@ -23,6 +23,56 @@ export default function SignIn() {
   const handleAdminSignIn = () => {
     navigate('/admin')
   }
+  
+  // Scrum 71: Handles forgot password form submission
+  const handleForgotSubmit = (e) => {
+    e.preventDefault()
+    setResetMessage(`A reset link has been sent to ${resetEmail}.`)
+    setResetEmail('')
+  }
+
+  // Scrum 71: Renders the forgot password form
+  const renderForgotPasswordForm = () => (
+    <>
+      <h1 className="section-title">Reset Password</h1>
+      <p className="section-subtitle" style={{ marginBottom: 'var(--space-xl)' }}>
+        Enter your email and we'll send you a reset link.
+      </p>
+
+      <form className="signin-form" onSubmit={handleForgotSubmit}>
+        <div className="form-group">
+          <label htmlFor="reset-email">Email Address</label>
+          <input
+            id="reset-email"
+            type="email"
+            placeholder="you@example.com"
+            value={resetEmail}
+            onChange={(e) => setResetEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        {resetMessage && (
+          <p style={{ color: '#155724', fontSize: '0.9rem', marginBottom: '1rem' }}>
+            {resetMessage}
+          </p>
+        )}
+
+        <button type="submit" className="button button-main button-big signin-btn">
+          Send Reset Link
+        </button>
+
+        <p className="signin-footer">
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); setShowForgotPassword(false); setResetMessage(''); setResetEmail('') }}
+          >
+            Back to Sign In
+          </a>
+        </p>
+      </form>
+    </>
+  )
 
   return (
     <section className="section signin-section">
@@ -55,8 +105,14 @@ export default function SignIn() {
             </div>
 
             <div className="form-footer-row">
-              <a href="#" className="forgot-link">Forgot password?</a>
-            </div>
+                  <a
+                    href="#"
+                    className="forgot-link"
+                    onClick={(e) => { e.preventDefault(); setShowForgotPassword(true) }}
+                  >
+                    Forgot password?
+                  </a>
+                </div>
 
             <button type="submit" className="button button-main button-big signin-btn">
               Sign In
