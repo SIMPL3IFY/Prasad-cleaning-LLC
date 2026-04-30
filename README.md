@@ -16,5 +16,3 @@
 - Tuong Lo 
 - Amaan Habib
 - Simrit Bajwa
-
-Something trivial
