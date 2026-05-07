@@ -13,6 +13,7 @@ export default function AdminDashboard() {
     const [currentAppointmentPage, setCurrentAppointmentPage] = useState(1) // Scrum 84: Appointment page state
     const [editingAppointmentId, setEditingAppointmentId] = useState(null) // Scrum 84: Editing appointment state
     const [appointmentMessage, setAppointmentMessage] = useState('') // Scrum 84: Appointment message state
+    const [editedAppointment, setEditedAppointment] = useState({}) // Scrum 87: Tracks in-progress field edits
 
 // SCRUM-85: Manage Quotes box and supporting methods
     const fetchQuotes = () =>{
@@ -47,6 +48,8 @@ export default function AdminDashboard() {
             if(direction === 'next') return Math.min(prev + 1, totalPages)
             if(direction === 'prev') return Math.max(prev - 1, 1)
         })
+        setEditingAppointmentId(null) // Scrum 87: Cancel edit mode when navigating pages
+        setEditedAppointment({}) // Scrum 87: Clear in-progress edits when navigating pages
     }
     // Scrum 126 method: Accepts a quote into database
     const acceptQuote = (quoteID) => {
@@ -54,23 +57,32 @@ export default function AdminDashboard() {
             prev.map(q => q.id === quoteID ? { ...q, status: 'accepted' } : q)
         )
     }
-    // Scrum 127 method: Declines a quote 
+    // Scrum 127 method: Declines a quote
     const declineQuote = (quoteID) => {
         setQuotes(prev =>
             prev.map(q => q.id === quoteID ? { ...q, status: 'declined' } : q)
         )
     }
-    // Scrum 84 method: Edit appointment 
+    // Scrum 84 method: Edit appointment
     const handleEditAppointment = (quoteID) => {
-        setEditingAppointmentId(prev => prev === quoteID ? null : quoteID)
+        if (editingAppointmentId === quoteID) {
+            setEditingAppointmentId(null)
+            setEditedAppointment({}) // Scrum 87: Clear edits on cancel
+        } else {
+            const quote = quotes.find(q => q.id === quoteID)
+            setEditingAppointmentId(quoteID)
+            setEditedAppointment({ ...quote }) // Scrum 87: Seed fields with current appointment values
+        }
         setAppointmentMessage('')
     }
-    // Scrum 84 method: Update appointment 
+    // Scrum 84 method: Update appointment
     const handleUpdateAppointment = (quoteID) => {
         const quote = quotes.find(q => q.id === quoteID)
         if (!quote) return
+        setQuotes(prev => prev.map(q => q.id === quoteID ? { ...q, ...editedAppointment } : q)) // Scrum 87: Apply edited fields to quotes state
         setAppointmentMessage(`Appointment updated for ${quote.customerName}.`)
         setEditingAppointmentId(null)
+        setEditedAppointment({}) // Scrum 87: Clear edits after saving
     }
     // Scrum 84 method: Renders and displays each appointment card on screen
     const renderAppointmentCard = (quote) => (
@@ -90,7 +102,7 @@ export default function AdminDashboard() {
                         fontWeight: 'bold'
                     }}
                 >
-                    Edit
+                    {editingAppointmentId === quote.id ? 'Cancel' : 'Edit'}{/* Scrum 87: Toggle label based on edit mode */}
                 </button>
             </div>
             <div style={{ marginBottom: '1rem' }}>
@@ -101,25 +113,74 @@ export default function AdminDashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
                 <div>
                     <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Service:</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.service}</p>
+                    {editingAppointmentId === quote.id ? ( // Scrum 87: Editable service field
+                        <input
+                            value={editedAppointment.service || ''}
+                            onChange={e => setEditedAppointment(prev => ({ ...prev, service: e.target.value }))}
+                            style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0' }}
+                        />
+                    ) : (
+                        <p style={{ fontSize: '0.85rem' }}>{quote.service}</p>
+                    )}
                 </div>
                 <div>
                     <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Property:</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.property}</p>
+                    {editingAppointmentId === quote.id ? ( // Scrum 87: Editable property field
+                        <input
+                            value={editedAppointment.property || ''}
+                            onChange={e => setEditedAppointment(prev => ({ ...prev, property: e.target.value }))}
+                            style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0' }}
+                        />
+                    ) : (
+                        <p style={{ fontSize: '0.85rem' }}>{quote.property}</p>
+                    )}
                 </div>
                 <div>
                     <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Appointment:</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentDate}</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentTime}</p>
+                    {editingAppointmentId === quote.id ? ( // Scrum 87: Editable date and time fields
+                        <>
+                            <input
+                                value={editedAppointment.appointmentDate || ''}
+                                onChange={e => setEditedAppointment(prev => ({ ...prev, appointmentDate: e.target.value }))}
+                                style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0', marginBottom: '0.2rem' }}
+                            />
+                            <input
+                                value={editedAppointment.appointmentTime || ''}
+                                onChange={e => setEditedAppointment(prev => ({ ...prev, appointmentTime: e.target.value }))}
+                                style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0' }}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <p style={{ fontSize: '0.85rem' }}>{quote.appointmentDate}</p>
+                            <p style={{ fontSize: '0.85rem' }}>{quote.appointmentTime}</p>
+                        </>
+                    )}
                 </div>
             </div>
             <div style={{ marginBottom: '1rem' }}>
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Address:</p>
-                <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
+                {editingAppointmentId === quote.id ? ( // Scrum 87: Editable address field
+                    <input
+                        value={editedAppointment.address || ''}
+                        onChange={e => setEditedAppointment(prev => ({ ...prev, address: e.target.value }))}
+                        style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0', marginTop: '0.3rem' }}
+                    />
+                ) : (
+                    <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
+                )}
             </div>
             <div>
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Message</p>
-                <span style={{ fontSize: '0.85rem' }}>{quote.message}</span>
+                {editingAppointmentId === quote.id ? ( // Scrum 87: Editable message field
+                    <textarea
+                        value={editedAppointment.message || ''}
+                        onChange={e => setEditedAppointment(prev => ({ ...prev, message: e.target.value }))}
+                        style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0', marginTop: '0.3rem', resize: 'vertical' }}
+                    />
+                ) : (
+                    <span style={{ fontSize: '0.85rem' }}>{quote.message}</span>
+                )}
             </div>
             {editingAppointmentId === quote.id && (
                 <p style={{ marginTop: '0.8rem', color: '#1a73e8', fontSize: '0.9rem' }}>
@@ -184,20 +245,20 @@ export default function AdminDashboard() {
                     </span>
                 )}
             </div>
- 
+
             {/* Customer Name */}
             <div style={{ marginBottom: '1rem' }}>
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Customer Name:</p>
                 <p style={{ fontSize: '0.9rem' }}>{quote.customerName}</p>
             </div>
- 
+
             {/* Contact Info */}
             <div style={{ marginBottom: '1rem' }}>
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Contact Info:</p>
                 <p style={{ fontSize: '0.85rem' }}>Email: {quote.email}</p>
                 <p style={{ fontSize: '0.85rem' }}>Phone #: {quote.phone}</p>
             </div>
- 
+
             {/* Service / Property / Appointment */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
                 <div>
@@ -214,13 +275,13 @@ export default function AdminDashboard() {
                     <p style={{ fontSize: '0.85rem' }}>{quote.appointmentTime}</p>
                 </div>
             </div>
- 
+
             {/* Address */}
             <div style={{ marginBottom: '1rem' }}>
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Address:</p>
                 <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
             </div>
- 
+
             {/* Message */}
             <div>
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Message</p>
@@ -274,7 +335,7 @@ export default function AdminDashboard() {
     const handleLogout = () => {
         navigate('/')
     }
-   
+
     const visibleQuotes = paginateQuotes()
     const visibleAppointments = paginateAppointments()
 
@@ -331,7 +392,7 @@ export default function AdminDashboard() {
                         maxWidth: '360px',
                         flex: '1',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: '2px solid #5ba3d0'
+                        border: editingAppointmentId ? '2px solid #1a73e8' : '2px solid #5ba3d0' // Scrum 87: Blue border when editing
                     }}>
                         <h2 style={{
                             fontWeight: 'bold',
@@ -341,7 +402,7 @@ export default function AdminDashboard() {
                         }}>
                             Manage Appointments
                         </h2>
-     
+
                         {quotes.length === 0 ? (
                             <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No appointments available.</p>
                         ) : (
@@ -353,16 +414,16 @@ export default function AdminDashboard() {
                     </div>
                     {/* Update Appointment Button */}
                     <button
-                        onClick={() => visibleAppointments[0] && handleUpdateAppointment(visibleAppointments[0].id)}
-                        disabled={quotes.length === 0}
+                        onClick={() => editingAppointmentId && handleUpdateAppointment(editingAppointmentId)} // Scrum 87: Update whichever appointment is being edited
+                        disabled={!editingAppointmentId} // Scrum 87: Only enabled when an appointment is in edit mode
                         style={{
-                            backgroundColor: quotes.length === 0 ? '#ccc' : 'white',
-                            color: quotes.length === 0 ? '#888' : '#333',
+                            backgroundColor: !editingAppointmentId ? '#ccc' : 'white',
+                            color: !editingAppointmentId ? '#888' : '#333',
                             border: '2px solid #5ba3d0',
                             borderRadius: '50px',
                             padding: '0.9rem 1.5rem',
                             fontWeight: 'bold',
-                            cursor: quotes.length === 0 ? 'not-allowed' : 'pointer',
+                            cursor: !editingAppointmentId ? 'not-allowed' : 'pointer',
                             textTransform: 'uppercase',
                             textAlign: 'center'
                         }}
@@ -389,7 +450,7 @@ export default function AdminDashboard() {
                     }}>
                         Manage Quotes
                     </h2>
- 
+
                     {quotes.length === 0 ? (
                         <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No quotes available.</p>
                     ) : (
