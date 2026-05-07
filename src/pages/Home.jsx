@@ -36,7 +36,7 @@ export default function Home() {
             ))}
           </ul>
           <div style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>
-            <Link className="buttonbutton-alt" to="/services">View all services</Link>
+            <Link className="button button-alt" to="/services">View all services</Link>
           </div>
         </div>
       </section>
