@@ -11,7 +11,6 @@ Prasad's Cleaning LLC is a full-stack web app that gives a small cleaning busine
 - React
 - Java Spring Boot
 - Node.js
-- Express
 
 ## Getting Started
 
