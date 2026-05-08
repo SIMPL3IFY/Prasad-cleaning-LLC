@@ -6,37 +6,32 @@ A web platform for a local cleaning business — built as a Senior Project for C
 
 Prasad's Cleaning LLC is a full-stack web app that gives a small cleaning business an online presence and a self-service portal. Visitors can browse services, service areas, and testimonials; customers can manage their appointments; and admins can manage operations from a dashboard.
 
-# Installation Instructions
+3. Installation Instructions
 
-   1. Clone the repository
-   ```sh
+   1. Clone the repository:
    https://github.com/SIMPL3IFY/Prasad-cleaning-LLC.git
-    ```
-   2. Ensure you are in the "Prasad-cleaning-LLC" directory
-   ```sh
+
+   3. Ensure you are in the "Prasad-cleaning-LLC" directory:
    cd Prasad-cleaning-LLC
-   ```
-   3. Install npm packages
-   ```sh
+   
+   4. Install npm packages:
    npm install
-   ```
-   4. Run the web application
-   ```sh
+
+   5. Run the web application:
    npm run dev
-   ```
-   5. Click on the local host link to enter website
-    ```sh
+ 
+   6. Click on the local host link to enter the website:
     http://localhost:5173/
-    ```
-    
-# Tech Stack
+
+
+4. Tech Stack
 
 - React
 - Java Spring Boot
 - Node.js
 - Express
 
-# Contributors
+5. Contributors
 
 - Thinh Nguyen
 - Avneet Singh
