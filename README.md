@@ -9,18 +9,15 @@ Prasad's Cleaning LLC is a full-stack web app that gives a small cleaning busine
 3. Installation Instructions
 
    1. Clone the repository:
-   https://github.com/SIMPL3IFY/Prasad-cleaning-LLC.git
 
-   3. Ensure you are in the "Prasad-cleaning-LLC" directory:
-   cd Prasad-cleaning-LLC
-   
-   4. Install npm packages:
-   npm install
-
-   5. Run the web application:
-   npm run dev
+```bash
+git clone https://github.com/SIMPL3IFY/Prasad-cleaning-LLC.git
+cd Prasad-cleaning-LLC
+npm install
+npm run dev
+```
  
-   6. Click on the local host link to enter the website:
+   2. Click on the local host link to enter the website:
     http://localhost:5173/
 
 
