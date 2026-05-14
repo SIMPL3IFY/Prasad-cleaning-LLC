@@ -1,3 +1,5 @@
+<img width="800" height="400" alt="image" src="https://github.com/user-attachments/assets/17f851e5-9298-4ba5-b546-e7ec62fa824d" />
+
 # Prasad's Cleaning LLC
 
 A web platform for a local cleaning business — built as a Senior Project for CSC 190/191 at Sacramento State.
@@ -77,6 +79,17 @@ _Placeholder — to be implemented in CSC 191._
 
 _Placeholder — to be implemented in CSC 191._
 
+## ERD
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/909d7319-01c7-4868-b9a9-8b2f59b5dc6d" />
+
+## FrontEnd Demo
+<img width="800" height="700" alt="image" src="https://github.com/user-attachments/assets/dae7f2f3-ebb3-41bf-9e07-4300b6fef9b3" />
+
+## Timeline Key Milestones
+- Database Implementation 08/24 - 11/1
+- Admin Portal 10/18
+- Calendy API Implementation 08/24 - 10/18
+- Vercel Hosting Implementation 10/19 - 11/1
 
 ## Contributors
 
