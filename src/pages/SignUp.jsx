@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import { supabase } from "../supabaseClient"
 
 export default function SignUp() {
   const navigate = useNavigate()
@@ -13,6 +14,7 @@ export default function SignUp() {
   
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -60,12 +62,30 @@ export default function SignUp() {
     }
 
     setIsLoading(true)
+    setSuccessMessage('')
 
-    // Simulate API call for account creation
-    setTimeout(() => {
-      setIsLoading(false)
+    const { data, error } = await supabase.auth.signUp({
+      email: formData.email.trim(),
+      password: formData.password,
+      options: {
+        data: { full_name: formData.name.trim() }
+      }
+    })
+
+    setIsLoading(false)
+
+    if (error) {
+      setErrors({ submit: error.message })
+      return
+    }
+
+    if (data.session) {
       handleRedirect()
-    }, 1000)
+      return
+    }
+
+    setSuccessMessage('Account created. Check your email to confirm your account, then sign in.')
+    setFormData({ name: '', email: '', password: '', confirmPassword: '' })
   }
 
   const renderErrorMessages = (fieldName) => {
@@ -157,6 +177,18 @@ export default function SignUp() {
             </div>
 
             {renderLoadingState()}
+
+            {errors.submit && (
+              <p className="error-text" style={{ color: 'red', marginBottom: '1rem' }}>
+                {errors.submit}
+              </p>
+            )}
+
+            {successMessage && (
+              <p style={{ color: '#155724', marginBottom: '1rem' }}>
+                {successMessage}
+              </p>
+            )}
 
             <button type="submit" className="button button-main button-big signin-btn" disabled={isLoading}>
               Sign Up

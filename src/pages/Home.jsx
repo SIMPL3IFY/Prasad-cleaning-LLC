@@ -4,30 +4,7 @@ import { SERVICES_LIST } from '../data/ServicesData';
 
 
 
-import { useEffect, useState } from 'react'
-import { supabase, supabaseUrl, supabaseKey } from '../supabaseClient'
-
-
 export default function Home() {
-
-  const [sbTest, setSbTest] = useState({ loading: true, data: null, error: null })
-
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      try {
-        const { data, error } = await supabase.from('services').select('*').limit(1)
-        if (!mounted) return
-        setSbTest({ loading: false, data, error })
-        console.log('Supabase test:', { data, error })
-      } catch (err) {
-        if (!mounted) return
-        setSbTest({ loading: false, data: null, error: err })
-        console.error('Supabase test error:', err)
-      }
-    })()
-    return () => { mounted = false }
-  }, [])
 
   const featuredServices = SERVICES_LIST.filter(service => 
     service.name === "Residential Cleaning" || 
@@ -37,20 +14,6 @@ export default function Home() {
 
   return (
     <>
-      <div style={{ position: 'fixed', right: 12, top: 12, zIndex: 9999, maxWidth: 320 }}>
-        <div style={{ padding: '8px 12px', borderRadius: 6, background: '#fff', boxShadow: '0 2px 6px rgba(0,0,0,0.12)', fontSize: 13 }}>
-          <div style={{ marginBottom: 6 }}><strong>Supabase:</strong>{' '}{sbTest.loading ? 'checking...' : sbTest.error ? 'error' : 'connected'}</div>
-          {!sbTest.loading && sbTest.error && (
-            <div style={{ color: '#b00020', fontSize: 12 }}>
-              {sbTest.error.message || JSON.stringify(sbTest.error)}
-            </div>
-          )}
-          <div style={{ marginTop: 6, fontSize: 11, color: '#444' }}>
-            <div>URL: {supabaseUrl ? 'set' : 'missing'}</div>
-            <div>Key: {supabaseKey ? 'set' : 'missing'}</div>
-          </div>
-        </div>
-      </div>
       <section className="banner">
         <div className="container banner-content">
           <h1 className="page-title">Professional Cleaning Services</h1>

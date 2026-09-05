@@ -2,6 +2,7 @@ import { useState } from 'react'
 //import { Link } from 'react-router-dom'
 import { SERVICES_LIST } from '../data/ServicesData';
 import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../supabaseClient'
 
 export default function CustomerPortal() {
     const navigate = useNavigate()
@@ -14,6 +15,8 @@ export default function CustomerPortal() {
     const [reviewText, setReviewText] = useState('')
     const [rating, setRating] = useState(0)
     const [errors, setErrors] = useState({})
+    const [reviewMessage, setReviewMessage] = useState('')
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false)
 
     // SCRUM 75: State Variables
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
@@ -42,6 +45,7 @@ export default function CustomerPortal() {
         setCustomerName('')
         setReviewText('')
         setRating(0)
+        setReviewMessage('')
     }
 
     // Handles star rating selection
@@ -78,12 +82,41 @@ export default function CustomerPortal() {
 
 
     // Submits review after validation
-    const submitReview = () => {
+    const submitReview = async () => {
         if (!validateReview()){
             return
         }
-        console.log({ customerName, reviewText, rating})
-        toggleModal()
+
+        setIsSubmittingReview(true)
+        setReviewMessage('')
+        setErrors({})
+
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            setIsSubmittingReview(false)
+            setReviewMessage('Please sign in again before submitting a review.')
+            return
+        }
+
+        const { error } = await supabase.from('customer_reviews').insert({
+            user_id: user.id,
+            customer_name: customerName.trim(),
+            review: reviewText.trim(),
+            rating
+        })
+
+        setIsSubmittingReview(false)
+
+        if (error) {
+            setReviewMessage(error.message)
+            return
+        }
+
+        setReviewMessage('Review submitted and awaiting approval.')
+        setCustomerName('')
+        setReviewText('')
+        setRating(0)
     }
 
     // SCRUM-75: function to open and close the modal
@@ -467,9 +500,16 @@ export default function CustomerPortal() {
                             )}
                         </div>
 
+                        {reviewMessage && (
+                            <p style={{ color: reviewMessage.includes('submitted') ? '#155724' : '#cc0000', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                {reviewMessage}
+                            </p>
+                        )}
+
                          {/* Send button */}
                         <button
                             onClick={submitReview}
+                            disabled={isSubmittingReview}
                             style={{
                                 backgroundColor: '#7ec8e3',
                                 color: 'white',
@@ -482,7 +522,7 @@ export default function CustomerPortal() {
                                 marginBottom: '0.75rem'
                             }}
                         >
-                            Send
+                            {isSubmittingReview ? 'Sending...' : 'Send'}
                         </button>
                              {/* Cancel link */}
                         <div>
