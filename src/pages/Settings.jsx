@@ -5,11 +5,19 @@ import { supabase } from '../lib/supabaseClient'
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function Settings() {
+    /* Scrum 64: Phone number edit and database integration.
+       This adds 10-digit phone validation, saves phone_number to "settings",
+       and displays success/error messages to the user. */
+    const [userId, setUserId] = useState('')
     const [email, setEmail] = useState('')
     const [savedEmail, setSavedEmail] = useState('')
+    const [phone, setPhone] = useState('')
+    const [savedPhone, setSavedPhone] = useState('')
     const [isEditingEmail, setIsEditingEmail] = useState(false)
+    // Tracks save request loading, error, and success states.
     const [status, setStatus] = useState({ loading: true, error: '', success: '' })
 
+    // Pulls the user's email from Supabase Auth and phone number from the settings table.
     useEffect(() => {
         let isMounted = true
 
@@ -29,7 +37,19 @@ export default function Settings() {
 
             setEmail(user.email || '')
             setSavedEmail(user.email || '')
-            setStatus({ loading: false, error: '', success: '' })
+            setUserId(user.id)
+
+            const { data: settings, error: settingsError } = await supabase
+                .from('settings')
+                .select('phone_number')
+                .eq('user_id', user.id)
+                .maybeSingle()
+
+            if (!isMounted) return
+
+            setPhone(settings?.phone_number || '')
+            setSavedPhone(settings?.phone_number || '')
+            setStatus({ loading: false, error: settingsError?.message || '', success: '' })
         }
 
         loadEmail()
@@ -52,6 +72,12 @@ export default function Settings() {
     // Scrum 62: keep the controlled email field in sync and clear stale validation messages.
     const handleEmailChange = (e) => {
         setEmail(e.target.value)
+        setStatus((current) => ({ ...current, error: '', success: '' }))
+    }
+
+    // Scrum 64 - SubTask 152: updates the phone field as the user types.
+    const handlePhoneChange = (e) => {
+        setPhone(e.target.value)
         setStatus((current) => ({ ...current, error: '', success: '' }))
     }
 
@@ -90,16 +116,46 @@ export default function Settings() {
             : 'Email address updated successfully.'
     }
 
+    // Scrum 64: validates and saves the phone number to the Supabase settings table.
+    const savePhoneNumber = async () => {
+        const digitsOnly = phone.replace(/\D/g, '')
+
+        if (digitsOnly.length !== 10) {
+            throw new Error('Enter a valid 10-digit US phone number.')
+        }
+
+        const { error } = await supabase
+            .from('settings')
+            .upsert(
+                {
+                    user_id: userId,
+                    phone_number: digitsOnly,
+                    updated_at: new Date().toISOString(),
+                },
+                { onConflict: 'user_id' }
+            )
+
+        if (error) throw error
+
+        setPhone(digitsOnly)
+        setSavedPhone(digitsOnly)
+        return 'Phone number updated successfully.'
+    }
+
     // Scrum 67: validate and persist the settings changed on this page.
     const handleSave = async (e) => {
         e.preventDefault()
 
-        if (!isEditingEmail) {
-            setStatus({ loading: false, error: 'Click the email field before making a change.', success: '' })
+        const normalizedEmail = email.trim()
+        const emailChanged = isEditingEmail && normalizedEmail !== savedEmail
+        const phoneChanged = phone !== savedPhone
+
+        if (!emailChanged && !phoneChanged) {
+            setStatus({ loading: false, error: 'Make a change before saving.', success: '' })
             return
         }
 
-        const validationError = validateEmail()
+        const validationError = emailChanged ? validateEmail() : ''
         if (validationError) {
             setStatus({ loading: false, error: validationError, success: '' })
             return
@@ -108,8 +164,12 @@ export default function Settings() {
         setStatus({ loading: true, error: '', success: '' })
 
         try {
-            const success = await saveEmailAddress()
-            setStatus({ loading: false, error: '', success })
+            const messages = []
+
+            if (emailChanged) messages.push(await saveEmailAddress())
+            if (phoneChanged) messages.push(await savePhoneNumber())
+
+            setStatus({ loading: false, error: '', success: messages.join(' ') })
         } catch (error) {
             setStatus({
                 loading: false,
@@ -120,6 +180,7 @@ export default function Settings() {
     }
 
     return (
+        // Scrum 115: settings fields for email, phone, address, and password.
         <main className="section">
             <div className="container">
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-2xl)' }}>
@@ -127,6 +188,7 @@ export default function Settings() {
                     <p className="section-subtitle">Update your account information below</p>
                 </div>
 
+                {/* Uses the Sign-In form layout, centered on the settings page. */}
                 <form
                     className="signin-form"
                     style={{ maxWidth: '500px', margin: '0 auto' }}
@@ -160,9 +222,16 @@ export default function Settings() {
                         )}
                     </div>
 
+                    {/* Scrum 64 - SubTask 153: phone number input and inline error feedback. */}
                     <div className="form-group">
                         <label htmlFor="phone">Change Phone Number</label>
-                        <input type="tel" id="phone" placeholder="(XXX) XXX-XXXX" />
+                        <input
+                            type="tel"
+                            id="phone"
+                            placeholder="(XXX) XXX-XXXX"
+                            value={phone}
+                            onChange={handlePhoneChange}
+                        />
                     </div>
 
                     <div className="form-group">
@@ -180,6 +249,7 @@ export default function Settings() {
                         <input type="password" id="password" placeholder="********" />
                     </div>
 
+                    {/* Scrum 64 and Scrum 67: display database save results. */}
                     {status.error && (
                         <p id="settings-error" role="alert" style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>
                             {status.error}
