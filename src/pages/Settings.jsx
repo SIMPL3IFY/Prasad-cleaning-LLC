@@ -19,6 +19,9 @@ export default function Settings() {
     // Tracks save requests status: loading, error and or success. Displays above Save button.
     const [status, setStatus] = useState({ loading: false, error: '', success: '' })
 
+    //Scrum 94: Controls the visibility of the save popup saying "Account Updated!"
+    const [showSavePopup, setShowSavePopup] = useState(false)
+
     // This pulls the users email from Supabase Auth, along with saved phone_number from Settings table.
     // It prefills the form if values are found so user can edit current values.
     useEffect(() => {
@@ -41,6 +44,18 @@ export default function Settings() {
         }
         loadSettings()
     }, [])
+
+    /*Scrum 94: Function to show save popup saying "Account Updated!",
+    popup has a 2 second delay,
+    and then redirects to the /portal page
+    */
+    const handleSavePopup = () => {
+        setShowSavePopup(true)
+        setTimeout(() => {
+            setShowSavePopup(false)
+            navigate('/portal')
+        }, 2000)
+    }
 
     // Scrum 64 - SubTask 152: handlePhoneChange updates phone field as user types.
     const handlePhoneChange = (e) => {
@@ -81,7 +96,9 @@ export default function Settings() {
         }
 
         setStatus({ loading: false, error: '', success: 'Phone number updated.' })
-        navigate('/portal')
+        //navigate('/portal')
+        //Scrum 94: Call the function to handle the save popup and redirect to /portal
+        handleSavePopup()
     }
 
     // Scrum 64: form submit handler skips the database entirely if the field is blank, otherwise runs it through validatePhoneNumber.
@@ -90,7 +107,9 @@ export default function Settings() {
         setStatus({ loading: true, error: '', success: '' })
         if (!formData.phone) {
             setStatus({ loading: false, error: '', success: '' })
-            navigate('/portal')
+            //navigate('/portal')
+            //Scrum 94: Call the function to handle the save popup and redirect to /portal
+            handleSavePopup()
             return
         }
         await validatePhoneNumber()
@@ -106,6 +125,13 @@ export default function Settings() {
                     <p className="section-subtitle">Update your account information below</p>
                 </div>
                 
+                {/* Scrum 94: Show popup box that states: "Account Updated!" */}
+                {showSavePopup && (
+                    <div className="popup-box">
+                        <p className="popup-text">Account Updated!</p>
+                    </div>
+                )}
+
                 {/* Use the format of the Sign-In form, but without floating box outline and adjust the size to center in the page */}
                 <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave}>
 
