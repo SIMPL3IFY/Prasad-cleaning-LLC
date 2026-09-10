@@ -4,17 +4,34 @@
  * Reviews currently loaded from local JSON file
  * When database is setup, fetchReviews() will be updated to pull directly from there.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import reviewsData from '../data/TestimonialData.json'
+import { supabase } from '../supabaseClient'
 
 export default function Testimonials() {
-  const [reviews] = useState(reviewsData)
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const fetchReviews = () => {
-    // Enter database info when ready
-    return reviewsData
-  }
+  useEffect(() => {
+    const fetchReviews = async () => {
+      const { data, error } = await supabase
+        .from('customer_reviews')
+        .select('id, customer_name, review, rating')
+        .eq('approved', true)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching reviews:', error)
+        setReviews([])
+      } else {
+        setReviews(data || [])
+      }
+
+      setLoading(false)
+    }
+
+    fetchReviews()
+  }, [])
 
   const limitReviews = (reviewsArray) => {
     return reviewsArray.slice(0,5)
@@ -22,9 +39,9 @@ export default function Testimonials() {
 
   const renderReviewCard = (review) => {
     return (
-      <li key = {review.id} className='testimonial-card'>
-        <h3>{review.customerName}</h3>
-        <p>{review.comment}</p>
+      <li key={review.id} className='testimonial-card'>
+        <h3>{review.customer_name}</h3>
+        <p>{review.review}</p>
         <span>{'⭐'.repeat(review.rating)}</span>
       </li>
     )
@@ -35,19 +52,25 @@ export default function Testimonials() {
   }
 
   const displayedReviews = limitReviews(reviews)
+
   return (
     <section className="section">
       <div className="container">
-        <h1 className="page-title" style={{textAlign: 'center' }}>Customer Testimonials</h1>
+        <h1 className="page-title" style={{ textAlign: 'center' }}>Customer Testimonials</h1>
         <p className="section-subtitle">Real feedback from customers we've helped</p>
 
-        <ul className="testimonials-list" style={{paddingTop: 'var(--space-2xl)'}}>
-          {displayedReviews.length > 0
-            ? displayedReviews.map(renderReviewCard)
-            : renderFallback()
-          }
-        </ul>
-         <div style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>
+        {loading ? (
+          <p style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>Loading reviews...</p>
+        ) : (
+          <ul className="testimonials-list" style={{ paddingTop: 'var(--space-2xl)' }}>
+            {displayedReviews.length > 0
+              ? displayedReviews.map(renderReviewCard)
+              : renderFallback()
+            }
+          </ul>
+        )}
+
+        <div style={{ textAlign: 'center', marginTop: 'var(--space-2xl)' }}>
           <Link className="button button-main" to="/contact">Book a cleaning</Link>
         </div>
       </div>

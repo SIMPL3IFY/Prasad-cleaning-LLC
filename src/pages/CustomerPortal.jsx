@@ -81,7 +81,7 @@ export default function CustomerPortal() {
     }
 
 
-    // Submits review after validation
+    // SCRUM 90: Function to submit the review to Supabase
     const submitReview = async () => {
         if (!validateReview()){
             return
@@ -103,7 +103,8 @@ export default function CustomerPortal() {
             user_id: user.id,
             customer_name: customerName.trim(),
             review: reviewText.trim(),
-            rating
+            rating,
+            approved: rating === 5
         })
 
         setIsSubmittingReview(false)
