@@ -84,13 +84,35 @@ export default function Settings() {
         navigate('/portal')
     }
 
+    // Scrum 65 - SubTask 161: handlePasswordChange updates password fields as user types.
+    const handlePasswordChange = (e) => {
+        setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
+    }
+
+    // Scrum 65 - SubTask 163: submits updated password to Supabase Auth.
+    const savePassword = async () => {
+        const { error } = await supabase.auth.updateUser({ password: formData.password })
+        if (error) {
+            setStatus({ loading: false, error: error.message, success: '' })
+            return false
+        }
+        return true
+    }
+
     // Scrum 64: form submit handler skips the database entirely if the field is blank, otherwise runs it through validatePhoneNumber.
+    // Scrum 65: also saves password if the password field is filled.
     const handleSave = async (e) => {
         e.preventDefault()
         setStatus({ loading: true, error: '', success: '' })
+
+        if (formData.password) {
+            const passwordSaved = await savePassword()
+            if (!passwordSaved) return
+        }
+
         if (!formData.phone) {
-            setStatus({ loading: false, error: '', success: '' })
-            navigate('/portal')
+            setStatus({ loading: false, error: '', success: formData.password ? 'Password updated.' : '' })
+            if (!formData.password) navigate('/portal')
             return
         }
         await validatePhoneNumber()
@@ -131,14 +153,15 @@ export default function Settings() {
                         <input type="text" id="address" placeholder="123 Main St, City, State, Zip Code" />
                     </div>
                     
+                    {/* Scrum 65 - SubTask 162: Password fields wired to formData state */}
                     <div className="form-group">
                         <label htmlFor="password">Change Password</label>
-                        <input type="password" id="password" placeholder="********" />
+                        <input type="password" id="password" placeholder="********" value={formData.password} onChange={handlePasswordChange} />
                     </div>
-                    
+
                     <div className="form-group">
-                        <label htmlFor="password">Re-Enter New Password</label>
-                        <input type="password" id="password" placeholder="********" />
+                        <label htmlFor="confirmPassword">Re-Enter New Password</label>
+                        <input type="password" id="confirmPassword" placeholder="********" value={formData.confirmPassword} onChange={handlePasswordChange} />
                     </div>
                     
                     {/* Button for user to change settings
