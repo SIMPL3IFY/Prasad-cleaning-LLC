@@ -1,21 +1,18 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { supabase } from "../lib/supabaseClient"
 
 export default function SignUp() {
   const navigate = useNavigate()
-
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
   })
-
+  
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
-  const [signupError, setSignupError] = useState('')
-  const [confirmMessage, setConfirmMessage] = useState('')
   
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -57,40 +54,18 @@ export default function SignUp() {
 
   const handleSignupSubmit = async (e) => {
     e.preventDefault()
-
+    
     if (!validateSignup()) {
       return
     }
 
     setIsLoading(true)
-    setSignupError('')
-    setConfirmMessage('')
 
-    // Saves the new user to the database (Supabase auth.users).
-    const { data, error } = await supabase.auth.signUp({
-      email: formData.email.trim(),
-      password: formData.password,
-      options: {
-        data: { full_name: formData.name.trim() }
-      }
-    })
-
-    setIsLoading(false)
-
-    if (error) {
-      setSignupError(error.message)
-      return
-    }
-
-    // With email confirmation enabled, no session is returned until the user
-    // clicks the link in their email, so there is nothing to redirect into the portal until they confirm their email. WORKING PROCESS!!!
-    if (!data.session) {
-      setConfirmMessage(`Account created. Check ${formData.email.trim()} to confirm your email before signing in.`)
-      setFormData({ name: '', email: '', password: '', confirmPassword: '' })
-      return
-    }
-
-    handleRedirect()
+    // Simulate API call for account creation
+    setTimeout(() => {
+      setIsLoading(false)
+      handleRedirect()
+    }, 1000)
   }
 
   const renderErrorMessages = (fieldName) => {
@@ -182,20 +157,6 @@ export default function SignUp() {
             </div>
 
             {renderLoadingState()}
-
-            // Red error shown if the signup request fails (e.g., email already exists, network error, etc.)
-            {signupError && (
-              <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                {signupError}
-              </p>
-            )}
-
-            // Green confirmation message shown if the signup request is successful and the user needs to confirm their email
-            {confirmMessage && (
-              <p style={{ color: '#155724', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                {confirmMessage}
-              </p>
-            )}
 
             <button type="submit" className="button button-main button-big signin-btn" disabled={isLoading}>
               Sign Up
