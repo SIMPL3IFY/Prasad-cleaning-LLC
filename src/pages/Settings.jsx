@@ -19,9 +19,6 @@ export default function Settings() {
     // Tracks save requests status: loading, error and or success. Displays above Save button.
     const [status, setStatus] = useState({ loading: false, error: '', success: '' })
 
-    //Scrum 94: Controls the visibility of the save popup saying "Account Updated!"
-    const [showSavePopup, setShowSavePopup] = useState(false)
-
     // This pulls the users email from Supabase Auth, along with saved phone_number from Settings table.
     // It prefills the form if values are found so user can edit current values.
     useEffect(() => {
@@ -44,18 +41,6 @@ export default function Settings() {
         }
         loadSettings()
     }, [])
-
-    /*Scrum 94: Function to show save popup saying "Account Updated!",
-    popup has a 2 second delay,
-    and then redirects to the /portal page
-    */
-    const handleSavePopup = () => {
-        setShowSavePopup(true)
-        setTimeout(() => {
-            setShowSavePopup(false)
-            navigate('/portal')
-        }, 2000)
-    }
 
     // Scrum 64 - SubTask 152: handlePhoneChange updates phone field as user types.
     const handlePhoneChange = (e) => {
@@ -101,20 +86,21 @@ export default function Settings() {
         }
 
         setStatus({ loading: false, error: '', success: 'Phone number updated.' })
-        //navigate('/portal')
-        //Scrum 94: Call the function to handle the save popup and redirect to /portal
-        handleSavePopup()
+        navigate('/portal')
     }
 
     // Scrum 64: form submit handler skips the database entirely if the field is blank, otherwise runs it through validatePhoneNumber.
+    // Scrum 63: saves the address first (if filled) so both fields are stored on one Save click.
     const handleSave = async (e) => {
         e.preventDefault()
         setStatus({ loading: true, error: '', success: '' })
+        if (formData.address.trim()) {
+            const addressSaved = await saveAddress()
+            if (!addressSaved) return
+        }
         if (!formData.phone) {
             setStatus({ loading: false, error: '', success: '' })
-            //navigate('/portal')
-            //Scrum 94: Call the function to handle the save popup and redirect to /portal
-            handleSavePopup()
+            navigate('/portal')
             return
         }
         await validatePhoneNumber()
@@ -125,7 +111,7 @@ export default function Settings() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
             setStatus({ loading: false, error: 'You must be signed in.', success: '' })
-            return
+            return false
         }
         const { error: settingsError } = await supabase
             .from('settings')
@@ -140,26 +126,13 @@ export default function Settings() {
 
         if (settingsError) {
             setStatus({ loading: false, error: settingsError.message, success: '' })
-            return
+            return false
         }
 
         setStatus({ loading: false, error: '', success: 'Address updated.' })
-        handleSavePopup()
-    }
-
-    // Scrum 63: form submit handler skips the database if the address is blank, otherwise saves it.
-    const handleAddressSave = async (e) => {
-        e.preventDefault()
-        setStatus({ loading: true, error: '', success: '' })
-        if (!formData.address.trim()) {
-            setStatus({ loading: false, error: '', success: '' })
-            handleSavePopup()
-            return
-        }
-        await saveAddress()
+        return true
     }
     return (
-
         //This section is for Scrum 115 to create boxes where users can change their settings
         //this includes their email address, phone number, business or residential address, and password
         <main className="section"> 
@@ -170,26 +143,25 @@ export default function Settings() {
                     <p className="section-subtitle">Update your account information below</p>
                 </div>
                 
-                {/* Scrum 94: Show popup box that states: "Account Updated!" */}
-                {showSavePopup && (
-                    <div className="popup-box">
-                        <p className="popup-text">Account Updated!</p>
-                    </div>
-                )}
-
                 {/* Use the format of the Sign-In form, but without floating box outline and adjust the size to center in the page */}
-                {/* Scrum 63: submitting the form saves the address to the database */}
-                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleAddressSave}>
+                {/* Scrum 63 / Scrum 64: submitting the form saves the address and phone number to the database */}
+                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave}>
 
                     {/* Scrum 115: Create all the boxes to change settings */}
                     <div className="form-group">
                         <label htmlFor="email">Change Email Address</label>
-                        <input type="email" id="email" placeholder="new-email@example.com" />
+                        <input type="email" id="email" placeholder="new-email@example.com"/> 
                     </div>
-                    
+                    {/* Scrum 64: Updated to save phone number 
+                        SubTask 153: Inline error highlighting*/}
                     <div className="form-group">
                         <label htmlFor="phone">Change Phone Number</label>
-                        <input type="tel" id="phone" placeholder="(XXX) XXX-XXXX" />
+                        <input type="tel" 
+                        id="phone" 
+                        placeholder="(XXX) XXX-XXXX" 
+                        value={formData.phone} 
+                        onChange={handlePhoneChange}
+                        style={status.error ? {borderColor: 'crimson'} : undefined}/>
                     </div>
                     
                     <div className="form-group">
@@ -215,12 +187,14 @@ export default function Settings() {
                     {/* Button for user to change settings
                          Scrum 115, redirects to customer portal page but
                          in a later Scrum, will update database*/}
-                    {/* Scrum 63: show database error above the Save button */}
+                    {/* Scrum 63 / Scrum 64: show database error or success message above the Save button */}
                     {status.error && (
                         <p style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>{status.error}</p>
                     )}
+                    {status.success && (
+                        <p style={{ color: 'green', textAlign: 'center', fontSize: '0.85rem' }}>{status.success}</p>
+                    )}
 
-                    {/* Scrum 63: submit button so the form saves the address to the database */}
                     <div style={{ textAlign: 'center', marginTop: 'var(--space-md)' }}>
                         <button type="submit" className="button button-main" disabled={status.loading}>
                             {status.loading ? 'Saving...' : 'Save'}
@@ -236,5 +210,5 @@ export default function Settings() {
                 </form>
             </div>
         </main>
-    );
+    )
 }
