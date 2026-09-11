@@ -49,6 +49,12 @@ export default function SignIn() {
     navigate('/portal')
   }
 
+  // Scrum 36: Redirects a user without an account to the sign up page
+  const handleSignUp = () => {
+    navigate('/signup')
+  }
+  
+
   // Scrum 71: Handles forgot password form submission
   const handleForgotSubmit = (e) => {
     e.preventDefault()
@@ -147,6 +153,16 @@ export default function SignIn() {
 
             <button type="submit" className="button button-main button-big signin-btn" disabled={isLoading}>
               {isLoading ? 'Signing in...' : 'Sign In'}
+            </button>
+
+            {/* Scrum 36: Redirects a user without an account to the sign up page */}
+            <button
+              type="button"
+              onClick={handleSignUp}
+              className="button button-main button-big signin-btn"
+              style={{ marginTop: '1rem' }}
+            >
+              Sign Up
             </button>
 
             <p className="signin-footer">
