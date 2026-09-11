@@ -139,7 +139,7 @@ export default function Settings() {
         }
 
         if (!formData.phone) {
-            setStatus({ loading: false, error: '', success: formData.password ? 'Password updated.' : '' })
+            setStatus({ loading: false, error: '', success: '' })
             //Scrum 94: Call the function to handle the save popup and redirect to /portal
             handleSavePopup()
             return
@@ -166,7 +166,7 @@ export default function Settings() {
                 )}
 
                 {/* Use the format of the Sign-In form, but without floating box outline and adjust the size to center in the page */}
-                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }}>
+                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave}>
 
                     {/* Scrum 115: Create all the boxes to change settings */}
                     <div className="form-group">
