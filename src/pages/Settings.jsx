@@ -136,6 +136,9 @@ export default function Settings() {
             if (!validatePasswordMatch()) return
             const passwordSaved = await savePassword()
             if (!passwordSaved) return
+            //Scrum 94: Call the function to handle the save popup and redirect to /portal
+            handleSavePopup()
+            return
         }
 
         if (!formData.phone) {
@@ -198,10 +201,14 @@ export default function Settings() {
                     {/* Button for user to change settings
                          Scrum 115, redirects to customer portal page but
                          in a later Scrum, will update database*/}
+                    {status.error && (
+                        <p style={{ color: 'crimson', textAlign: 'center', marginBottom: 'var(--space-md)' }}>{status.error}</p>
+                    )}
+
                     <div style={{ textAlign: 'center', marginTop: 'var(--space-md)' }}>
-                        <Link to="/portal" className="button button-main" >
+                        <button type="submit" className="button button-main">
                             Save
-                        </Link>
+                        </button>
                     </div>
                     
                     {/* Scrum 115: "Cancel" link button to redirect user back to customer portal page */}
