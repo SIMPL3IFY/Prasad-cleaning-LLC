@@ -132,8 +132,7 @@ export default function SignIn() {
               Sign in as Admin
             </button>
 
-              // Scrum 36: Redirects a user without an account to the sign up page
-
+            {/* Scrum 36: Redirects a user without an account to the sign up page */}
             <button
               type="button"
               onClick={handleSignUp}

@@ -693,3 +693,21 @@ ul {
 .signin-footer a:hover {
   color: var(--color-primary-dark);
 }
+/* ========== POPUP BOX ========== */
+.popup-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--color-primary);
+  padding: var(--space-lg) var(--space-2xl);
+  z-index: 1000;
+  text-align: center;
+}
+
+.popup-text {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--color-bg);
+}
