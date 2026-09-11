@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Settings() {
     /* Scrum 64: Phone number edit and database integration. 
@@ -115,6 +114,7 @@ export default function Settings() {
         await validatePhoneNumber()
     }
     return (
+
         //This section is for Scrum 115 to create boxes where users can change their settings
         //this includes their email address, phone number, business or residential address, and password
         <main className="section"> 
@@ -133,23 +133,17 @@ export default function Settings() {
                 )}
 
                 {/* Use the format of the Sign-In form, but without floating box outline and adjust the size to center in the page */}
-                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave}>
+                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }}>
 
                     {/* Scrum 115: Create all the boxes to change settings */}
                     <div className="form-group">
                         <label htmlFor="email">Change Email Address</label>
-                        <input type="email" id="email" placeholder="new-email@example.com"/> 
+                        <input type="email" id="email" placeholder="new-email@example.com" />
                     </div>
-                    {/* Scrum 64: Updated to save phone number 
-                        SubTask 153: Inline error highlighting*/}
+                    
                     <div className="form-group">
                         <label htmlFor="phone">Change Phone Number</label>
-                        <input type="tel" 
-                        id="phone" 
-                        placeholder="(XXX) XXX-XXXX" 
-                        value={formData.phone} 
-                        onChange={handlePhoneChange}
-                        style={status.error ? {borderColor: 'crimson'} : undefined}/>
+                        <input type="tel" id="phone" placeholder="(XXX) XXX-XXXX" />
                     </div>
                     
                     <div className="form-group">
@@ -170,18 +164,10 @@ export default function Settings() {
                     {/* Button for user to change settings
                          Scrum 115, redirects to customer portal page but
                          in a later Scrum, will update database*/}
-                    {/* Scrum 64: now updates if user details are saved successfully. */}
-                    {status.error && (
-                        <p style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>{status.error}</p>
-                    )}
-                    {status.success && (
-                        <p style={{ color: 'green', textAlign: 'center', fontSize: '0.85rem' }}>{status.success}</p>
-                    )}
-
                     <div style={{ textAlign: 'center', marginTop: 'var(--space-md)' }}>
-                        <button type="submit" className="button button-main" disabled={status.loading}>
-                            {status.loading ? 'Saving...' : 'Save'}
-                        </button>
+                        <Link to="/portal" className="button button-main" >
+                            Save
+                        </Link>
                     </div>
                     
                     {/* Scrum 115: "Cancel" link button to redirect user back to customer portal page */}
@@ -193,5 +179,5 @@ export default function Settings() {
                 </form>
             </div>
         </main>
-    )
+    );
 }
