@@ -89,14 +89,45 @@ export default function Settings() {
         navigate('/portal')
     }
 
+    // Scrum 65 - SubTask 161: handlePasswordChange updates password fields as user types.
+    const handlePasswordChange = (e) => {
+        setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
+    }
+
+    // Scrum 66: compares New Password and Re-Enter New Password fields before saving.
+    // Returns false and shows error if they don't match, true if they do.
+    const validatePasswordMatch = () => {
+        if (formData.password !== formData.confirmPassword) {
+            setStatus({ loading: false, error: 'Passwords do not match.', success: '' })
+            return false
+        }
+        return true
+    }
+
+    // Scrum 65 - SubTask 163: submits updated password to Supabase Auth.
+    const savePassword = async () => {
+        const { error } = await supabase.auth.updateUser({ password: formData.password })
+        if (error) {
+            setStatus({ loading: false, error: error.message, success: '' })
+            return false
+        }
+        return true
+    }
+
     // Scrum 64: form submit handler skips the database entirely if the field is blank, otherwise runs it through validatePhoneNumber.
     // Scrum 63: saves the address first (if filled) so both fields are stored on one Save click.
+    // Scrum 65: also saves password if the password field is filled.
     const handleSave = async (e) => {
         e.preventDefault()
         setStatus({ loading: true, error: '', success: '' })
         if (formData.address.trim()) {
             const addressSaved = await saveAddress()
             if (!addressSaved) return
+        }
+        if (formData.password || formData.confirmPassword) {
+            if (!validatePasswordMatch()) return
+            const passwordSaved = await savePassword()
+            if (!passwordSaved) return
         }
         if (!formData.phone) {
             setStatus({ loading: false, error: '', success: '' })
@@ -144,7 +175,7 @@ export default function Settings() {
                 </div>
                 
                 {/* Use the format of the Sign-In form, but without floating box outline and adjust the size to center in the page */}
-                {/* Scrum 63 / Scrum 64: submitting the form saves the address and phone number to the database */}
+                {/* Scrum 63 / 64 / 65: submitting the form saves the address, password, and phone number */}
                 <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave}>
 
                     {/* Scrum 115: Create all the boxes to change settings */}
@@ -174,14 +205,15 @@ export default function Settings() {
                         onChange={handleAddressChange} />
                     </div>
                     
+                    {/* Scrum 65 - SubTask 162: Password fields wired to formData state */}
                     <div className="form-group">
                         <label htmlFor="password">Change Password</label>
-                        <input type="password" id="password" placeholder="********" />
+                        <input type="password" id="password" placeholder="********" value={formData.password} onChange={handlePasswordChange} />
                     </div>
-                    
+
                     <div className="form-group">
-                        <label htmlFor="password">Re-Enter New Password</label>
-                        <input type="password" id="password" placeholder="********" />
+                        <label htmlFor="confirmPassword">Re-Enter New Password</label>
+                        <input type="password" id="confirmPassword" placeholder="********" value={formData.confirmPassword} onChange={handlePasswordChange} style={status.error === 'Passwords do not match.' ? { borderColor: 'crimson' } : undefined} />
                     </div>
                     
                     {/* Button for user to change settings
