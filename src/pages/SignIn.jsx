@@ -2,9 +2,6 @@ import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { supabase } from "../supabaseClient"
 
-// SCRUM-119: admin email routes to admin dashboard.
-const ADMIN_EMAIL = 'admin@prasad'
-
 export default function SignIn() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -18,31 +15,40 @@ export default function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSignInError('')
-
-    if (email.trim().toLowerCase() === ADMIN_EMAIL) {
-      navigate('/admin')
-      return
-    }
-
     setIsLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
+
+    const { data: { user }, error: signInErrorData } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password
     })
+
+    if (signInErrorData) {
+      setSignInError(signInErrorData.message)
+      setIsLoading(false)
+      return
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, email, is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+
     setIsLoading(false)
 
-    if (error) {
-      setSignInError(error.message)
+    if (profileError) {
+      setSignInError('Unable to verify your account access.')
+      return
+    }
+
+    if (profile?.is_admin) {
+      navigate('/admin')
       return
     }
 
     navigate('/portal')
   }
 
-  const handleAdminSignIn = () => {
-    navigate('/admin')
-  }
-  
   // Scrum 71: Handles forgot password form submission
   const handleForgotSubmit = (e) => {
     e.preventDefault()
@@ -141,15 +147,6 @@ export default function SignIn() {
 
             <button type="submit" className="button button-main button-big signin-btn" disabled={isLoading}>
               {isLoading ? 'Signing in...' : 'Sign In'}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleAdminSignIn}
-              className="button button-main button-big signin-btn"
-              style={{ marginTop: '1rem' }}
-            >
-              Sign in as Admin
             </button>
 
             <p className="signin-footer">

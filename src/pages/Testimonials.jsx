@@ -12,6 +12,7 @@ export default function Testimonials() {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
 
+  //SCRUM 90: Fetch reviews from Supabase database
   useEffect(() => {
     const fetchReviews = async () => {
       const { data, error } = await supabase
