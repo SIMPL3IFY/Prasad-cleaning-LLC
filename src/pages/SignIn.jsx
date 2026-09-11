@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { supabase } from "../lib/supabaseClient"
 
 // SCRUM-119: admin email routes to admin dashboard.
 const ADMIN_EMAIL = 'admin@prasad'
@@ -8,33 +7,12 @@ const ADMIN_EMAIL = 'admin@prasad'
 export default function SignIn() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [signinError, setSigninError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false) // Scrum 71: Controls which form is visible
   const [resetEmail, setResetEmail] = useState('') // Scrum 71: Email input for forgot password form
   const [resetMessage, setResetMessage] = useState('') // Scrum 71: Confirmation message after submission
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-
-    setIsLoading(true)
-    setSigninError('')
-
-    // Checks the email and password against Supabase auth.users.
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password
-    })
-
-    setIsLoading(false)
-
-    // Wrong credentials, or an unconfirmed email, stay on this page.
-    if (error) {
-      setSigninError(error.message)
-      return
-    }
-
     if (email.trim().toLowerCase() === ADMIN_EMAIL) {
       navigate('/admin')
     } else {
@@ -116,21 +94,14 @@ export default function SignIn() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setSigninError('') }}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
 
             <div className="form-group">
               <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setSigninError('') }}
-                required
-              />
+              <input id="password" type="password" placeholder="••••••••" required />
             </div>
 
             <div className="form-footer-row">
@@ -143,15 +114,8 @@ export default function SignIn() {
                   </a>
                 </div>
 
-            {/* Red error shown if the email or password is wrong */}
-            {signinError && (
-              <p style={{ color: 'red', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                {signinError}
-              </p>
-            )}
-
-            <button type="submit" className="button button-main button-big signin-btn" disabled={isLoading}>
-              {isLoading ? 'Signing In...' : 'Sign In'}
+            <button type="submit" className="button button-main button-big signin-btn">
+              Sign In
             </button>
 
             <button
@@ -161,16 +125,6 @@ export default function SignIn() {
               style={{ marginTop: '1rem' }}
             >
               Sign in as Admin
-            </button>
-
-            {/* Redirects users without an account to the sign up page. */}
-            <button
-              type="button"
-              onClick={() => navigate('/signup')}
-              className="button button-main button-big signin-btn"
-              style={{ marginTop: '1rem' }}
-            >
-              Sign Up
             </button>
 
             <p className="signin-footer">
