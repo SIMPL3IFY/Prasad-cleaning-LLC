@@ -62,6 +62,11 @@ export default function Settings() {
         setFormData((prev) => ({ ...prev, phone: e.target.value }))
     }
 
+    // Scrum 63: handleAddressChange updates address field as user types.
+    const handleAddressChange = (e) => {
+        setFormData((prev) => ({ ...prev, address: e.target.value }))
+    }
+
     // Scrum 64: checks the typed value and if it meets standard US phone number.
     const validatePhoneNumber = async () => {
         const digitsOnly = formData.phone.replace(/\D/g, '')
@@ -114,6 +119,45 @@ export default function Settings() {
         }
         await validatePhoneNumber()
     }
+
+    // Scrum 63: submits the address to the Supabase settings table.
+    const saveAddress = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            setStatus({ loading: false, error: 'You must be signed in.', success: '' })
+            return
+        }
+        const { error: settingsError } = await supabase
+            .from('settings')
+            .upsert(
+                {
+                    user_id: user.id,
+                    address: formData.address.trim(),
+                    updated_at: new Date(),
+                },
+                { onConflict: 'user_id' }
+            )
+
+        if (settingsError) {
+            setStatus({ loading: false, error: settingsError.message, success: '' })
+            return
+        }
+
+        setStatus({ loading: false, error: '', success: 'Address updated.' })
+        handleSavePopup()
+    }
+
+    // Scrum 63: form submit handler skips the database if the address is blank, otherwise saves it.
+    const handleAddressSave = async (e) => {
+        e.preventDefault()
+        setStatus({ loading: true, error: '', success: '' })
+        if (!formData.address.trim()) {
+            setStatus({ loading: false, error: '', success: '' })
+            handleSavePopup()
+            return
+        }
+        await saveAddress()
+    }
     return (
 
         //This section is for Scrum 115 to create boxes where users can change their settings
@@ -134,7 +178,8 @@ export default function Settings() {
                 )}
 
                 {/* Use the format of the Sign-In form, but without floating box outline and adjust the size to center in the page */}
-                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }}>
+                {/* Scrum 63: submitting the form saves the address to the database */}
+                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleAddressSave}>
 
                     {/* Scrum 115: Create all the boxes to change settings */}
                     <div className="form-group">
@@ -149,7 +194,12 @@ export default function Settings() {
                     
                     <div className="form-group">
                         <label htmlFor="address">Change Business or Residential Address</label>
-                        <input type="text" id="address" placeholder="123 Main St, City, State, Zip Code" />
+                        {/* Scrum 63: controlled input so the typed address can be saved */}
+                        <input type="text"
+                        id="address"
+                        placeholder="123 Main St, City, State, Zip Code"
+                        value={formData.address}
+                        onChange={handleAddressChange} />
                     </div>
                     
                     <div className="form-group">
@@ -165,10 +215,16 @@ export default function Settings() {
                     {/* Button for user to change settings
                          Scrum 115, redirects to customer portal page but
                          in a later Scrum, will update database*/}
+                    {/* Scrum 63: show database error above the Save button */}
+                    {status.error && (
+                        <p style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>{status.error}</p>
+                    )}
+
+                    {/* Scrum 63: submit button so the form saves the address to the database */}
                     <div style={{ textAlign: 'center', marginTop: 'var(--space-md)' }}>
-                        <Link to="/portal" className="button button-main" >
-                            Save
-                        </Link>
+                        <button type="submit" className="button button-main" disabled={status.loading}>
+                            {status.loading ? 'Saving...' : 'Save'}
+                        </button>
                     </div>
                     
                     {/* Scrum 115: "Cancel" link button to redirect user back to customer portal page */}
