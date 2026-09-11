@@ -96,9 +96,7 @@ export default function Settings() {
         }
 
         setStatus({ loading: false, error: '', success: 'Phone number updated.' })
-        //navigate('/portal')
-        //Scrum 94: Call the function to handle the save popup and redirect to /portal
-        handleSavePopup()
+        navigate('/portal')
     }
 
     // Scrum 65 - SubTask 161: handlePasswordChange updates password fields as user types.
@@ -150,7 +148,6 @@ export default function Settings() {
         await validatePhoneNumber()
     }
     return (
-
         //This section is for Scrum 115 to create boxes where users can change their settings
         //this includes their email address, phone number, business or residential address, and password
         <main className="section"> 
@@ -174,12 +171,18 @@ export default function Settings() {
                     {/* Scrum 115: Create all the boxes to change settings */}
                     <div className="form-group">
                         <label htmlFor="email">Change Email Address</label>
-                        <input type="email" id="email" placeholder="new-email@example.com" />
+                        <input type="email" id="email" placeholder="new-email@example.com"/> 
                     </div>
-                    
+                    {/* Scrum 64: Updated to save phone number 
+                        SubTask 153: Inline error highlighting*/}
                     <div className="form-group">
                         <label htmlFor="phone">Change Phone Number</label>
-                        <input type="tel" id="phone" placeholder="(XXX) XXX-XXXX" />
+                        <input type="tel" 
+                        id="phone" 
+                        placeholder="(XXX) XXX-XXXX" 
+                        value={formData.phone} 
+                        onChange={handlePhoneChange}
+                        style={status.error ? {borderColor: 'crimson'} : undefined}/>
                     </div>
                     
                     <div className="form-group">
@@ -201,13 +204,17 @@ export default function Settings() {
                     {/* Button for user to change settings
                          Scrum 115, redirects to customer portal page but
                          in a later Scrum, will update database*/}
+                    {/* Scrum 64: now updates if user details are saved successfully. */}
                     {status.error && (
-                        <p style={{ color: 'crimson', textAlign: 'center', marginBottom: 'var(--space-md)' }}>{status.error}</p>
+                        <p style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>{status.error}</p>
+                    )}
+                    {status.success && (
+                        <p style={{ color: 'green', textAlign: 'center', fontSize: '0.85rem' }}>{status.success}</p>
                     )}
 
                     <div style={{ textAlign: 'center', marginTop: 'var(--space-md)' }}>
-                        <button type="submit" className="button button-main">
-                            Save
+                        <button type="submit" className="button button-main" disabled={status.loading}>
+                            {status.loading ? 'Saving...' : 'Save'}
                         </button>
                     </div>
                     
@@ -220,5 +227,5 @@ export default function Settings() {
                 </form>
             </div>
         </main>
-    );
+    )
 }
