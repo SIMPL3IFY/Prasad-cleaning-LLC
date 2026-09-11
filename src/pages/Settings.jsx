@@ -89,6 +89,16 @@ export default function Settings() {
         setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
     }
 
+    // Scrum 66: compares New Password and Re-Enter New Password fields before saving.
+    // Returns false and shows error if they don't match, true if they do.
+    const validatePasswordMatch = () => {
+        if (formData.password !== formData.confirmPassword) {
+            setStatus({ loading: false, error: 'Passwords do not match.', success: '' })
+            return false
+        }
+        return true
+    }
+
     // Scrum 65 - SubTask 163: submits updated password to Supabase Auth.
     const savePassword = async () => {
         const { error } = await supabase.auth.updateUser({ password: formData.password })
@@ -105,7 +115,8 @@ export default function Settings() {
         e.preventDefault()
         setStatus({ loading: true, error: '', success: '' })
 
-        if (formData.password) {
+        if (formData.password || formData.confirmPassword) {
+            if (!validatePasswordMatch()) return
             const passwordSaved = await savePassword()
             if (!passwordSaved) return
         }
@@ -161,7 +172,7 @@ export default function Settings() {
 
                     <div className="form-group">
                         <label htmlFor="confirmPassword">Re-Enter New Password</label>
-                        <input type="password" id="confirmPassword" placeholder="********" value={formData.confirmPassword} onChange={handlePasswordChange} />
+                        <input type="password" id="confirmPassword" placeholder="********" value={formData.confirmPassword} onChange={handlePasswordChange} style={status.error === 'Passwords do not match.' ? { borderColor: 'crimson' } : undefined} />
                     </div>
                     
                     {/* Button for user to change settings
