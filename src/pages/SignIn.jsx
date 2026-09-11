@@ -1,8 +1,6 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 
-// SCRUM-119: admin email routes to admin dashboard.
-const ADMIN_EMAIL = 'admin@prasad'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -13,15 +11,11 @@ export default function SignIn() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (email.trim().toLowerCase() === ADMIN_EMAIL) {
-      navigate('/admin')
-    } else {
-      navigate('/portal')
-    }
+    navigate('/portal')
   }
 
   const handleAdminSignIn = () => {
-    navigate('/admin')
+    navigate('/admin/login')
   }
   
   // Scrum 71: Handles forgot password form submission
@@ -124,7 +118,7 @@ export default function SignIn() {
               className="button button-main button-big signin-btn"
               style={{ marginTop: '1rem' }}
             >
-              Sign in as Admin
+              Admin Login
             </button>
 
             <p className="signin-footer">
