@@ -96,7 +96,7 @@ export default function Settings() {
         }
 
         setStatus({ loading: false, error: '', success: 'Phone number updated.' })
-        navigate('/portal')
+        handleSavePopup()
     }
 
     // Scrum 65 - SubTask 161: handlePasswordChange updates password fields as user types.
