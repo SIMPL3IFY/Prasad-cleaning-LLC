@@ -22,11 +22,6 @@ export default function SignIn() {
   const handleSignUp = () => {
     navigate('/signup')
   }
-
-  // Scrum 36: Redirects a user without an account to the sign up page
-  const handleSignUp = () => {
-    navigate('/signup')
-  }
   
   // Scrum 71: Handles forgot password form submission
   const handleForgotSubmit = (e) => {
