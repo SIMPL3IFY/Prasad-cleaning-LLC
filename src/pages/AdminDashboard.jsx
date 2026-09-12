@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import sampleQuotes from '../data/sampleQuotes'
+//import sampleQuotes from '../data/sampleQuotes'
+import { supabase } from '../lib/supabaseClient'
 
 const QUOTES_PER_PAGE = 1
 const APPOINTMENTS_PER_PAGE = 1 // Scrum 84: Appointments pagination
@@ -8,21 +9,79 @@ const APPOINTMENTS_PER_PAGE = 1 // Scrum 84: Appointments pagination
 export default function AdminDashboard() {
     const navigate = useNavigate()
      // SCRUM-85: Constants
-    const [quotes, setQuotes] = useState([])
+    const [quotes, setQuotes] = useState([]) //Scrum 88
+    const [acceptedQuotes, setAcceptedQuotes] = useState([]) //Scrum 88
     const [currentQuotePage, setCurrentQuotePage] = useState(1)
     const [currentAppointmentPage, setCurrentAppointmentPage] = useState(1) // Scrum 84: Appointment page state
     const [editingAppointmentId, setEditingAppointmentId] = useState(null) // Scrum 84: Editing appointment state
     const [appointmentMessage, setAppointmentMessage] = useState('') // Scrum 84: Appointment message state
     const [editedAppointment, setEditedAppointment] = useState({}) // Scrum 87: Tracks in-progress field edits
 
-// SCRUM-85: Manage Quotes box and supporting methods
-    const fetchQuotes = () =>{
-        setQuotes(sampleQuotes)
-    }
+    // SCRUM-85: Manage Quotes box and supporting methods
+    //EDITED from CSC 190-191:
+    //Scrum 88 to fetch quotes from quotes table on Supabase
+    const fetchQuotes = async () => {
+        const { data, error } = await supabase
+            .from('quotes')
+            .select(`
+                id,
+                customerName:customer_name,
+                email,
+                phone,
+                service,
+                property,
+                appointmentDate:appointment_date,
+                appointmentTime:appointment_time,
+                address,
+                message,
+                status
+            `)
+            .order('created_at', { ascending: true })
 
+        if (error) {
+            console.error('Error fetching quotes:', error.message)
+            return
+        }
+        setQuotes(data)
+    }
+    /*
     useEffect(() => {
         fetchQuotes()
     }, [])
+    */
+    // Scrum 88: Method to fetch accepted quotes from accepted_quotes table on Supabase
+    const fetchAcceptedQuotes = async () => {
+        const { data, error } = await supabase
+            .from('accepted_quotes')
+            .select(`
+                id,
+                originalQuoteId:original_quote_id,
+                customerName:customer_name,
+                email,
+                phone,
+                service,
+                property,
+                appointmentDate:appointment_date,
+                appointmentTime:appointment_time,
+                address,
+                message,
+                status
+            `)
+            .order('accepted_at', { ascending: true })
+
+        if (error) {
+            console.error('Error fetching accepted quotes:', error.message)
+            return
+        }
+        setAcceptedQuotes(data)
+    }
+
+    // Scrum 88: Fetch both pending and accepted quotes
+    useEffect(() => {
+        fetchQuotes()
+        fetchAcceptedQuotes()
+    }, [])
+
     // Scrum 128 method: Returns the quotes for current page
     const paginateQuotes = () => {
         const start = (currentQuotePage - 1) * QUOTES_PER_PAGE
@@ -31,7 +90,7 @@ export default function AdminDashboard() {
     // Scrum 84 method: Returns the appointments for current page
     const paginateAppointments = () => {
         const start = (currentAppointmentPage - 1) * APPOINTMENTS_PER_PAGE
-        return quotes.slice(start, start + APPOINTMENTS_PER_PAGE)
+        return acceptedQuotes.slice(start, start + APPOINTMENTS_PER_PAGE)
     }
     // Scrum 128 method: Navigates between quote pages
     const handleNextPage = (direction) => {
@@ -43,7 +102,7 @@ export default function AdminDashboard() {
     }
     // Scrum 84 method: Navigates between appointment pages
     const handleAppointmentPage = (direction) => {
-        const totalPages = Math.ceil(quotes.length / APPOINTMENTS_PER_PAGE)
+        const totalPages = Math.ceil(acceptedQuotes.length / APPOINTMENTS_PER_PAGE)
         setCurrentAppointmentPage(prev => {
             if(direction === 'next') return Math.min(prev + 1, totalPages)
             if(direction === 'prev') return Math.max(prev - 1, 1)
@@ -52,11 +111,51 @@ export default function AdminDashboard() {
         setEditedAppointment({}) // Scrum 87: Clear in-progress edits when navigating pages
     }
     // Scrum 126 method: Accepts a quote into database
-    const acceptQuote = (quoteID) => {
-        setQuotes(prev =>
-            prev.map(q => q.id === quoteID ? { ...q, status: 'accepted' } : q)
-        )
+    //EDITED from CSC 190-191:
+    // Scrum 88 method: Accepts a quote from quotes table and moves it to accepted_quotes table on Supabase
+    const acceptQuote = async (quoteID) => { 
+        const quoteToAccept = quotes.find(q => q.id === quoteID)
+        if (!quoteToAccept) return
+    
+        //Insert into accepted_quotes table in Supabase
+        const { error: insertError } = await supabase
+            .from('accepted_quotes')
+            .insert([{
+                original_quote_id: quoteToAccept.id,
+                customer_name: quoteToAccept.customerName,
+                email: quoteToAccept.email,
+                phone: quoteToAccept.phone,
+                service: quoteToAccept.service,
+                property: quoteToAccept.property,
+                appointment_date: quoteToAccept.appointmentDate,
+                appointment_time: quoteToAccept.appointmentTime,
+                address: quoteToAccept.address,
+                message: quoteToAccept.message,
+                status: 'accepted'
+            }])
+        if (insertError) {
+            console.error('Error creating accepted quote record:', insertError.message)
+            return
+        }
+        //Delete the quote from the 'quotes' table in Supabase
+        const { error: deleteError } = await supabase
+            .from('quotes')
+            .delete()
+            .eq('id', quoteID)
+        if (deleteError) {
+            console.error('Error deleting quote from quotes table:', deleteError.message)
+            return
+        }
+        //Update local UI state
+        setQuotes(prev => prev.filter(q => q.id !== quoteID)) 
+        // Reset pagination to page 1 if deleting the last quote on the current page
+        if (quotes.length - 1 <= (currentQuotePage - 1) * QUOTES_PER_PAGE && currentQuotePage > 1) {
+            setCurrentQuotePage(prev => prev - 1)
+        }
+        // Refresh accepted appointments list
+        fetchAcceptedQuotes() 
     }
+
     // Scrum 127 method: Declines a quote
     const declineQuote = (quoteID) => {
         setQuotes(prev =>
@@ -69,21 +168,43 @@ export default function AdminDashboard() {
             setEditingAppointmentId(null)
             setEditedAppointment({}) // Scrum 87: Clear edits on cancel
         } else {
-            const quote = quotes.find(q => q.id === quoteID)
+            const quote = acceptedQuotes.find(q => q.id === quoteID)
             setEditingAppointmentId(quoteID)
             setEditedAppointment({ ...quote }) // Scrum 87: Seed fields with current appointment values
         }
         setAppointmentMessage('')
     }
+
     // Scrum 84 method: Update appointment
-    const handleUpdateAppointment = (quoteID) => {
-        const quote = quotes.find(q => q.id === quoteID)
+    //EDITED from CSC 190-191:
+    // Scrum 88 fix: Updates Supabase accepted_quotes table and acceptedQuotes state
+    const handleUpdateAppointment = async (quoteID) => {
+        const quote = acceptedQuotes.find(q => q.id === quoteID)
         if (!quote) return
-        setQuotes(prev => prev.map(q => q.id === quoteID ? { ...q, ...editedAppointment } : q)) // Scrum 87: Apply edited fields to quotes state
+
+        const { error } = await supabase
+            .from('accepted_quotes')
+            .update({
+                service: editedAppointment.service,
+                property: editedAppointment.property,
+                appointment_date: editedAppointment.appointmentDate,
+                appointment_time: editedAppointment.appointmentTime,
+                address: editedAppointment.address,
+                message: editedAppointment.message
+            })
+            .eq('id', quoteID)
+
+        if (error) {
+            console.error('Error updating appointment:', error.message)
+            return
+        }
+
+        setAcceptedQuotes(prev => prev.map(q => q.id === quoteID ? { ...q, ...editedAppointment } : q))
         setAppointmentMessage(`Appointment updated for ${quote.customerName}.`)
         setEditingAppointmentId(null)
         setEditedAppointment({}) // Scrum 87: Clear edits after saving
     }
+
     // Scrum 84 method: Renders and displays each appointment card on screen
     const renderAppointmentCard = (quote) => (
         <div key={quote.id} style={{ width: '100%' }}>
@@ -403,12 +524,12 @@ export default function AdminDashboard() {
                             Manage Appointments
                         </h2>
 
-                        {quotes.length === 0 ? (
+                        {acceptedQuotes.length === 0 ? (
                             <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No appointments available.</p>
                         ) : (
                             <>
                                 {visibleAppointments.map(quote => renderAppointmentCard(quote))}
-                                {renderPagination(currentAppointmentPage, quotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
+                                {renderPagination(currentAppointmentPage, acceptedQuotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
                             </>
                         )}
                     </div>
