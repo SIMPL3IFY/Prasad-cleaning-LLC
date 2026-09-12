@@ -96,18 +96,51 @@ export default function Settings() {
         }
 
         setStatus({ loading: false, error: '', success: 'Phone number updated.' })
-        //navigate('/portal')
-        //Scrum 94: Call the function to handle the save popup and redirect to /portal
         handleSavePopup()
     }
 
+    // Scrum 65 - SubTask 161: handlePasswordChange updates password fields as user types.
+    const handlePasswordChange = (e) => {
+        setFormData((prev) => ({ ...prev, [e.target.id]: e.target.value }))
+    }
+
+    // Scrum 66: compares New Password and Re-Enter New Password fields before saving.
+    // Returns false and shows error if they don't match, true if they do.
+    const validatePasswordMatch = () => {
+        if (formData.password !== formData.confirmPassword) {
+            setStatus({ loading: false, error: 'Passwords do not match.', success: '' })
+            return false
+        }
+        return true
+    }
+
+    // Scrum 65 - SubTask 163: submits updated password to Supabase Auth.
+    const savePassword = async () => {
+        const { error } = await supabase.auth.updateUser({ password: formData.password })
+        if (error) {
+            setStatus({ loading: false, error: error.message, success: '' })
+            return false
+        }
+        return true
+    }
+
     // Scrum 64: form submit handler skips the database entirely if the field is blank, otherwise runs it through validatePhoneNumber.
+    // Scrum 65: also saves password if the password field is filled.
     const handleSave = async (e) => {
         e.preventDefault()
         setStatus({ loading: true, error: '', success: '' })
+
+        if (formData.password || formData.confirmPassword) {
+            if (!validatePasswordMatch()) return
+            const passwordSaved = await savePassword()
+            if (!passwordSaved) return
+            //Scrum 94: Call the function to handle the save popup and redirect to /portal
+            handleSavePopup()
+            return
+        }
+
         if (!formData.phone) {
             setStatus({ loading: false, error: '', success: '' })
-            //navigate('/portal')
             //Scrum 94: Call the function to handle the save popup and redirect to /portal
             handleSavePopup()
             return
@@ -115,7 +148,6 @@ export default function Settings() {
         await validatePhoneNumber()
     }
     return (
-
         //This section is for Scrum 115 to create boxes where users can change their settings
         //this includes their email address, phone number, business or residential address, and password
         <main className="section"> 
@@ -134,17 +166,23 @@ export default function Settings() {
                 )}
 
                 {/* Use the format of the Sign-In form, but without floating box outline and adjust the size to center in the page */}
-                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }}>
+                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave}>
 
                     {/* Scrum 115: Create all the boxes to change settings */}
                     <div className="form-group">
                         <label htmlFor="email">Change Email Address</label>
-                        <input type="email" id="email" placeholder="new-email@example.com" />
+                        <input type="email" id="email" placeholder="new-email@example.com"/> 
                     </div>
-                    
+                    {/* Scrum 64: Updated to save phone number 
+                        SubTask 153: Inline error highlighting*/}
                     <div className="form-group">
                         <label htmlFor="phone">Change Phone Number</label>
-                        <input type="tel" id="phone" placeholder="(XXX) XXX-XXXX" />
+                        <input type="tel" 
+                        id="phone" 
+                        placeholder="(XXX) XXX-XXXX" 
+                        value={formData.phone} 
+                        onChange={handlePhoneChange}
+                        style={status.error ? {borderColor: 'crimson'} : undefined}/>
                     </div>
                     
                     <div className="form-group">
@@ -152,23 +190,32 @@ export default function Settings() {
                         <input type="text" id="address" placeholder="123 Main St, City, State, Zip Code" />
                     </div>
                     
+                    {/* Scrum 65 - SubTask 162: Password fields wired to formData state */}
                     <div className="form-group">
                         <label htmlFor="password">Change Password</label>
-                        <input type="password" id="password" placeholder="********" />
+                        <input type="password" id="password" placeholder="********" value={formData.password} onChange={handlePasswordChange} />
                     </div>
-                    
+
                     <div className="form-group">
-                        <label htmlFor="password">Re-Enter New Password</label>
-                        <input type="password" id="password" placeholder="********" />
+                        <label htmlFor="confirmPassword">Re-Enter New Password</label>
+                        <input type="password" id="confirmPassword" placeholder="********" value={formData.confirmPassword} onChange={handlePasswordChange} style={status.error === 'Passwords do not match.' ? { borderColor: 'crimson' } : undefined} />
                     </div>
                     
                     {/* Button for user to change settings
                          Scrum 115, redirects to customer portal page but
                          in a later Scrum, will update database*/}
+                    {/* Scrum 64: now updates if user details are saved successfully. */}
+                    {status.error && (
+                        <p style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>{status.error}</p>
+                    )}
+                    {status.success && (
+                        <p style={{ color: 'green', textAlign: 'center', fontSize: '0.85rem' }}>{status.success}</p>
+                    )}
+
                     <div style={{ textAlign: 'center', marginTop: 'var(--space-md)' }}>
-                        <Link to="/portal" className="button button-main" >
-                            Save
-                        </Link>
+                        <button type="submit" className="button button-main" disabled={status.loading}>
+                            {status.loading ? 'Saving...' : 'Save'}
+                        </button>
                     </div>
                     
                     {/* Scrum 115: "Cancel" link button to redirect user back to customer portal page */}
@@ -180,5 +227,5 @@ export default function Settings() {
                 </form>
             </div>
         </main>
-    );
+    )
 }

@@ -1,27 +1,30 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import { supabase } from "../lib/supabaseClient"
 
-// SCRUM-119: admin email routes to admin dashboard.
-const ADMIN_EMAIL = 'admin@prasad'
 
 export default function SignIn() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
   const [showForgotPassword, setShowForgotPassword] = useState(false) // Scrum 71: Controls which form is visible
   const [resetEmail, setResetEmail] = useState('') // Scrum 71: Email input for forgot password form
   const [resetMessage, setResetMessage] = useState('') // Scrum 71: Confirmation message after submission
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (email.trim().toLowerCase() === ADMIN_EMAIL) {
-      navigate('/admin')
-    } else {
-      navigate('/portal')
+    setError('')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      setError(error.message)
+      return
     }
+    navigate('/portal')
   }
 
   const handleAdminSignIn = () => {
-    navigate('/admin')
+    navigate('/admin/login')
   }
 
   // Scrum 36: Redirects a user without an account to the sign up page
@@ -106,8 +109,12 @@ export default function SignIn() {
 
             <div className="form-group">
               <label htmlFor="password">Password</label>
-              <input id="password" type="password" placeholder="••••••••" required />
+              <input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
+
+            {error && (
+              <p style={{ color: 'crimson', fontSize: '0.9rem', marginBottom: '1rem' }}>{error}</p>
+            )}
 
             <div className="form-footer-row">
                   <a
@@ -129,7 +136,7 @@ export default function SignIn() {
               className="button button-main button-big signin-btn"
               style={{ marginTop: '1rem' }}
             >
-              Sign in as Admin
+              Admin Login
             </button>
 
             {/* Scrum 36: Redirects a user without an account to the sign up page */}
