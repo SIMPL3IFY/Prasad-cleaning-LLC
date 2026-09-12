@@ -9,6 +9,10 @@ export default function SignIn() {
   const [resetEmail, setResetEmail] = useState('') // Scrum 71: Email input for forgot password form
   const [resetMessage, setResetMessage] = useState('') // Scrum 71: Confirmation message after submission
 
+  const [decliningQuoteId, setDecliningQuoteId] = useState(null) // Which quote's reason prompt is open
+  const [declineReason, setDeclineReason] = useState('')
+  const [declineReasonError, setDeclineReasonError] = useState(false) // Drives the required-field highlight
+  
   const handleSubmit = (e) => {
     e.preventDefault()
     navigate('/portal')
@@ -23,10 +27,6 @@ export default function SignIn() {
     navigate('/signup')
   }
 
-  // Scrum 36: Redirects a user without an account to the sign up page
-  const handleSignUp = () => {
-    navigate('/signup')
-  }
   
   // Scrum 71: Handles forgot password form submission
   const handleForgotSubmit = (e) => {
