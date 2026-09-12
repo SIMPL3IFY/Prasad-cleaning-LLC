@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabaseClient' 
+import { supabase } from '../lib/supabaseClient'
+
 const QUOTES_PER_PAGE = 1
 const APPOINTMENTS_PER_PAGE = 1 // Scrum 84: Appointments pagination
 const DECLINED_QUOTES_PER_PAGE = 1 // Scrum 149: Declined quotes pagination
@@ -8,7 +9,8 @@ const DECLINED_QUOTES_PER_PAGE = 1 // Scrum 149: Declined quotes pagination
 export default function AdminDashboard() {
     const navigate = useNavigate()
      // SCRUM-85: Constants
-    const [quotes, setQuotes] = useState([])
+    const [quotes, setQuotes] = useState([]) //Scrum 88
+    const [acceptedQuotes, setAcceptedQuotes] = useState([]) //Scrum 88
     const [currentQuotePage, setCurrentQuotePage] = useState(1)
     const [currentAppointmentPage, setCurrentAppointmentPage] = useState(1) // Scrum 84: Appointment page state
     const [editingAppointmentId, setEditingAppointmentId] = useState(null) // Scrum 84: Editing appointment state
@@ -19,65 +21,96 @@ export default function AdminDashboard() {
     const [decliningQuoteId, setDecliningQuoteId] = useState(null) // Scrum 149: Which quote's reason prompt is open
     const [declineReason, setDeclineReason] = useState('')  // Scrum 149: In-progress text for the decline reason field
     const [declineReasonError, setDeclineReasonError] = useState(false) // Scrum 149: Drives the required-field highlight
-// Scrum-85: Manage Quotes box and supporting methods
-// Scrum- 149: connects quotes box to Supabase database.
-const fetchQuotes = async () => {
-    const { data, error } = await supabase
-        .from('quotes')
-        .select(`
-            id,
-            customerName:customer_name,
-            email,
-            phone,
-            service,
-            property,
-            appointmentDate:appointment_date,
-            appointmentTime:appointment_time,
-            address,
-            message,
-            status
-        `)
-        .order('created_at', { ascending: true })
 
-    if (error) {
-        console.error('Error fetching quotes:', error.message)
-        return
-    }
-    setQuotes(data)
+    // SCRUM-85: Manage Quotes box and supporting methods
+    // EDITED from CSC 190-191:
+    // Scrum 88: fetches quotes from the quotes table on Supabase
+    // Scrum 149: connects quotes box to Supabase database.
+    const fetchQuotes = async () => {
+        const { data, error } = await supabase
+            .from('quotes')
+            .select(`
+                id,
+                customerName:customer_name,
+                email,
+                phone,
+                service,
+                property,
+                appointmentDate:appointment_date,
+                appointmentTime:appointment_time,
+                address,
+                message,
+                status
+            `)
+            .order('created_at', { ascending: true })
+
+        if (error) {
+            console.error('Error fetching quotes:', error.message)
+            return
+        }
+        setQuotes(data)
     }
 
     // Scrum 149 method: fetches every declined quote from the archive table.
-const fetchDeclinedQuotes = async () => {
-    const { data, error } = await supabase
-        .from('declined_quotes')
-        .select(`
-            id,
-            customerName:customer_name,
-            email,
-            phone,
-            service,
-            property,
-            appointmentDate:appointment_date,
-            appointmentTime:appointment_time,
-            address,
-            message,
-            declineReason:decline_reason,
-            declinedAt:declined_at
-        `)
-        .order('declined_at', { ascending: false })
+    const fetchDeclinedQuotes = async () => {
+        const { data, error } = await supabase
+            .from('declined_quotes')
+            .select(`
+                id,
+                customerName:customer_name,
+                email,
+                phone,
+                service,
+                property,
+                appointmentDate:appointment_date,
+                appointmentTime:appointment_time,
+                address,
+                message,
+                declineReason:decline_reason,
+                declinedAt:declined_at
+            `)
+            .order('declined_at', { ascending: false })
 
-    if (error) {
-        console.error('Error fetching declined quotes:', error.message)
-        return
+        if (error) {
+            console.error('Error fetching declined quotes:', error.message)
+            return
+        }
+        setDeclinedQuotes(data)
     }
-    setDeclinedQuotes(data)
-}
+
+    // Scrum 88: Method to fetch accepted quotes from accepted_quotes table on Supabase
+    const fetchAcceptedQuotes = async () => {
+        const { data, error } = await supabase
+            .from('accepted_quotes')
+            .select(`
+                id,
+                originalQuoteId:original_quote_id,
+                customerName:customer_name,
+                email,
+                phone,
+                service,
+                property,
+                appointmentDate:appointment_date,
+                appointmentTime:appointment_time,
+                address,
+                message,
+                status
+            `)
+            .order('accepted_at', { ascending: true })
+
+        if (error) {
+            console.error('Error fetching accepted quotes:', error.message)
+            return
+        }
+        setAcceptedQuotes(data)
+    }
+
+    // Scrum 88: Fetch pending, accepted, and declined quotes
     useEffect(() => {
-    fetchQuotes()
-    fetchDeclinedQuotes()
-}, [])
-
-
+        fetchQuotes()
+        fetchAcceptedQuotes()
+        fetchDeclinedQuotes()
+    }, [])
 
     // Scrum 128 method: Returns the quotes for current page
     const paginateQuotes = () => {
@@ -87,7 +120,7 @@ const fetchDeclinedQuotes = async () => {
     // Scrum 84 method: Returns the appointments for current page
     const paginateAppointments = () => {
         const start = (currentAppointmentPage - 1) * APPOINTMENTS_PER_PAGE
-        return quotes.slice(start, start + APPOINTMENTS_PER_PAGE)
+        return acceptedQuotes.slice(start, start + APPOINTMENTS_PER_PAGE)
     }
     // Scrum 149 method: Returns declined quotes for the current page
     const paginateDeclinedQuotes = () => {
@@ -104,7 +137,7 @@ const fetchDeclinedQuotes = async () => {
     }
     // Scrum 84 method: Navigates between appointment pages
     const handleAppointmentPage = (direction) => {
-        const totalPages = Math.ceil(quotes.length / APPOINTMENTS_PER_PAGE)
+        const totalPages = Math.ceil(acceptedQuotes.length / APPOINTMENTS_PER_PAGE)
         setCurrentAppointmentPage(prev => {
             if(direction === 'next') return Math.min(prev + 1, totalPages)
             if(direction === 'prev') return Math.max(prev - 1, 1)
@@ -121,94 +154,155 @@ const fetchDeclinedQuotes = async () => {
         })
     }
     // Scrum 126 method: Accepts a quote into database
-    const acceptQuote = (quoteID) => {
-        setQuotes(prev =>
-            prev.map(q => q.id === quoteID ? { ...q, status: 'accepted' } : q)
-        )
+    //EDITED from CSC 190-191:
+    // Scrum 88 method: Accepts a quote from quotes table and moves it to accepted_quotes table on Supabase
+    const acceptQuote = async (quoteID) => { 
+        const quoteToAccept = quotes.find(q => q.id === quoteID)
+        if (!quoteToAccept) return
+    
+        //Insert into accepted_quotes table in Supabase
+        const { error: insertError } = await supabase
+            .from('accepted_quotes')
+            .insert([{
+                original_quote_id: quoteToAccept.id,
+                customer_name: quoteToAccept.customerName,
+                email: quoteToAccept.email,
+                phone: quoteToAccept.phone,
+                service: quoteToAccept.service,
+                property: quoteToAccept.property,
+                appointment_date: quoteToAccept.appointmentDate,
+                appointment_time: quoteToAccept.appointmentTime,
+                address: quoteToAccept.address,
+                message: quoteToAccept.message,
+                status: 'accepted'
+            }])
+        if (insertError) {
+            console.error('Error creating accepted quote record:', insertError.message)
+            return
+        }
+        //Delete the quote from the 'quotes' table in Supabase
+        const { error: deleteError } = await supabase
+            .from('quotes')
+            .delete()
+            .eq('id', quoteID)
+        if (deleteError) {
+            console.error('Error deleting quote from quotes table:', deleteError.message)
+            return
+        }
+        //Update local UI state
+        setQuotes(prev => prev.filter(q => q.id !== quoteID)) 
+        // Reset pagination to page 1 if deleting the last quote on the current page
+        if (quotes.length - 1 <= (currentQuotePage - 1) * QUOTES_PER_PAGE && currentQuotePage > 1) {
+            setCurrentQuotePage(prev => prev - 1)
+        }
+        // Refresh accepted appointments list
+        fetchAcceptedQuotes() 
     }
     // SCRUM-155: Opens the decline reason prompt for a quote, or cancels it if already open
-const handleDecline = (quoteID) => {
-    if (decliningQuoteId === quoteID) {
+    const handleDecline = (quoteID) => {
+        if (decliningQuoteId === quoteID) {
+            setDecliningQuoteId(null)
+        } else {
+            setDecliningQuoteId(quoteID)
+        }
+        setDeclineReason('')
+        setDeclineReasonError(false)
+    }
+
+    // SCRUM-155 method: Validates that a decline reason was entered; highlights the field and blocks submission if empty, otherwise hands off to archiveQuote()
+    const confirmDecline = (quoteID) => {
+        if (!declineReason.trim()) {
+            setDeclineReasonError(true)
+            return
+        }
+        archiveQuote(quoteID, declineReason.trim())
+    }
+
+    // SCRUM-155 method: Moves a declined quote from `quotes` into `declined_quotes`
+    const archiveQuote = async (quoteID, reason) => {
+        const quote = quotes.find(q => q.id === quoteID)
+        if (!quote) return
+
+        const { error: insertError } = await supabase
+            .from('declined_quotes')
+            .insert({
+                original_quote_id: quote.id,
+                customer_name: quote.customerName,
+                email: quote.email,
+                phone: quote.phone,
+                service: quote.service,
+                property: quote.property,
+                appointment_date: quote.appointmentDate,
+                appointment_time: quote.appointmentTime,
+                address: quote.address,
+                message: quote.message,
+                decline_reason: reason
+            })
+
+        if (insertError) {
+            console.error('Error archiving declined quote:', insertError.message)
+            return
+        }
+
+        const { error: deleteError } = await supabase
+            .from('quotes')
+            .delete()
+            .eq('id', quoteID)
+
+        if (deleteError) {
+            console.error('Error removing declined quote from quotes table:', deleteError.message)
+            return
+        }
+
+        setQuotes(prev => prev.filter(q => q.id !== quoteID))
         setDecliningQuoteId(null)
-    } else {
-        setDecliningQuoteId(quoteID)
+        setDeclineReason('')
+        setDeclineReasonError(false)
+        fetchDeclinedQuotes()
     }
-    setDeclineReason('')
-    setDeclineReasonError(false)
-}
-
-// SCRUM-155 method: Validates that a decline reason was entered; highlights the field and blocks submission if empty, otherwise hands off to archiveQuote()
-const confirmDecline = (quoteID) => {
-    if (!declineReason.trim()) {
-        setDeclineReasonError(true)
-        return
-    }
-    archiveQuote(quoteID, declineReason.trim())
-}
-
-// SCRUM-155 method: Moves a declined quote from `quotes` into `declined_quotes`
-const archiveQuote = async (quoteID, reason) => {
-    const quote = quotes.find(q => q.id === quoteID)
-    if (!quote) return
-
-    const { error: insertError } = await supabase
-        .from('declined_quotes')
-        .insert({
-            original_quote_id: quote.id,
-            customer_name: quote.customerName,
-            email: quote.email,
-            phone: quote.phone,
-            service: quote.service,
-            property: quote.property,
-            appointment_date: quote.appointmentDate,
-            appointment_time: quote.appointmentTime,
-            address: quote.address,
-            message: quote.message,
-            decline_reason: reason
-        })
-
-    if (insertError) {
-        console.error('Error archiving declined quote:', insertError.message)
-        return
-    }
-
-    const { error: deleteError } = await supabase
-        .from('quotes')
-        .delete()
-        .eq('id', quoteID)
-
-    if (deleteError) {
-        console.error('Error removing declined quote from quotes table:', deleteError.message)
-        return
-    }
-
-    setQuotes(prev => prev.filter(q => q.id !== quoteID))
-    setDecliningQuoteId(null)
-    setDeclineReason('')
-    setDeclineReasonError(false)
-    fetchDeclinedQuotes()
-}
     // Scrum 84 method: Edit appointment
     const handleEditAppointment = (quoteID) => {
         if (editingAppointmentId === quoteID) {
             setEditingAppointmentId(null)
             setEditedAppointment({}) // Scrum 87: Clear edits on cancel
         } else {
-            const quote = quotes.find(q => q.id === quoteID)
+            const quote = acceptedQuotes.find(q => q.id === quoteID)
             setEditingAppointmentId(quoteID)
             setEditedAppointment({ ...quote }) // Scrum 87: Seed fields with current appointment values
         }
         setAppointmentMessage('')
     }
+
     // Scrum 84 method: Update appointment
-    const handleUpdateAppointment = (quoteID) => {
-        const quote = quotes.find(q => q.id === quoteID)
+    //EDITED from CSC 190-191:
+    // Scrum 88 fix: Updates Supabase accepted_quotes table and acceptedQuotes state
+    const handleUpdateAppointment = async (quoteID) => {
+        const quote = acceptedQuotes.find(q => q.id === quoteID)
         if (!quote) return
-        setQuotes(prev => prev.map(q => q.id === quoteID ? { ...q, ...editedAppointment } : q)) // Scrum 87: Apply edited fields to quotes state
+
+        const { error } = await supabase
+            .from('accepted_quotes')
+            .update({
+                service: editedAppointment.service,
+                property: editedAppointment.property,
+                appointment_date: editedAppointment.appointmentDate,
+                appointment_time: editedAppointment.appointmentTime,
+                address: editedAppointment.address,
+                message: editedAppointment.message
+            })
+            .eq('id', quoteID)
+
+        if (error) {
+            console.error('Error updating appointment:', error.message)
+            return
+        }
+
+        setAcceptedQuotes(prev => prev.map(q => q.id === quoteID ? { ...q, ...editedAppointment } : q))
         setAppointmentMessage(`Appointment updated for ${quote.customerName}.`)
         setEditingAppointmentId(null)
         setEditedAppointment({}) // Scrum 87: Clear edits after saving
     }
+
     // Scrum 84 method: Renders and displays each appointment card on screen
     const renderAppointmentCard = (quote) => (
         <div key={quote.id} style={{ width: '100%' }}>
@@ -453,54 +547,54 @@ const archiveQuote = async (quoteID, reason) => {
         </div>
     )
     // Scrum 149 method: Renders and displays each declined quote card on screen
-const renderDeclinedQuoteCard = (quote) => (
-    <div key={quote.id} style={{ width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
-            <span style={{
-                padding: '0.35rem 1rem', borderRadius: '6px', fontWeight: 'bold',
-                fontSize: '0.85rem', backgroundColor: '#f8d7da', color: '#721c24'
-            }}>
-                Declined
-            </span>
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-            <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Customer Name:</p>
-            <p style={{ fontSize: '0.9rem' }}>{quote.customerName}</p>
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-            <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Contact Info:</p>
-            <p style={{ fontSize: '0.85rem' }}>Email: {quote.email}</p>
-            <p style={{ fontSize: '0.85rem' }}>Phone #: {quote.phone}</p>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
-            <div>
-                <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Service:</p>
-                <p style={{ fontSize: '0.85rem' }}>{quote.service}</p>
+    const renderDeclinedQuoteCard = (quote) => (
+        <div key={quote.id} style={{ width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+                <span style={{
+                    padding: '0.35rem 1rem', borderRadius: '6px', fontWeight: 'bold',
+                    fontSize: '0.85rem', backgroundColor: '#f8d7da', color: '#721c24'
+                }}>
+                    Declined
+                </span>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Customer Name:</p>
+                <p style={{ fontSize: '0.9rem' }}>{quote.customerName}</p>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Contact Info:</p>
+                <p style={{ fontSize: '0.85rem' }}>Email: {quote.email}</p>
+                <p style={{ fontSize: '0.85rem' }}>Phone #: {quote.phone}</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+                <div>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Service:</p>
+                    <p style={{ fontSize: '0.85rem' }}>{quote.service}</p>
+                </div>
+                <div>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Property:</p>
+                    <p style={{ fontSize: '0.85rem' }}>{quote.property}</p>
+                </div>
+                <div>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Appointment:</p>
+                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentDate}</p>
+                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentTime}</p>
+                </div>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Address:</p>
+                <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Message</p>
+                <span style={{ fontSize: '0.85rem' }}>{quote.message}</span>
             </div>
             <div>
-                <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Property:</p>
-                <p style={{ fontSize: '0.85rem' }}>{quote.property}</p>
-            </div>
-            <div>
-                <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Appointment:</p>
-                <p style={{ fontSize: '0.85rem' }}>{quote.appointmentDate}</p>
-                <p style={{ fontSize: '0.85rem' }}>{quote.appointmentTime}</p>
+                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Decline Reason:</p>
+                <span style={{ fontSize: '0.85rem' }}>{quote.declineReason}</span>
             </div>
         </div>
-        <div style={{ marginBottom: '1rem' }}>
-            <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Address:</p>
-            <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
-        </div>
-        <div style={{ marginBottom: '1rem' }}>
-            <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Message</p>
-            <span style={{ fontSize: '0.85rem' }}>{quote.message}</span>
-        </div>
-        <div>
-            <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Decline Reason:</p>
-            <span style={{ fontSize: '0.85rem' }}>{quote.declineReason}</span>
-        </div>
-    </div>
-)
+    )
     // Scrum 128 method: Shows the arrows to navigate
     const renderPagination = (currentPage, totalItems, itemsPerPage, onPageChange) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage)
@@ -614,12 +708,12 @@ const renderDeclinedQuoteCard = (quote) => (
                             Manage Appointments
                         </h2>
 
-                        {quotes.length === 0 ? (
+                        {acceptedQuotes.length === 0 ? (
                             <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No appointments available.</p>
                         ) : (
                             <>
                                 {visibleAppointments.map(quote => renderAppointmentCard(quote))}
-                                {renderPagination(currentAppointmentPage, quotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
+                                {renderPagination(currentAppointmentPage, acceptedQuotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
                             </>
                         )}
                     </div>
