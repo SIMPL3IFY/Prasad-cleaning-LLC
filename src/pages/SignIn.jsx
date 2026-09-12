@@ -1,20 +1,25 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import { supabase } from "../lib/supabaseClient"
 
 
 export default function SignIn() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
   const [showForgotPassword, setShowForgotPassword] = useState(false) // Scrum 71: Controls which form is visible
   const [resetEmail, setResetEmail] = useState('') // Scrum 71: Email input for forgot password form
   const [resetMessage, setResetMessage] = useState('') // Scrum 71: Confirmation message after submission
 
-  const [decliningQuoteId, setDecliningQuoteId] = useState(null) // Which quote's reason prompt is open
-  const [declineReason, setDeclineReason] = useState('')
-  const [declineReasonError, setDeclineReasonError] = useState(false) // Drives the required-field highlight
-  
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      setError(error.message)
+      return
+    }
     navigate('/portal')
   }
 
@@ -26,7 +31,6 @@ export default function SignIn() {
   const handleSignUp = () => {
     navigate('/signup')
   }
-
   
   // Scrum 71: Handles forgot password form submission
   const handleForgotSubmit = (e) => {
@@ -105,8 +109,12 @@ export default function SignIn() {
 
             <div className="form-group">
               <label htmlFor="password">Password</label>
-              <input id="password" type="password" placeholder="••••••••" required />
+              <input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
+
+            {error && (
+              <p style={{ color: 'crimson', fontSize: '0.9rem', marginBottom: '1rem' }}>{error}</p>
+            )}
 
             <div className="form-footer-row">
                   <a
@@ -129,16 +137,6 @@ export default function SignIn() {
               style={{ marginTop: '1rem' }}
             >
               Admin Login
-            </button>
-
-            {/* Scrum 36: Redirects a user without an account to the sign up page */}
-            <button
-              type="button"
-              onClick={handleSignUp}
-              className="button button-main button-big signin-btn"
-              style={{ marginTop: '1rem' }}
-            >
-              Sign Up
             </button>
 
             {/* Scrum 36: Redirects a user without an account to the sign up page */}
