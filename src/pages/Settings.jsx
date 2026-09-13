@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export default function Settings() {
     /* Scrum 64: Phone number edit and database integration. 
         This adds a 10 digit phone validation, saving phone_number to "settings",
@@ -15,6 +17,8 @@ export default function Settings() {
         password: '',
         confirmPassword: '',
     })
+    const [savedEmail, setSavedEmail] = useState('')
+    const [isEditingEmail, setIsEditingEmail] = useState(false)
 
     // Tracks save requests status: loading, error and or success. Displays above Save button.
     const [status, setStatus] = useState({ loading: false, error: '', success: '' })
@@ -29,6 +33,7 @@ export default function Settings() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
             setFormData((prev) => ({ ...prev, email: user.email || '' }))
+            setSavedEmail(user.email || '')
             const { data } = await supabase
                 .from('settings')
                 .select('phone_number, address')
@@ -60,6 +65,57 @@ export default function Settings() {
     // Scrum 64 - SubTask 152: handlePhoneChange updates phone field as user types.
     const handlePhoneChange = (e) => {
         setFormData((prev) => ({ ...prev, phone: e.target.value }))
+    }
+
+    // Scrum 62: opens and closes edit mode for the email field.
+    const toggleEditMode = () => {
+        if (isEditingEmail) {
+            setFormData((prev) => ({ ...prev, email: savedEmail }))
+        }
+
+        setIsEditingEmail((prev) => !prev)
+        setStatus((prev) => ({ ...prev, error: '', success: '' }))
+    }
+
+    // Scrum 62: updates the email value while the user types.
+    const handleEmailChange = (e) => {
+        setFormData((prev) => ({ ...prev, email: e.target.value }))
+        setStatus((prev) => ({ ...prev, error: '', success: '' }))
+    }
+
+    // Scrum 62: validates that the email is present and correctly formatted.
+    const validateEmail = () => {
+        const normalizedEmail = formData.email.trim()
+
+        if (!normalizedEmail) return 'Email is required.'
+        if (!EMAIL_PATTERN.test(normalizedEmail)) return 'Please enter a valid email address.'
+
+        return ''
+    }
+
+    // Scrum 62: updates the user's actual Supabase Auth login email.
+    const saveEmailAddress = async () => {
+        const normalizedEmail = formData.email.trim()
+        const { data, error } = await supabase.auth.updateUser({ email: normalizedEmail })
+
+        if (error) {
+            setStatus({ loading: false, error: error.message, success: '' })
+            return false
+        }
+
+        setFormData((prev) => ({ ...prev, email: normalizedEmail }))
+        setSavedEmail(normalizedEmail)
+        setIsEditingEmail(false)
+
+        const confirmationRequired = data.user?.email !== normalizedEmail
+        setStatus({
+            loading: false,
+            error: '',
+            success: confirmationRequired
+                ? `A confirmation link was sent to ${normalizedEmail}. Your login email will change after confirmation.`
+                : 'Email address updated successfully.',
+        })
+        return true
     }
 
     // Scrum 64: checks the typed value and if it meets standard US phone number.
@@ -130,6 +186,18 @@ export default function Settings() {
         e.preventDefault()
         setStatus({ loading: true, error: '', success: '' })
 
+        // Scrum 67: validate and persist an edited email before other settings.
+        if (isEditingEmail && formData.email.trim() !== savedEmail) {
+            const emailError = validateEmail()
+            if (emailError) {
+                setStatus({ loading: false, error: emailError, success: '' })
+                return
+            }
+
+            await saveEmailAddress()
+            return
+        }
+
         if (formData.password || formData.confirmPassword) {
             if (!validatePasswordMatch()) return
             const passwordSaved = await savePassword()
@@ -166,12 +234,30 @@ export default function Settings() {
                 )}
 
                 {/* Use the format of the Sign-In form, but without floating box outline and adjust the size to center in the page */}
-                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave}>
+                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave} noValidate>
 
                     {/* Scrum 115: Create all the boxes to change settings */}
                     <div className="form-group">
-                        <label htmlFor="email">Change Email Address</label>
-                        <input type="email" id="email" placeholder="new-email@example.com"/> 
+                        <label htmlFor="email">Email Address</label>
+                        <input
+                            type="email"
+                            id="email"
+                            placeholder="new-email@example.com"
+                            value={formData.email}
+                            onClick={() => {
+                                if (!isEditingEmail) toggleEditMode()
+                            }}
+                            onChange={handleEmailChange}
+                            readOnly={!isEditingEmail}
+                            aria-invalid={Boolean(status.error)}
+                            aria-describedby={status.error ? 'settings-error' : undefined}
+                            style={status.error ? { borderColor: 'crimson' } : undefined}
+                        />
+                        {isEditingEmail && (
+                            <button type="button" onClick={toggleEditMode} style={{ marginTop: 'var(--space-sm)' }}>
+                                Cancel email edit
+                            </button>
+                        )}
                     </div>
                     {/* Scrum 64: Updated to save phone number 
                         SubTask 153: Inline error highlighting*/}
@@ -206,7 +292,7 @@ export default function Settings() {
                          in a later Scrum, will update database*/}
                     {/* Scrum 64: now updates if user details are saved successfully. */}
                     {status.error && (
-                        <p style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>{status.error}</p>
+                        <p id="settings-error" role="alert" style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>{status.error}</p>
                     )}
                     {status.success && (
                         <p style={{ color: 'green', textAlign: 'center', fontSize: '0.85rem' }}>{status.success}</p>
