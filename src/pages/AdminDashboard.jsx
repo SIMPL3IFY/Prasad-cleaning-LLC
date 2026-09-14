@@ -84,6 +84,7 @@ export default function AdminDashboard() {
     }
 
 
+    // Scrum 135: Loads all customer reviews from Supabase so the admin can approve or reject them
     const fetchReviews = async () => {
         setLoadingReviews(true)
         const { data, error } = await supabase
@@ -103,6 +104,7 @@ export default function AdminDashboard() {
         setLoadingReviews(false)
     }
 
+    // Scrum 88: Fetch pending, accepted, declined, and review data for the dashboard
     useEffect(() => {
         const checkAdminAccess = async () => {
             const demoAccess = typeof window !== 'undefined' && localStorage.getItem('prasad-admin-demo-access') === 'true'
@@ -135,8 +137,11 @@ export default function AdminDashboard() {
 
         checkAdminAccess()
         fetchQuotes()
-    }, [])
-    */
+        fetchReviews()
+        fetchAcceptedQuotes()
+        fetchDeclinedQuotes()
+    }, [navigate])
+
     // Scrum 88: Method to fetch accepted quotes from accepted_quotes table on Supabase
     const fetchAcceptedQuotes = async () => {
         const { data, error } = await supabase
@@ -164,15 +169,6 @@ export default function AdminDashboard() {
         setAcceptedQuotes(data)
     }
 
-    // Scrum 88: Fetch pending, accepted, and declined quotes
-    useEffect(() => {
-        fetchQuotes()
-        fetchAcceptedQuotes()
-        fetchDeclinedQuotes()
-    }, [])
-
-        fetchReviews()
-    }, [navigate])
     // Scrum 128 method: Returns the quotes for current page
     const paginateQuotes = () => {
         const start = (currentQuotePage - 1) * QUOTES_PER_PAGE
@@ -823,21 +819,24 @@ export default function AdminDashboard() {
             <div style={{
                 display: 'flex',
                 gap: '1.5rem',
-                padding: '0 2rem 2rem',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                flexWrap: 'wrap'
+                padding: '0 1.5rem 2rem',
+                alignItems: 'stretch',
+                justifyContent: 'space-between',
+                width: '100%',
+                maxWidth: '1400px',
+                margin: '0 auto'
             }}>
                 {/* Manage Appointments Section */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'space-between', height: '100%' }}>
                     {/* Manage Appointments Card */}
                     <div style={{
                         backgroundColor: 'white',
                         borderRadius: '12px',
                         padding: '1.5rem',
+                        width: '300px',
                         minWidth: '300px',
-                        maxWidth: '360px',
-                        flex: '1',
+                        maxWidth: '300px',
+                        flex: '0 0 300px',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                         border: editingAppointmentId ? '2px solid #1a73e8' : '2px solid #5ba3d0' // Scrum 87: Blue border when editing
                     }}>
@@ -883,9 +882,10 @@ export default function AdminDashboard() {
                     backgroundColor: 'white',
                     borderRadius: '12px',
                     padding: '1.5rem',
+                    width: '300px',
                     minWidth: '300px',
-                    maxWidth: '360px',
-                    flex: '1',
+                    maxWidth: '300px',
+                    flex: '0 0 300px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     border: '2px solid #5ba3d0'
                 }}>
@@ -912,9 +912,10 @@ export default function AdminDashboard() {
                     backgroundColor: 'white',
                     borderRadius: '12px',
                     padding: '1.5rem',
+                    width: '300px',
                     minWidth: '300px',
-                    maxWidth: '360px',
-                    flex: '1',
+                    maxWidth: '300px',
+                    flex: '0 0 300px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     border: '2px solid #5ba3d0'
                 }}>
@@ -941,13 +942,16 @@ export default function AdminDashboard() {
                 <div style={{
                     backgroundColor: 'white',
                     borderRadius: '12px',
-                    padding: '1.5rem',
-                    minWidth: '300px',
-                    maxWidth: '420px',
-                    flex: '1',
+                    padding: '0.9rem 1.25rem 0.75rem',
+                    width: '250px',
+                    minWidth: '250px',
+                    maxWidth: '250px',
+                    flex: '0 0 250px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     border: '2px solid #5ba3d0',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    alignSelf: 'stretch',
+                    height: 'fit-content'
                 }}>
                     <h2 style={{
                         fontWeight: 'bold',
