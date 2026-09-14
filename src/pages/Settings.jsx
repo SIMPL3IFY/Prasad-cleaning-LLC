@@ -8,6 +8,10 @@ export default function Settings() {
     /* Scrum 64: Phone number edit and database integration. 
         This adds a 10 digit phone validation, saving phone_number to "settings",
         and displaying success/error messages to user.*/
+    /* Scrum 63: Address edit and database integration.
+        Loads the saved address from the "settings" table on page load,
+        lets the user edit it in a controlled input, and on Save upserts
+        the trimmed address to "settings" (keyed by user_id) only if it changed.*/
     const navigate = useNavigate()
     // Holds all editable settings fields, can update by using input id.
     const [formData, setFormData] = useState({
@@ -19,6 +23,7 @@ export default function Settings() {
     })
     const [savedEmail, setSavedEmail] = useState('')
     const [savedPhone, setSavedPhone] = useState('')
+    // Scrum 63: Holds the address currently stored in the database so Save can tell if the user changed it.
     const [savedAddress, setSavedAddress] = useState('')
     const [isEditingEmail, setIsEditingEmail] = useState(false)
 
@@ -45,6 +50,7 @@ export default function Settings() {
             setFormData((prev) => ({ ...prev, email: user.email || '' }))
             setSavedEmail(user.email || '')
 
+            // Scrum 63 - 48 to 67: Fetches address from the Supabase settings table for the signed-in user and prefills the input.
             const { data, error: settingsError } = await supabase
                 .from('settings')
                 .select('phone_number, address')
@@ -191,13 +197,14 @@ export default function Settings() {
     }
 
     // Scrum 64: form submit handler skips the database entirely if the field is blank, otherwise runs it through validatePhoneNumber.
-    // Scrum 63: saves the address first (if filled) so both fields are stored on one Save click.
+    // Scrum 63: saves the address first so both fields are stored on one Save click.
     // Scrum 65: also saves password if the password field is filled.
     const handleSave = async (e) => {
         e.preventDefault()
         const normalizedEmail = formData.email.trim()
         const emailChanged = isEditingEmail && normalizedEmail !== savedEmail
         const phoneChanged = formData.phone !== savedPhone
+        // Scrum 63: Compares the typed address against the saved one to detect an edit.
         const addressChanged = formData.address.trim() !== savedAddress
         const passwordChanged = Boolean(formData.password || formData.confirmPassword)
 
@@ -220,6 +227,7 @@ export default function Settings() {
         try {
             const successMessages = []
 
+            // Scrum 63: Only writes the address to the database if it changed and is not blank.
             if (addressChanged && formData.address.trim()) {
                 await saveAddress()
                 successMessages.push('Address updated.')
@@ -330,7 +338,7 @@ export default function Settings() {
                             onChange={handlePhoneChange}
                         />
                     </div>
-                    
+                    {/* Scrum 63: Updated to save address */}
                     <div className="form-group">
                         <label htmlFor="address">Change Business or Residential Address</label>
                         {/* Scrum 63: controlled input so the typed address can be saved */}
