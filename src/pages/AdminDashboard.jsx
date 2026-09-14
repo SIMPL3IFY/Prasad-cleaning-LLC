@@ -21,6 +21,11 @@ export default function AdminDashboard() {
     const [decliningQuoteId, setDecliningQuoteId] = useState(null) // Scrum 149: Which quote's reason prompt is open
     const [declineReason, setDeclineReason] = useState('')  // Scrum 149: In-progress text for the decline reason field
     const [declineReasonError, setDeclineReasonError] = useState(false) // Scrum 149: Drives the required-field highlight
+    const [reviews, setReviews] = useState([])
+    const [loadingReviews, setLoadingReviews] = useState(true)
+    const [reviewMessage, setReviewMessage] = useState('')
+    const [showReviewsModal, setShowReviewsModal] = useState(false)
+    const [isAdmin, setIsAdmin] = useState(false)
 
     // SCRUM-85: Manage Quotes box and supporting methods
     // EDITED from CSC 190-191:
@@ -78,6 +83,65 @@ export default function AdminDashboard() {
         setDeclinedQuotes(data)
     }
 
+
+    // Scrum 135: Loads all customer reviews from Supabase so the admin can approve or reject them
+    const fetchReviews = async () => {
+        setLoadingReviews(true)
+        const { data, error } = await supabase
+            .from('customer_reviews')
+            .select('id, customer_name, review, rating, approved, created_at')
+            .order('created_at', { ascending: false })
+
+        if (error) {
+            console.error('Error fetching customer reviews:', error)
+            setReviews([])
+            setReviewMessage('Unable to load customer reviews.')
+        } else {
+            setReviews(data || [])
+            setReviewMessage('')
+        }
+
+        setLoadingReviews(false)
+    }
+
+    // Scrum 88: Fetch pending, accepted, declined, and review data for the dashboard
+    useEffect(() => {
+        const checkAdminAccess = async () => {
+            const demoAccess = typeof window !== 'undefined' && localStorage.getItem('prasad-admin-demo-access') === 'true'
+
+            if (demoAccess) {
+                setIsAdmin(true)
+                return
+            }
+
+            const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+            if (userError || !user) {
+                navigate('/signin')
+                return
+            }
+
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', user.id)
+                .maybeSingle()
+
+            if (profileError || !profile?.is_admin) {
+                navigate('/signin')
+                return
+            }
+
+            setIsAdmin(true)
+        }
+
+        checkAdminAccess()
+        fetchQuotes()
+        fetchReviews()
+        fetchAcceptedQuotes()
+        fetchDeclinedQuotes()
+    }, [navigate])
+
     // Scrum 88: Method to fetch accepted quotes from accepted_quotes table on Supabase
     const fetchAcceptedQuotes = async () => {
         const { data, error } = await supabase
@@ -104,13 +168,6 @@ export default function AdminDashboard() {
         }
         setAcceptedQuotes(data)
     }
-
-    // Scrum 88: Fetch pending, accepted, and declined quotes
-    useEffect(() => {
-        fetchQuotes()
-        fetchAcceptedQuotes()
-        fetchDeclinedQuotes()
-    }, [])
 
     // Scrum 128 method: Returns the quotes for current page
     const paginateQuotes = () => {
@@ -302,7 +359,81 @@ export default function AdminDashboard() {
         setEditingAppointmentId(null)
         setEditedAppointment({}) // Scrum 87: Clear edits after saving
     }
+    //Scrum 135 method: Approve or reject a customer review
+    const handleReviewDecision = async (reviewId, approved) => {
+        const { error } = await supabase
+            .from('customer_reviews')
+            .update({ approved })
+            .eq('id', reviewId)
 
+        if (error) {
+            console.error('Error updating review approval:', error)
+            setReviewMessage(error.message)
+            return
+        }
+
+        setReviews(prev => prev.map(review =>
+            review.id === reviewId ? { ...review, approved } : review
+        ))
+
+        setReviewMessage(approved ? 'Review approved and now visible publicly.' : 'Review rejected and hidden from the public page.')
+    }
+
+    const renderReviewCard = (review, isApproved) => (
+        <div key={review.id} style={{ border: '1px solid #d9d9d9', borderRadius: '10px', padding: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                <strong style={{ fontSize: '0.95rem' }}>{review.customer_name}</strong>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#555' }}>{'⭐'.repeat(review.rating)}</span>
+                    <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '999px',
+                        backgroundColor: isApproved ? '#d4edda' : '#fff3cd',
+                        color: isApproved ? '#155724' : '#856404'
+                    }}>
+                        {isApproved ? 'Approved' : 'Pending'}
+                    </span>
+                </div>
+            </div>
+            <p style={{ fontSize: '0.85rem', lineHeight: '1.5', marginBottom: '0.75rem' }}>
+                {review.review}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                    onClick={() => handleReviewDecision(review.id, true)}
+                    style={{
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.35rem 0.8rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        opacity: review.approved ? 0.6 : 1
+                    }}
+                >
+                    {review.approved ? 'Approved' : 'Approve'}
+                </button>
+                <button
+                    onClick={() => handleReviewDecision(review.id, false)}
+                    style={{
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.35rem 0.8rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        opacity: !review.approved ? 0.6 : 1
+                    }}
+                >
+                    {review.approved ? 'Reject' : 'Rejected'}
+                </button>
+            </div>
+        </div>
+    )
     // Scrum 84 method: Renders and displays each appointment card on screen
     const renderAppointmentCard = (quote) => (
         <div key={quote.id} style={{ width: '100%' }}>
@@ -643,6 +774,13 @@ export default function AdminDashboard() {
 
     const visibleQuotes = paginateQuotes()
     const visibleAppointments = paginateAppointments()
+    const allReviews = [...reviews].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    const pendingReviews = allReviews.filter(review => !review.approved)
+    const approvedReviews = allReviews.filter(review => review.approved)
+
+    if (!isAdmin) {
+        return <div style={{ textAlign: 'center', padding: '3rem' }}>Checking admin access...</div>
+    }
     const visibleDeclinedQuotes = paginateDeclinedQuotes()
     // Main return
     return (
@@ -681,21 +819,24 @@ export default function AdminDashboard() {
             <div style={{
                 display: 'flex',
                 gap: '1.5rem',
-                padding: '0 2rem 2rem',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                flexWrap: 'wrap'
+                padding: '0 1.5rem 2rem',
+                alignItems: 'stretch',
+                justifyContent: 'space-between',
+                width: '100%',
+                maxWidth: '1400px',
+                margin: '0 auto'
             }}>
                 {/* Manage Appointments Section */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'space-between', height: '100%' }}>
                     {/* Manage Appointments Card */}
                     <div style={{
                         backgroundColor: 'white',
                         borderRadius: '12px',
                         padding: '1.5rem',
+                        width: '300px',
                         minWidth: '300px',
-                        maxWidth: '360px',
-                        flex: '1',
+                        maxWidth: '300px',
+                        flex: '0 0 300px',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                         border: editingAppointmentId ? '2px solid #1a73e8' : '2px solid #5ba3d0' // Scrum 87: Blue border when editing
                     }}>
@@ -741,9 +882,10 @@ export default function AdminDashboard() {
                     backgroundColor: 'white',
                     borderRadius: '12px',
                     padding: '1.5rem',
+                    width: '300px',
                     minWidth: '300px',
-                    maxWidth: '360px',
-                    flex: '1',
+                    maxWidth: '300px',
+                    flex: '0 0 300px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     border: '2px solid #5ba3d0'
                 }}>
@@ -770,9 +912,10 @@ export default function AdminDashboard() {
                     backgroundColor: 'white',
                     borderRadius: '12px',
                     padding: '1.5rem',
+                    width: '300px',
                     minWidth: '300px',
-                    maxWidth: '360px',
-                    flex: '1',
+                    maxWidth: '300px',
+                    flex: '0 0 300px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     border: '2px solid #5ba3d0'
                 }}>
@@ -794,7 +937,124 @@ export default function AdminDashboard() {
                         </>
                     )}
                 </div>
+
+                {/* Customer Reviews Trigger */}
+                <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    padding: '0.9rem 1.25rem 0.75rem',
+                    width: '250px',
+                    minWidth: '250px',
+                    maxWidth: '250px',
+                    flex: '0 0 250px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    border: '2px solid #5ba3d0',
+                    textAlign: 'center',
+                    alignSelf: 'stretch',
+                    height: 'fit-content'
+                }}>
+                    <h2 style={{
+                        fontWeight: 'bold',
+                        fontSize: '1.1rem',
+                        textAlign: 'center',
+                        marginBottom: '1rem'
+                    }}>
+                        Customer Reviews
+                    </h2>
+
+                    {reviewMessage && (
+                        <p style={{ marginBottom: '1rem', color: '#155724', fontSize: '0.9rem' }}>
+                            {reviewMessage}
+                        </p>
+                    )}
+
+                    <button
+                        onClick={() => setShowReviewsModal(true)}
+                        style={{
+                            backgroundColor: '#1a73e8',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '0.75rem 1.25rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem'
+                        }}
+                    >
+                        View Review Table
+                    </button>
+                </div>
             </div>                          
+
+            {showReviewsModal && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(0,0,0,0.6)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '1rem'
+                }}>
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        width: '100%',
+                        maxWidth: '700px',
+                        maxHeight: '80vh',
+                        overflowY: 'auto',
+                        padding: '1.5rem',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>Customer Reviews</h3>
+                            <button
+                                onClick={() => setShowReviewsModal(false)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '1.25rem',
+                                    cursor: 'pointer',
+                                    color: '#333'
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {loadingReviews ? (
+                            <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>Loading reviews...</p>
+                        ) : allReviews.length === 0 ? (
+                            <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No reviews available.</p>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                <div>
+                                    <h4 style={{ margin: '0 0 0.75rem', color: '#1a73e8' }}>Pending Reviews</h4>
+                                    {pendingReviews.length === 0 ? (
+                                        <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>No pending reviews.</p>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            {pendingReviews.map(review => renderReviewCard(review, false))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <h4 style={{ margin: '0 0 0.75rem', color: '#155724' }}>Approved Reviews</h4>
+                                    {approvedReviews.length === 0 ? (
+                                        <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>No approved reviews.</p>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            {approvedReviews.map(review => renderReviewCard(review, true))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             <button
                 onClick={handleLogout}
                 style={{

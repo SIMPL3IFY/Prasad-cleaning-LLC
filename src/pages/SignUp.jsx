@@ -198,6 +198,18 @@ export default function SignUp() {
             
             {renderLoadingState()}
 
+            {errors.submit && (
+              <p className="error-text" style={{ color: 'red', marginBottom: '1rem' }}>
+                {errors.submit}
+              </p>
+            )}
+
+            {successMessage && (
+              <p style={{ color: '#155724', marginBottom: '1rem' }}>
+                {successMessage}
+              </p>
+            )}
+
             <button type="submit" className="button button-main button-big signin-btn" disabled={isLoading}>
               Sign Up
             </button>

@@ -32,6 +32,7 @@ export default function SignIn() {
     navigate('/signup')
   }
   
+
   // Scrum 71: Handles forgot password form submission
   const handleForgotSubmit = (e) => {
     e.preventDefault()
@@ -152,7 +153,7 @@ export default function SignIn() {
             <p className="signin-footer">
               Don't have an account? <Link to="/signup">Create one</Link>
             </p>
-            </form>
+          </form>
             </>
           )}
         </div>
