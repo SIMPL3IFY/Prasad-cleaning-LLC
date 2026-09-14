@@ -1,52 +1,30 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { supabase } from "../supabaseClient"
+import { supabase } from "../lib/supabaseClient"
+
 
 export default function SignIn() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [signInError, setSignInError] = useState('')
+  const [error, setError] = useState('')
   const [showForgotPassword, setShowForgotPassword] = useState(false) // Scrum 71: Controls which form is visible
   const [resetEmail, setResetEmail] = useState('') // Scrum 71: Email input for forgot password form
   const [resetMessage, setResetMessage] = useState('') // Scrum 71: Confirmation message after submission
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setSignInError('')
-    setIsLoading(true)
-
-    const { data: { user }, error: signInErrorData } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password
-    })
-
-    if (signInErrorData) {
-      setSignInError(signInErrorData.message)
-      setIsLoading(false)
+    setError('')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      setError(error.message)
       return
     }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, email, is_admin')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    setIsLoading(false)
-
-    if (profileError) {
-      setSignInError('Unable to verify your account access.')
-      return
-    }
-
-    if (profile?.is_admin) {
-      navigate('/admin')
-      return
-    }
-
     navigate('/portal')
+  }
+
+  const handleAdminSignIn = () => {
+    navigate('/admin/login')
   }
 
   // Scrum 36: Redirects a user without an account to the sign up page
@@ -135,10 +113,8 @@ export default function SignIn() {
               <input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
 
-            {signInError && (
-              <p className="error-text" style={{ color: 'red', marginBottom: '1rem' }}>
-                {signInError}
-              </p>
+            {error && (
+              <p style={{ color: 'crimson', fontSize: '0.9rem', marginBottom: '1rem' }}>{error}</p>
             )}
 
             <div className="form-footer-row">
@@ -151,8 +127,17 @@ export default function SignIn() {
                   </a>
                 </div>
 
-            <button type="submit" className="button button-main button-big signin-btn" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
+            <button type="submit" className="button button-main button-big signin-btn">
+              Sign In
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAdminSignIn}
+              className="button button-main button-big signin-btn"
+              style={{ marginTop: '1rem' }}
+            >
+              Admin Login
             </button>
 
             {/* Scrum 36: Redirects a user without an account to the sign up page */}

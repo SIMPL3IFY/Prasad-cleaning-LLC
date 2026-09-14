@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { supabase } from "../supabaseClient"
+import { supabase } from '../lib/supabaseClient'
 
 export default function SignUp() {
   const navigate = useNavigate()
@@ -36,8 +36,8 @@ export default function SignUp() {
     
     if (!formData.password) {
       newErrors.password = 'Password is required'
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters'
     }
     
     if (!formData.confirmPassword) {
@@ -50,9 +50,9 @@ export default function SignUp() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleRedirect = () => {
+  /*const handleRedirect = () => {
     navigate('/portal')
-  }
+  }*/
 
   const handleSignupSubmit = async (e) => {
     e.preventDefault()
@@ -61,31 +61,36 @@ export default function SignUp() {
       return
     }
 
-    setIsLoading(true)
+    setErrors({})
     setSuccessMessage('')
+    setIsLoading(true)
 
-    const { data, error } = await supabase.auth.signUp({
+    const {data, error } = await supabase.auth.signUp({
       email: formData.email.trim(),
       password: formData.password,
       options: {
-        data: { full_name: formData.name.trim() }
+        data: {
+          full_name: formData.name.trim()
+        }
       }
     })
 
     setIsLoading(false)
 
     if (error) {
-      setErrors({ submit: error.message })
+      setErrors({ general: error.message})
       return
     }
 
     if (data.session) {
-      handleRedirect()
+      setSuccessMessage('Account created successfully. Redirecting...')
+      setTimeout(() => navigate('/portal'), 1200)
       return
     }
 
     setSuccessMessage('Account created. Check your email to confirm your account, then sign in.')
-    setFormData({ name: '', email: '', password: '', confirmPassword: '' })
+
+    setTimeout(() => navigate('/signin'), 2500)
   }
 
   const renderErrorMessages = (fieldName) => {
@@ -176,6 +181,14 @@ export default function SignUp() {
               {renderErrorMessages('confirmPassword')}
             </div>
 
+            {renderErrorMessages('general')}
+
+            {successMessage && (
+              <p role="status" style={{ color: 'green', textAlign: 'center', marginBottom: '1rem'}}>
+                {successMessage}
+              </p>
+            )}
+            
             {renderLoadingState()}
 
             {errors.submit && (
