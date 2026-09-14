@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export default function Settings() {
     /* Scrum 64: Phone number edit and database integration. 
         This adds a 10 digit phone validation, saving phone_number to "settings",
@@ -15,9 +17,13 @@ export default function Settings() {
         password: '',
         confirmPassword: '',
     })
+    const [savedEmail, setSavedEmail] = useState('')
+    const [savedPhone, setSavedPhone] = useState('')
+    const [savedAddress, setSavedAddress] = useState('')
+    const [isEditingEmail, setIsEditingEmail] = useState(false)
 
     // Tracks save requests status: loading, error and or success. Displays above Save button.
-    const [status, setStatus] = useState({ loading: false, error: '', success: '' })
+    const [status, setStatus] = useState({ loading: true, error: '', success: '' })
 
     //Scrum 94: Controls the visibility of the save popup saying "Account Updated!"
     const [showSavePopup, setShowSavePopup] = useState(false)
@@ -26,10 +32,20 @@ export default function Settings() {
     // It prefills the form if values are found so user can edit current values.
     useEffect(() => {
         const loadSettings = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
+            const { data: { user }, error: userError } = await supabase.auth.getUser()
+            if (userError || !user) {
+                setStatus({
+                    loading: false,
+                    error: userError?.message || 'You must be signed in to change your settings.',
+                    success: '',
+                })
+                return
+            }
+
             setFormData((prev) => ({ ...prev, email: user.email || '' }))
-            const { data } = await supabase
+            setSavedEmail(user.email || '')
+
+            const { data, error: settingsError } = await supabase
                 .from('settings')
                 .select('phone_number, address')
                 .eq('user_id', user.id)
@@ -40,7 +56,11 @@ export default function Settings() {
                     phone: data.phone_number || '',
                     address: data.address || '',
                 }))
+                setSavedPhone(data.phone_number || '')
+                setSavedAddress(data.address || '')
             }
+
+            setStatus({ loading: false, error: settingsError?.message || '', success: '' })
         }
         loadSettings()
     }, [])
@@ -60,6 +80,49 @@ export default function Settings() {
     // Scrum 64 - SubTask 152: handlePhoneChange updates phone field as user types.
     const handlePhoneChange = (e) => {
         setFormData((prev) => ({ ...prev, phone: e.target.value }))
+        setStatus((prev) => ({ ...prev, error: '', success: '' }))
+    }
+
+    // Scrum 62: opens and closes edit mode for the email field.
+    const toggleEditMode = () => {
+        if (isEditingEmail) {
+            setFormData((prev) => ({ ...prev, email: savedEmail }))
+        }
+
+        setIsEditingEmail((prev) => !prev)
+        setStatus((prev) => ({ ...prev, error: '', success: '' }))
+    }
+
+    // Scrum 62: updates the email value as the user types.
+    const handleEmailChange = (e) => {
+        setFormData((prev) => ({ ...prev, email: e.target.value }))
+        setStatus((prev) => ({ ...prev, error: '', success: '' }))
+    }
+
+    // Scrum 62: checks that the new email is present and properly formatted.
+    const validateEmail = () => {
+        const normalizedEmail = formData.email.trim()
+
+        if (!normalizedEmail) return 'Email is required.'
+        if (!EMAIL_PATTERN.test(normalizedEmail)) return 'Please enter a valid email address.'
+
+        return ''
+    }
+
+    // Scrum 62: updates the user's actual Supabase Auth login email.
+    const saveEmailAddress = async () => {
+        const normalizedEmail = formData.email.trim()
+        const { data, error } = await supabase.auth.updateUser({ email: normalizedEmail })
+
+        if (error) throw error
+
+        setFormData((prev) => ({ ...prev, email: normalizedEmail }))
+        setSavedEmail(normalizedEmail)
+        setIsEditingEmail(false)
+
+        return data.user?.email !== normalizedEmail
+            ? `A confirmation link was sent to ${normalizedEmail}. Your login email will change after confirmation.`
+            : 'Email address updated successfully.'
     }
 
     // Scrum 63: handleAddressChange updates address field as user types.
@@ -68,21 +131,20 @@ export default function Settings() {
     }
 
     // Scrum 64: checks the typed value and if it meets standard US phone number.
-    const validatePhoneNumber = async () => {
+    const validatePhoneNumber = () => {
         const digitsOnly = formData.phone.replace(/\D/g, '')
         if (digitsOnly.length !== 10) {
             setStatus({ loading: false, error: 'Enter a valid 10-digit US phone number.', success: '' })
-            return
+            return null
         }
-        await savePhoneNumber(digitsOnly)
+        return digitsOnly
     }
 
     // Scrum 64: submits valid phone number to Supabase table.
     const savePhoneNumber = async (digitsOnly) => {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
-            setStatus({ loading: false, error: 'You must be signed in.', success: '' })
-            return
+            throw new Error('You must be signed in.')
         }
         const { error: settingsError } = await supabase
             .from('settings')
@@ -96,12 +158,11 @@ export default function Settings() {
             )
 
         if (settingsError) {
-            setStatus({ loading: false, error: settingsError.message, success: '' })
-            return
+            throw settingsError
         }
 
-        setStatus({ loading: false, error: '', success: 'Phone number updated.' })
-        handleSavePopup()
+        setFormData((prev) => ({ ...prev, phone: digitsOnly }))
+        setSavedPhone(digitsOnly)
     }
 
     // Scrum 65 - SubTask 161: handlePasswordChange updates password fields as user types.
@@ -134,23 +195,56 @@ export default function Settings() {
     // Scrum 65: also saves password if the password field is filled.
     const handleSave = async (e) => {
         e.preventDefault()
-        setStatus({ loading: true, error: '', success: '' })
-        if (formData.address.trim()) {
-            const addressSaved = await saveAddress()
-            if (!addressSaved) return
-        }
-        if (formData.password || formData.confirmPassword) {
-            if (!validatePasswordMatch()) return
-            const passwordSaved = await savePassword()
-            if (!passwordSaved) return
-        }
-        if (!formData.phone) {
-            setStatus({ loading: false, error: '', success: '' })
-            //Scrum 94: Call the function to handle the save popup and redirect to /portal
-            handleSavePopup()
+        const normalizedEmail = formData.email.trim()
+        const emailChanged = isEditingEmail && normalizedEmail !== savedEmail
+        const phoneChanged = formData.phone !== savedPhone
+        const addressChanged = formData.address.trim() !== savedAddress
+        const passwordChanged = Boolean(formData.password || formData.confirmPassword)
+
+        if (!emailChanged && !phoneChanged && !addressChanged && !passwordChanged) {
+            setStatus({ loading: false, error: 'Make a change before saving.', success: '' })
             return
         }
-        await validatePhoneNumber()
+
+        const emailError = emailChanged ? validateEmail() : ''
+        if (emailError) {
+            setStatus({ loading: false, error: emailError, success: '' })
+            return
+        }
+
+        const digitsOnly = phoneChanged ? validatePhoneNumber() : ''
+        if (phoneChanged && !digitsOnly) return
+
+        setStatus({ loading: true, error: '', success: '' })
+
+        try {
+            const successMessages = []
+
+            if (addressChanged && formData.address.trim()) {
+                await saveAddress()
+                successMessages.push('Address updated.')
+            }
+            if (passwordChanged) {
+                if (!validatePasswordMatch()) return
+                if (!(await savePassword())) return
+                successMessages.push('Password updated.')
+            }
+            if (emailChanged) successMessages.push(await saveEmailAddress())
+            if (phoneChanged) {
+                await savePhoneNumber(digitsOnly)
+                successMessages.push('Phone number updated.')
+            }
+
+            setStatus({ loading: false, error: '', success: successMessages.join(' ') })
+
+            if (phoneChanged && !emailChanged && !addressChanged && !passwordChanged) handleSavePopup()
+        } catch (error) {
+            setStatus({
+                loading: false,
+                error: error.message || 'Unable to update account settings. Please try again.',
+                success: '',
+            })
+        }
     }
 
     // Scrum 63: submits the address to the Supabase settings table.
@@ -176,7 +270,8 @@ export default function Settings() {
             return false
         }
 
-        setStatus({ loading: false, error: '', success: 'Address updated.' })
+        setFormData((prev) => ({ ...prev, address: formData.address.trim() }))
+        setSavedAddress(formData.address.trim())
         return true
     }
     return (
@@ -198,24 +293,42 @@ export default function Settings() {
                 )}
 
                 {/* Use the format of the Sign-In form, but without floating box outline and adjust the size to center in the page */}
-                {/* Scrum 63 / 64 / 65: submitting the form saves the address, password, and phone number */}
-                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave}>
+                <form className="signin-form" style={{ maxWidth: '500px', margin: '0 auto' }} onSubmit={handleSave} noValidate>
 
                     {/* Scrum 115: Create all the boxes to change settings */}
                     <div className="form-group">
-                        <label htmlFor="email">Change Email Address</label>
-                        <input type="email" id="email" placeholder="new-email@example.com"/> 
+                        <label htmlFor="email">Email Address</label>
+                        <input
+                            type="email"
+                            id="email"
+                            placeholder="new-email@example.com"
+                            value={formData.email}
+                            onClick={() => {
+                                if (!isEditingEmail) toggleEditMode()
+                            }}
+                            onChange={handleEmailChange}
+                            readOnly={!isEditingEmail}
+                            aria-invalid={Boolean(status.error)}
+                            aria-describedby={status.error ? 'settings-error' : undefined}
+                            style={status.error ? { borderColor: 'crimson' } : undefined}
+                        />
+                        {isEditingEmail && (
+                            <button type="button" onClick={toggleEditMode} style={{ marginTop: 'var(--space-sm)' }}>
+                                Cancel email edit
+                            </button>
+                        )}
                     </div>
                     {/* Scrum 64: Updated to save phone number 
                         SubTask 153: Inline error highlighting*/}
                     <div className="form-group">
                         <label htmlFor="phone">Change Phone Number</label>
-                        <input type="tel" 
-                        id="phone" 
-                        placeholder="(XXX) XXX-XXXX" 
-                        value={formData.phone} 
-                        onChange={handlePhoneChange}
-                        style={status.error ? {borderColor: 'crimson'} : undefined}/>
+                        <input
+                            type="tel"
+                            id="phone"
+                            placeholder="(XXX) XXX-XXXX"
+                            value={formData.phone}
+                            onChange={handlePhoneChange}
+                        />
                     </div>
                     
                     <div className="form-group">
@@ -239,17 +352,18 @@ export default function Settings() {
                         <input type="password" id="confirmPassword" placeholder="********" value={formData.confirmPassword} onChange={handlePasswordChange} style={status.error === 'Passwords do not match.' ? { borderColor: 'crimson' } : undefined} />
                     </div>
                     
-                    {/* Button for user to change settings
-                         Scrum 115, redirects to customer portal page but
-                         in a later Scrum, will update database*/}
-                    {/* Scrum 63 / Scrum 64: show database error or success message above the Save button */}
                     {status.error && (
-                        <p style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>{status.error}</p>
+                        <p id="settings-error" role="alert" style={{ color: 'crimson', textAlign: 'center', fontSize: '0.85rem' }}>
+                            {status.error}
+                        </p>
                     )}
                     {status.success && (
-                        <p style={{ color: 'green', textAlign: 'center', fontSize: '0.85rem' }}>{status.success}</p>
+                        <p role="status" style={{ color: 'green', textAlign: 'center', fontSize: '0.85rem' }}>
+                            {status.success}
+                        </p>
                     )}
 
+                    {/* Scrum 67: Save validates and persists changed account settings. */}
                     <div style={{ textAlign: 'center', marginTop: 'var(--space-md)' }}>
                         <button type="submit" className="button button-main" disabled={status.loading}>
                             {status.loading ? 'Saving...' : 'Save'}
