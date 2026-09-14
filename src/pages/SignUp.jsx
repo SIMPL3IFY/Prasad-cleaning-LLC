@@ -33,11 +33,10 @@ export default function SignUp() {
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address'
     }
-    
     if (!formData.password) {
       newErrors.password = 'Password is required'
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters'
+      newErrors.password = 'Password must be at least 8 characters' 
     }
     
     if (!formData.confirmPassword) {
@@ -190,6 +189,18 @@ export default function SignUp() {
             )}
             
             {renderLoadingState()}
+
+            {errors.submit && (
+              <p className="error-text" style={{ color: 'red', marginBottom: '1rem' }}>
+                {errors.submit}
+              </p>
+            )}
+
+            {successMessage && (
+              <p style={{ color: '#155724', marginBottom: '1rem' }}>
+                {successMessage}
+              </p>
+            )}
 
             <button type="submit" className="button button-main button-big signin-btn" disabled={isLoading}>
               Sign Up
