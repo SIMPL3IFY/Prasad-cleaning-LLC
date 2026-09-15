@@ -33,10 +33,15 @@ export default function SignUp() {
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address'
     }
+    
+    const specialCharPattern = /[!@#$%^&*(),.?":{}|<>_\-+=[\]/\\~`]/
+
     if (!formData.password) {
       newErrors.password = 'Password is required'
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters' 
+      newErrors.password = 'Password must be at least 8 characters'
+    } else if (!specialCharPattern.test(formData.password)) {
+      newErrors.password = 'Password must include at least 1 special character'
     }
     
     if (!formData.confirmPassword) {
