@@ -8,11 +8,13 @@ import Testimonials from './pages/Testimonials'
 import Contact from './pages/Contact'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
+import ResetPassword from './pages/ResetPassword'
 import ServiceArea from './pages/ServiceArea'
 import CustomerPortal from './pages/CustomerPortal'
 import Settings from './pages/Settings'
 import AdminLogin from './pages/AdminLogin'
 import ProtectedAdminRoute from './components/ProtectedAdminRoute'
+import ProtectedCustomerRoute from './components/ProtectedCustomerRoute'
 // SCRUM-119: Admin dashboard page
 import AdminDashboard from './pages/AdminDashboard'
 
@@ -42,9 +44,12 @@ function AppContent() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/service-area" element={<ServiceArea />} /> 
-          <Route path="/portal" element={<CustomerPortal />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route element={<ProtectedCustomerRoute />}>
+            <Route path="/portal" element={<CustomerPortal />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route element={<ProtectedAdminRoute />}>
             <Route path="/admin" element={<AdminDashboard />} />

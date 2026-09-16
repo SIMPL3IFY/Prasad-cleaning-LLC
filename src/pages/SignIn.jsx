@@ -11,6 +11,8 @@ export default function SignIn() {
   const [showForgotPassword, setShowForgotPassword] = useState(false) // Scrum 71: Controls which form is visible
   const [resetEmail, setResetEmail] = useState('') // Scrum 71: Email input for forgot password form
   const [resetMessage, setResetMessage] = useState('') // Scrum 71: Confirmation message after submission
+  const [resetError, setResetError] = useState('')
+  const [isSendingReset, setIsSendingReset] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -34,9 +36,25 @@ export default function SignIn() {
   
 
   // Scrum 71: Handles forgot password form submission
-  const handleForgotSubmit = (e) => {
+  const handleForgotSubmit = async (e) => {
     e.preventDefault()
-    setResetMessage(`A reset link has been sent to ${resetEmail}.`)
+    setResetMessage('')
+    setResetError('')
+    setIsSendingReset(true)
+
+    const normalizedEmail = resetEmail.trim()
+    const { error: resetRequestError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+
+    setIsSendingReset(false)
+
+    if (resetRequestError) {
+      setResetError(resetRequestError.message)
+      return
+    }
+
+    setResetMessage(`A reset link has been sent to ${normalizedEmail}. Please check your inbox.`)
     setResetEmail('')
   }
 
@@ -62,19 +80,21 @@ export default function SignIn() {
         </div>
 
         {resetMessage && (
-          <p style={{ color: '#155724', fontSize: '0.9rem', marginBottom: '1rem' }}>
+          <p className="form-success" role="status">
             {resetMessage}
           </p>
         )}
 
-        <button type="submit" className="button button-main button-big signin-btn">
-          Send Reset Link
+        {resetError && <p className="form-error" role="alert">{resetError}</p>}
+
+        <button type="submit" className="button button-main button-big signin-btn" disabled={isSendingReset}>
+          {isSendingReset ? 'Sending...' : 'Send Reset Link'}
         </button>
 
         <p className="signin-footer">
           <a
             href="#"
-            onClick={(e) => { e.preventDefault(); setShowForgotPassword(false); setResetMessage(''); setResetEmail('') }}
+            onClick={(e) => { e.preventDefault(); setShowForgotPassword(false); setResetMessage(''); setResetError(''); setResetEmail('') }}
           >
             Back to Sign In
           </a>
