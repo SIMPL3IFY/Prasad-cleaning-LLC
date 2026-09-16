@@ -2,7 +2,7 @@ import { useState } from 'react'
 //import { Link } from 'react-router-dom'
 import { SERVICES_LIST } from '../data/ServicesData';
 import { Link, useNavigate } from 'react-router-dom'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../lib/supabaseClient'
 
 export default function CustomerPortal() {
     const navigate = useNavigate()
