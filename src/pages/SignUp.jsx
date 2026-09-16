@@ -168,6 +168,10 @@ export default function SignUp() {
                 onChange={handleInputChange}
                 className={errors.password ? 'input-error' : ''}
               />
+               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted, #666)', display: 'block', marginTop: '0.25rem' }}>
+                Must be at least 8 characters and include 1 special character
+              </span>
+              
               {renderErrorMessages('password')}
             </div>
 
