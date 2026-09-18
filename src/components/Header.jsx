@@ -1,4 +1,7 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 
 const navLinks = [
   { to: '/services', label: 'Services' },
@@ -10,6 +13,17 @@ const navLinks = [
 
 export default function Header() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { user, loading } = useAuth()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    const { error } = await supabase.auth.signOut()
+    setIsSigningOut(false)
+
+    if (!error) navigate('/', { replace: true })
+  }
 
   return (
     <header className="header">
@@ -31,9 +45,16 @@ export default function Header() {
         </nav>
 
         <div className="header-actions">
-          <Link to="/signin" className="button button-alt">
-            Sign In
-          </Link>
+          {!loading && (user ? (
+            <>
+              <Link to="/portal" className="button button-alt">Dashboard</Link>
+              <button type="button" className="button button-alt" onClick={handleSignOut} disabled={isSigningOut}>
+                {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+              </button>
+            </>
+          ) : (
+            <Link to="/signin" className="button button-alt">Sign In</Link>
+          ))}
         </div>
       </div>
     </header>
