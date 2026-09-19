@@ -10,6 +10,8 @@ if (!supabaseUrl || !supabaseKey) {
   )
 }
 
+// SCRUM 172: Persist and refresh sessions so navigation or a page reload does not sign users out.
+// SCRUM 145: Read the recovery session returned in a password-reset URL.
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: true,

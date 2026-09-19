@@ -14,7 +14,7 @@ const navLinks = [
 export default function Header() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { user, loading } = useAuth()
+  const { user, isAdmin, loading } = useAuth()
   const [isSigningOut, setIsSigningOut] = useState(false)
 
   const handleSignOut = async () => {
@@ -45,9 +45,10 @@ export default function Header() {
         </nav>
 
         <div className="header-actions">
+          {/* SCRUM 172: Keep signed-in navigation visible and send each role to its own dashboard. */}
           {!loading && (user ? (
             <>
-              <Link to="/portal" className="button button-alt">Dashboard</Link>
+              <Link to={isAdmin ? '/admin' : '/portal'} className="button button-alt">Dashboard</Link>
               <button type="button" className="button button-alt" onClick={handleSignOut} disabled={isSigningOut}>
                 {isSigningOut ? 'Signing Out...' : 'Sign Out'}
               </button>

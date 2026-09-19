@@ -44,8 +44,10 @@ function AppContent() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          {/* SCRUM 145: Destination opened by the password-reset email. */}
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/service-area" element={<ServiceArea />} /> 
+          {/* SCRUM 172: Customer account pages require the persisted Supabase session. */}
           <Route element={<ProtectedCustomerRoute />}>
             <Route path="/portal" element={<CustomerPortal />} />
             <Route path="/settings" element={<Settings />} />

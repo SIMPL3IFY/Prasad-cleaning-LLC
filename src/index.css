@@ -144,12 +144,14 @@ ul {
   gap: var(--space-sm);
 }
 
+/* SCRUM 172: Shared loading state while the saved session and role are restored. */
 .auth-status {
   padding: var(--section-padding) var(--container-padding);
   text-align: center;
   color: var(--color-text-muted);
 }
 
+/* SCRUM 145: Feedback shown while requesting or completing a password reset. */
 .form-error,
 .form-success {
   font-size: 0.9rem;
