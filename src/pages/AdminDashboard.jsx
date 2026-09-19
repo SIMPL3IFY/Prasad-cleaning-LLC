@@ -993,8 +993,13 @@ export default function AdminDashboard() {
         )
     }
 
-    const handleLogout = () => {
-        navigate('/')
+    // SCRUM 172: End the admin's Supabase session before returning to the landing page.
+    const handleLogout = async () => {
+        const { error } = await supabase.auth.signOut()
+
+        if (!error) {
+            navigate('/', { replace: true })
+        }
     }
 
     const visibleQuotes = paginateQuotes()
@@ -1427,7 +1432,7 @@ export default function AdminDashboard() {
                     zIndex: 999
                 }}
             >
-                Logout
+                Sign Out
             </button>
         </div>
     )
