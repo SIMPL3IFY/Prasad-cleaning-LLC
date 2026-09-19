@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
-// SCRUM 145: Accepts a valid Supabase recovery link and lets the user choose a new password.
 export default function ResetPassword() {
   const navigate = useNavigate()
   const [password, setPassword] = useState('')
@@ -16,7 +15,6 @@ export default function ResetPassword() {
   useEffect(() => {
     let isMounted = true
 
-    // Supabase converts the recovery URL into a temporary authenticated session.
     const checkRecoverySession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (isMounted) {
@@ -56,7 +54,6 @@ export default function ResetPassword() {
     }
 
     setIsSubmitting(true)
-    // SCRUM 145: Save the validated password to the currently recovered account.
     const { error: updateError } = await supabase.auth.updateUser({ password })
     setIsSubmitting(false)
 

@@ -43,7 +43,6 @@ export default function SignIn() {
     setIsSendingReset(true)
 
     const normalizedEmail = resetEmail.trim()
-    // SCRUM 145: Ask Supabase to email a real recovery link back to this application.
     const { error: resetRequestError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo: `${window.location.origin}/reset-password`,
     })

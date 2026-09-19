@@ -225,7 +225,7 @@ export default function CustomerPortal() {
             </button>
         )
 }
-    // SCRUM 172: End the Supabase session only when the customer selects Sign Out.
+    // Logout function to navigate back to landing page
     const handleLogout = async () => {
         const { error } = await supabase.auth.signOut()
         if (!error) navigate('/', { replace: true })
