@@ -26,6 +26,10 @@ export default function AdminDashboard() {
     const [reviewMessage, setReviewMessage] = useState('')
     const [showReviewsModal, setShowReviewsModal] = useState(false)
     const [isAdmin, setIsAdmin] = useState(false)
+    // Scrum 150: State to track which quote is awaiting confirmation to accept
+    const [acceptingQuoteId, setAcceptingQuoteId] = useState(null)
+    // Scrum 183: State to track which declined quote is awaiting confirmation to move to pending
+    const [reopenModalQuote, setReopenModalQuote] = useState(null)
 
     // SCRUM-85: Manage Quotes box and supporting methods
     // EDITED from CSC 190-191:
@@ -210,9 +214,16 @@ export default function AdminDashboard() {
             if(direction === 'prev') return Math.max(prev - 1, 1)
         })
     }
+    
+    // Scrum 150 method: Opens acceptance confirmation modal for quote
+    const handleAcceptClick = (quoteID) => {
+        setAcceptingQuoteId(quoteID)
+    }
+
     // Scrum 126 method: Accepts a quote into database
-    //EDITED from CSC 190-191:
+    // EDITED from CSC 190-191:
     // Scrum 88 method: Accepts a quote from quotes table and moves it to accepted_quotes table on Supabase
+    // Scrum 150 method: Executes quote acceptance after modal confirmation
     const acceptQuote = async (quoteID) => { 
         const quoteToAccept = quotes.find(q => q.id === quoteID)
         if (!quoteToAccept) return
@@ -248,6 +259,7 @@ export default function AdminDashboard() {
         }
         //Update local UI state
         setQuotes(prev => prev.filter(q => q.id !== quoteID)) 
+        setAcceptingQuoteId(null) // Scrum 150: Close accept confirmation modal
         // Reset pagination to page 1 if deleting the last quote on the current page
         if (quotes.length - 1 <= (currentQuotePage - 1) * QUOTES_PER_PAGE && currentQuotePage > 1) {
             setCurrentQuotePage(prev => prev - 1)
@@ -266,13 +278,20 @@ export default function AdminDashboard() {
         setDeclineReasonError(false)
     }
 
-    // SCRUM-155 method: Validates that a decline reason was entered; highlights the field and blocks submission if empty, otherwise hands off to archiveQuote()
+    // SCRUM-155 method: Validates that a decline reason was entered; highlights the field and blocks submission if empty, otherwise hands off to archiveQuote() or archiveAcceptedAppointment()
+    // Scrum 150 method: Checks if quote is in pending quotes or accepted appointments before declining
     const confirmDecline = (quoteID) => {
         if (!declineReason.trim()) {
             setDeclineReasonError(true)
             return
         }
-        archiveQuote(quoteID, declineReason.trim())
+
+        const isAcceptedAppointment = acceptedQuotes.some(q => q.id === quoteID)
+        if (isAcceptedAppointment) {
+            archiveAcceptedAppointment(quoteID, declineReason.trim()) // Scrum 150: Cancel/decline accepted appointment
+        } else {
+            archiveQuote(quoteID, declineReason.trim())
+        }
     }
 
     // SCRUM-155 method: Moves a declined quote from `quotes` into `declined_quotes`
@@ -317,6 +336,122 @@ export default function AdminDashboard() {
         setDeclineReasonError(false)
         fetchDeclinedQuotes()
     }
+
+    // Scrum 150 method: Moves an accepted appointment directly from accepted_quotes into declined_quotes
+    const archiveAcceptedAppointment = async (quoteID, reason) => {
+        const appointment = acceptedQuotes.find(q => q.id === quoteID)
+        if (!appointment) return
+
+        const { error: insertError } = await supabase
+            .from('declined_quotes')
+            .insert({
+                original_quote_id: appointment.originalQuoteId || appointment.id,
+                customer_name: appointment.customerName,
+                email: appointment.email,
+                phone: appointment.phone,
+                service: appointment.service,
+                property: appointment.property,
+                appointment_date: appointment.appointmentDate,
+                appointment_time: appointment.appointmentTime,
+                address: appointment.address,
+                message: appointment.message,
+                decline_reason: reason
+            })
+
+        if (insertError) {
+            console.error('Error archiving accepted appointment to declined_quotes:', insertError.message)
+            return
+        }
+
+        const { error: deleteError } = await supabase
+            .from('accepted_quotes')
+            .delete()
+            .eq('id', quoteID)
+
+        if (deleteError) {
+            console.error('Error removing appointment from accepted_quotes table:', deleteError.message)
+            return
+        }
+
+        setAcceptedQuotes(prev => prev.filter(q => q.id !== quoteID))
+        setDecliningQuoteId(null)
+        setDeclineReason('')
+        setDeclineReasonError(false)
+
+        if (acceptedQuotes.length - 1 <= (currentAppointmentPage - 1) * APPOINTMENTS_PER_PAGE && currentAppointmentPage > 1) {
+            setCurrentAppointmentPage(prev => prev - 1)
+        }
+
+        fetchDeclinedQuotes()
+    }
+
+    // Scrum 183: Triggers the confirmation modal popup when button is clicked
+    const handleReopenClick = (quote) => {
+        setReopenModalQuote(quote)
+    }
+
+    // Scrum 183: Executes the database operations after admin confirms in modal
+    const handleConfirmReopen = async () => {
+        if (!reopenModalQuote) return
+
+        const quote = reopenModalQuote
+
+        try {
+            // Map payload fields to match Supabase database column names
+            const pendingQuotePayload = {
+                customer_name: quote.customerName || quote.customer_name,
+                email: quote.email,
+                phone: quote.phone,
+                service: quote.service,
+                property: quote.property,
+                appointment_date: quote.appointmentDate || quote.appointment_date,
+                appointment_time: quote.appointmentTime || quote.appointment_time,
+                address: quote.address,
+                message: quote.message,
+                status: 'pending'
+            }
+
+            // 1. Insert into 'quotes' table
+            const { error: insertError } = await supabase
+                .from('quotes')
+                .insert([pendingQuotePayload])
+
+            if (insertError) {
+                console.error('Supabase Insert Error (quotes):', insertError)
+                alert(`Failed to restore quote: ${insertError.message}`)
+                return
+            }
+
+            // 2. Delete from 'declined_quotes' table
+            const { error: deleteError } = await supabase
+                .from('declined_quotes')
+                .delete()
+                .eq('id', quote.id)
+
+            if (deleteError) {
+                console.error('Supabase Delete Error (declined_quotes):', deleteError)
+                alert(`Inserted into quotes, but failed to remove from declined_quotes: ${deleteError.message}`)
+                return
+            }
+
+            // 3. Update local state and pagination
+            setDeclinedQuotes(prev => prev.filter(q => q.id !== quote.id))
+
+            if (declinedQuotes.length - 1 <= (currentDeclinedPage - 1) * DECLINED_QUOTES_PER_PAGE && currentDeclinedPage > 1) {
+                setCurrentDeclinedPage(prev => prev - 1)
+            }
+
+            await fetchQuotes()
+
+            // Close modal and clear state
+            setReopenModalQuote(null)
+
+        } catch (err) {
+            console.error('Unexpected failure during move to pending:', err)
+            alert('An unexpected error occurred while processing your request.')
+        }
+    }
+
     // Scrum 84 method: Edit appointment
     const handleEditAppointment = (quoteID) => {
         if (editingAppointmentId === quoteID) {
@@ -434,7 +569,9 @@ export default function AdminDashboard() {
             </div>
         </div>
     )
+
     // Scrum 84 method: Renders and displays each appointment card on screen
+    // Scrum 150 method: Added Decline button to cancel accepted appointments
     const renderAppointmentCard = (quote) => (
         <div key={quote.id} style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -442,19 +579,22 @@ export default function AdminDashboard() {
                     <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Customer Name:</p>
                     <p style={{ fontSize: '0.9rem' }}>{quote.customerName}</p>
                 </div>
-                <button
-                    onClick={() => handleEditAppointment(quote.id)}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#1a73e8',
-                        cursor: 'pointer',
-                        fontWeight: 'bold'
-                    }}
-                >
-                    {editingAppointmentId === quote.id ? 'Cancel' : 'Edit'}{/* Scrum 87: Toggle label based on edit mode */}
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button
+                        onClick={() => handleEditAppointment(quote.id)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#1a73e8',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                        }}
+                    >
+                        {editingAppointmentId === quote.id ? 'Cancel' : 'Edit'}{/* Scrum 87: Toggle label based on edit mode */}
+                    </button>
+                </div>
             </div>
+
             <div style={{ marginBottom: '1rem' }}>
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Contact Info:</p>
                 <p style={{ fontSize: '0.85rem' }}>Email: {quote.email}</p>
@@ -520,7 +660,7 @@ export default function AdminDashboard() {
                     <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
                 )}
             </div>
-            <div>
+            <div style={{ marginBottom: '1rem' }}>
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Message</p>
                 {editingAppointmentId === quote.id ? ( // Scrum 87: Editable message field
                     <textarea
@@ -532,6 +672,67 @@ export default function AdminDashboard() {
                     <span style={{ fontSize: '0.85rem' }}>{quote.message}</span>
                 )}
             </div>
+
+            {/* Scrum 150: Centered Cancel Appointment button below Message */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                <button
+                    onClick={() => handleDecline(quote.id)}
+                    style={{
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.35rem 1rem',
+                        fontWeight: 'bold',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Cancel Appointment
+                </button>
+            </div>
+
+            {/* Scrum 150: Decline reason input prompt for cancelling an accepted appointment */}
+            {decliningQuoteId === quote.id && (
+                <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#fff5f5', borderRadius: '6px', border: '1px solid #dc3545' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                        Reason for cancelling appointment:
+                    </p>
+                    <textarea
+                        value={declineReason}
+                        onChange={e => {
+                            setDeclineReason(e.target.value)
+                            if (declineReasonError) setDeclineReasonError(false)
+                        }}
+                        rows={2}
+                        style={{
+                            width: '100%', fontSize: '0.85rem', padding: '0.4rem', borderRadius: '4px',
+                            border: declineReasonError ? '2px solid #dc3545' : '1px solid #ccc',
+                            resize: 'vertical', marginBottom: '0.5rem'
+                        }}
+                    />
+                    {declineReasonError && (
+                        <p style={{ color: '#dc3545', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                            A reason is required before you can cancel this appointment.
+                        </p>
+                    )}
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                        <button
+                            onClick={() => confirmDecline(quote.id)}
+                            style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                        >
+                            Confirm Cancellation
+                        </button>
+                        <button
+                            onClick={() => handleDecline(quote.id)}
+                            style={{ background: 'none', color: '#333', border: '1px solid #ccc', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                        >
+                            Keep Appointment
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {editingAppointmentId === quote.id && (
                 <p style={{ marginTop: '0.8rem', color: '#1a73e8', fontSize: '0.9rem' }}>
                     Editing appointment details for {quote.customerName}.
@@ -545,14 +746,16 @@ export default function AdminDashboard() {
         </div>
     )
     // Scrum 128 method: Renders and displays each quote card on screen
+    // Scrum 150 method: Updated Accept button to trigger confirmation modal instead of directly accepting
     const renderQuoteCard = (quote) => (
         <div key={quote.id} style={{ width: '100%' }}>
             {/* Accept / Decline buttons */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 {quote.status === 'pending' ? (
                     <>
+                        {/* Scrum 150: Accept button now triggers handleAcceptClick confirmation modal */}
                         <button
-                            onClick={() => acceptQuote(quote.id)}
+                            onClick={() => handleAcceptClick(quote.id)}
                             style={{
                                 backgroundColor: '#28a745',
                                 color: 'white',
@@ -596,44 +799,45 @@ export default function AdminDashboard() {
                 )}
             </div>
             {decliningQuoteId === quote.id && (
-            <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fff5f5', borderRadius: '6px', border: '1px solid #dc3545' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                Reason for declining:
-             </p>
-            <textarea
-                value={declineReason}
-                onChange={e => {
-                    setDeclineReason(e.target.value)
-                    if (declineReasonError) setDeclineReasonError(false)
-                }}
-                rows={2}
-                style={{
-                    width: '100%', fontSize: '0.85rem', padding: '0.4rem', borderRadius: '4px',
-                    border: declineReasonError ? '2px solid #dc3545' : '1px solid #ccc',
-                    resize: 'vertical', marginBottom: '0.5rem'
-                }}
-            />
-            {declineReasonError && (
-                <p style={{ color: '#dc3545', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                    A reason is required before you can decline this quote.
-                </p>
+                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fff5f5', borderRadius: '6px', border: '1px solid #dc3545' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                        Reason for declining:
+                    </p>
+                    <textarea
+                        value={declineReason}
+                        onChange={e => {
+                            setDeclineReason(e.target.value)
+                            if (declineReasonError) setDeclineReasonError(false)
+                        }}
+                        rows={2}
+                        style={{
+                            width: '100%', fontSize: '0.85rem', padding: '0.4rem', borderRadius: '4px',
+                            border: declineReasonError ? '2px solid #dc3545' : '1px solid #ccc',
+                            resize: 'vertical', marginBottom: '0.5rem'
+                        }}
+                    />
+                    {declineReasonError && (
+                        <p style={{ color: '#dc3545', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                            A reason is required before you can decline this quote.
+                        </p>
+                    )}
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                            onClick={() => confirmDecline(quote.id)}
+                            style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                        >
+                            Confirm Decline
+                        </button>
+                        <button
+                            onClick={() => handleDecline(quote.id)}
+                            style={{ background: 'none', color: '#333', border: '1px solid #ccc', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
             )}
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button
-                    onClick={() => confirmDecline(quote.id)}
-                    style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
-                >
-                    Confirm Decline
-                </button>
-                <button
-                    onClick={() => handleDecline(quote.id)}
-                    style={{ background: 'none', color: '#333', border: '1px solid #ccc', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
-                >
-                    Cancel
-                </button>
-            </div>
-            </div>
-    )}
+
             {/* Customer Name */}
             <div style={{ marginBottom: '1rem' }}>
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Customer Name:</p>
@@ -677,7 +881,9 @@ export default function AdminDashboard() {
             </div>
         </div>
     )
+
     // Scrum 149 method: Renders and displays each declined quote card on screen
+    //Scrum 183: Move declined quotes (Manage Quotes) to pending with button
     const renderDeclinedQuoteCard = (quote) => (
         <div key={quote.id} style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
@@ -724,8 +930,27 @@ export default function AdminDashboard() {
                 <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Decline Reason:</p>
                 <span style={{ fontSize: '0.85rem' }}>{quote.declineReason}</span>
             </div>
+            {/* Scrum 183: Button triggers the "Are you sure?" modal to verify admin want to move declined quote */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                <button
+                    onClick={() => handleReopenClick(quote)}
+                    style={{
+                        backgroundColor: '#1a73e8',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.35rem 0.8rem',
+                        fontWeight: 'bold',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Move to Manage Quotes
+                </button>
+            </div>
         </div>
     )
+
     // Scrum 128 method: Shows the arrows to navigate
     const renderPagination = (currentPage, totalItems, itemsPerPage, onPageChange) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage)
@@ -985,6 +1210,134 @@ export default function AdminDashboard() {
                     </button>
                 </div>
             </div>                          
+
+            {/* Scrum 150: Confirmation Modal before accepting quote */}
+            {acceptingQuoteId && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '1rem'
+                }}>
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        width: '100%',
+                        maxWidth: '400px',
+                        padding: '1.5rem',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Accept Quote?</h3>
+                        <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1.25rem' }}>
+                            Are you sure you want to accept the quote for{' '}
+                            <strong>{quotes.find(q => q.id === acceptingQuoteId)?.customerName}</strong>?
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
+                            <button
+                                onClick={() => acceptQuote(acceptingQuoteId)}
+                                style={{
+                                    backgroundColor: '#28a745',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '0.5rem 1.25rem',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Yes, Accept
+                            </button>
+                            <button
+                                onClick={() => setAcceptingQuoteId(null)}
+                                style={{
+                                    backgroundColor: '#fff',
+                                    color: '#333',
+                                    border: '1px solid #ccc',
+                                    borderRadius: '6px',
+                                    padding: '0.5rem 1.25rem',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Scrum 183: Confirmation Modal Popup for moving a declined quote back to pending */}
+            {reopenModalQuote && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyIn: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: 'white',
+                        borderRadius: '8px',
+                        padding: '1.5rem',
+                        width: '90%',
+                        maxWidth: '400px',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', color: '#333' }}>
+                            Move Quote to Pending?
+                        </h3>
+                        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1.5rem' }}>
+                            Are you sure you want to move the quote for <strong>{reopenModalQuote.customerName || reopenModalQuote.customer_name}</strong> back to Pending Quotes?
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <button
+                                onClick={handleConfirmReopen}
+                                style={{
+                                    backgroundColor: '#1a73e8',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '0.5rem 1.25rem',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Yes, Move to Manage Quotes
+                            </button>
+                            <button
+                                onClick={() => setReopenModalQuote(null)}
+                                style={{
+                                    backgroundColor: 'white',
+                                    color: '#333',
+                                    border: '1px solid #ccc',
+                                    borderRadius: '6px',
+                                    padding: '0.5rem 1.25rem',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showReviewsModal && (
                 <div style={{
