@@ -17,6 +17,7 @@ export function AuthProvider({ children }) {
       }
     })
 
+    // SCRUM-177: picks up the session a confirmation link creates, app-wide
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       setLoading(false)

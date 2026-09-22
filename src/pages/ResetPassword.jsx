@@ -15,6 +15,7 @@ export default function ResetPassword() {
   useEffect(() => {
     let isMounted = true
 
+    // SCRUM-177: depends on detectSessionInUrl — regression-test this ticket
     const checkRecoverySession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (isMounted) {

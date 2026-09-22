@@ -18,6 +18,7 @@ export default function SignIn() {
     e.preventDefault()
     setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    // SCRUM-177: unconfirmed accounts fail here with "Email not confirmed"
     if (error) {
       setError(error.message)
       return
