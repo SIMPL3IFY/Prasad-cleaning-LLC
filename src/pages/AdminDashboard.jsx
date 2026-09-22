@@ -225,6 +225,7 @@ export default function AdminDashboard() {
         })
         setEditingAppointmentId(null) // Scrum 87: Cancel edit mode when navigating pages
         setEditedAppointment({}) // Scrum 87: Clear in-progress edits when navigating pages
+        setAppointmentMessage('') // Clear any success message when navigating pages
         setAppointmentError('') // SCRUM-142 sub task 189: Clear any edit error when navigating pages
     }
     // Scrum 149 method: Navigates between declined quote pages
