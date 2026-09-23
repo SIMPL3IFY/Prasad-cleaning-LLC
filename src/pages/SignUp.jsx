@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { supabase } from '../lib/supabaseClient'
 
@@ -15,6 +15,17 @@ export default function SignUp() {
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  // Scrum 177: Email awaiting confirmation, and resend cooldown state
+  const [pendingEmail, setPendingEmail] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendMessage, setResendMessage] = useState('')
+
+  // Scrum 177: Count down the resend cooldown one second at a time
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const id = setTimeout(() => setResendCooldown((s) => s - 1), 1000)
+    return () => clearTimeout(id)
+  }, [resendCooldown])
   
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -69,13 +80,17 @@ export default function SignUp() {
     setSuccessMessage('')
     setIsLoading(true)
 
+    const email = formData.email.trim()
+
     const {data, error } = await supabase.auth.signUp({
-      email: formData.email.trim(),
+      email,
       password: formData.password,
       options: {
         data: {
           full_name: formData.name.trim()
-        }
+        },
+        // Scrum 177: Send the confirmation link back to our callback page
+        emailRedirectTo: `${window.location.origin}/auth/callback`
       }
     })
 
@@ -92,9 +107,28 @@ export default function SignUp() {
       return
     }
 
-    setSuccessMessage('Account created. Check your email to confirm your account, then sign in.')
+    // Scrum 177: Stay on this page so the user can resend the confirmation email
+    setPendingEmail(email)
+    setResendCooldown(60)
+    setSuccessMessage(`Account created. We sent a confirmation link to ${email}. Confirm your email, then sign in.`)
+  }
 
-    setTimeout(() => navigate('/signin'), 2500)
+  // Scrum 177: Resend the sign-up confirmation email
+  const handleResend = async () => {
+    setResendMessage('')
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: pendingEmail,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
+    })
+
+    if (error) {
+      setResendMessage(error.message)
+      return
+    }
+
+    setResendCooldown(60) // Scrum 177: Set a longer cooldown for resending confirmation emails
+    setResendMessage(`A new confirmation link was sent to ${pendingEmail}.`)
   }
 
   const renderErrorMessages = (fieldName) => {
@@ -123,6 +157,35 @@ export default function SignUp() {
     <section className="section signin-section">
       <div className="container">
         <div className="signin-card">
+          {/* Scrum 177: After sign up, show the confirmation panel instead of the form */}
+          {pendingEmail ? (
+            <div style={{ textAlign: 'center' }}>
+              <h1 className="section-title">Confirm your email</h1>
+              <p role="status" className="section-subtitle" style={{ color: '#155724', marginBottom: '1rem' }}>
+                {successMessage}
+              </p>
+
+              {resendMessage && (
+                <p role="status" style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
+                  {resendMessage}
+                </p>
+              )}
+
+              <button
+                type="button"
+                className="button button-main button-big signin-btn"
+                onClick={handleResend}
+                disabled={resendCooldown > 0}
+              >
+                {resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : 'Resend confirmation email'}
+              </button>
+
+              <p className="signin-footer">
+                Already confirmed? <Link to="/signin">Sign In</Link>
+              </p>
+            </div>
+          ) : (
+          <>
           <h1 className="section-title">Sign Up</h1>
           <p className="section-subtitle" style={{ marginBottom: 'var(--space-xl)' }}>
             Create an account to get started.
@@ -219,6 +282,8 @@ export default function SignUp() {
               Already have an account? <Link to="/signin">Sign In</Link>
             </p>
           </form>
+          </>
+          )}
         </div>
       </div>
     </section>

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { supabase } from "../lib/supabaseClient"
 
@@ -11,16 +11,52 @@ export default function SignIn() {
   const [showForgotPassword, setShowForgotPassword] = useState(false) // Scrum 71: Controls which form is visible
   const [resetEmail, setResetEmail] = useState('') // Scrum 71: Email input for forgot password form
   const [resetMessage, setResetMessage] = useState('') // Scrum 71: Confirmation message after submission
+  const [needsConfirmation, setNeedsConfirmation] = useState(false) // Scrum 177: Sign-in blocked until email is confirmed
+  const [resendMessage, setResendMessage] = useState('') // Scrum 177: Feedback after resending the confirmation email
+  const [resendCooldown, setResendCooldown] = useState(0) // Scrum 177: Seconds until resend is allowed again
+
+  // Scrum 177: Count down the resend cooldown one second at a time
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const id = setTimeout(() => setResendCooldown((s) => s - 1), 1000)
+    return () => clearTimeout(id)
+  }, [resendCooldown])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setNeedsConfirmation(false)
+    setResendMessage('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
+      // Scrum 177: Supabase rejects unconfirmed accounts with this code
+      if (error.code === 'email_not_confirmed' || /not confirmed/i.test(error.message)) {
+        setNeedsConfirmation(true)
+        setError('Please confirm your email before signing in. Check your inbox for the confirmation link.')
+        return
+      }
       setError(error.message)
       return
     }
     navigate('/portal')
+  }
+
+  // Scrum 177: Resend the sign-up confirmation email
+  const handleResendConfirmation = async () => {
+    setResendMessage('')
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
+    })
+
+    if (resendError) {
+      setResendMessage(resendError.message)
+      return
+    }
+
+    setResendCooldown(60)
+    setResendMessage(`A new confirmation link was sent to ${email}.`)
   }
 
   const handleAdminSignIn = () => {
@@ -115,6 +151,23 @@ export default function SignIn() {
 
             {error && (
               <p style={{ color: 'crimson', fontSize: '0.9rem', marginBottom: '1rem' }}>{error}</p>
+            )}
+
+            {/* Scrum 177: Offer to resend the confirmation email when sign-in is blocked */}
+            {needsConfirmation && (
+              <div style={{ marginBottom: '1rem' }}>
+                <button
+                  type="button"
+                  className="button button-main button-big signin-btn"
+                  onClick={handleResendConfirmation}
+                  disabled={resendCooldown > 0}
+                >
+                  {resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : 'Resend confirmation email'}
+                </button>
+                {resendMessage && (
+                  <p role="status" style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>{resendMessage}</p>
+                )}
+              </div>
             )}
 
             <div className="form-footer-row">
