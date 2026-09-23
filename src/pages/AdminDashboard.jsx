@@ -5,6 +5,25 @@ import { supabase } from '../lib/supabaseClient'
 const QUOTES_PER_PAGE = 1
 const APPOINTMENTS_PER_PAGE = 1 // Scrum 84: Appointments pagination
 const DECLINED_QUOTES_PER_PAGE = 1 // Scrum 149: Declined quotes pagination
+// SCRUM-142: Maps the appointment card's camelCase fields to their accepted_quotes column names
+const APPOINTMENT_FIELD_MAP = {
+    service: 'service',
+    property: 'property',
+    appointmentDate: 'appointment_date',
+    appointmentTime: 'appointment_time',
+    address: 'address',
+    message: 'message',
+    phone: 'phone'
+}
+// SCRUM-142: Fields that can't be saved blank.
+const REQUIRED_APPOINTMENT_FIELDS = {
+    service: 'Service',
+    property: 'Property',
+    appointmentDate: 'Appointment date',
+    appointmentTime: 'Appointment time',
+    address: 'Address',
+    phone: 'Phone number'
+}
 // SCRUM-119: Admin landing page shown after admin login
 export default function AdminDashboard() {
     const navigate = useNavigate()
@@ -14,6 +33,7 @@ export default function AdminDashboard() {
     const [currentQuotePage, setCurrentQuotePage] = useState(1)
     const [currentAppointmentPage, setCurrentAppointmentPage] = useState(1) // Scrum 84: Appointment page state
     const [editingAppointmentId, setEditingAppointmentId] = useState(null) // Scrum 84: Editing appointment state
+    const [appointmentError, setAppointmentError] = useState('') // SCRUM-142 Subtask 189: Visible error for invalid or failed appointment edits
     const [appointmentMessage, setAppointmentMessage] = useState('') // Scrum 84: Appointment message state
     const [editedAppointment, setEditedAppointment] = useState({}) // Scrum 87: Tracks in-progress field edits
     const [declinedQuotes, setDeclinedQuotes] = useState([])       // Scrum 149: Holds declined quotes fetched from the archive table
@@ -205,6 +225,8 @@ export default function AdminDashboard() {
         })
         setEditingAppointmentId(null) // Scrum 87: Cancel edit mode when navigating pages
         setEditedAppointment({}) // Scrum 87: Clear in-progress edits when navigating pages
+        setAppointmentMessage('') // Clear any success message when navigating pages
+        setAppointmentError('') // SCRUM-142 sub task 189: Clear any edit error when navigating pages
     }
     // Scrum 149 method: Navigates between declined quote pages
     const handleDeclinedPage = (direction) => {
@@ -463,36 +485,87 @@ export default function AdminDashboard() {
             setEditedAppointment({ ...quote }) // Scrum 87: Seed fields with current appointment values
         }
         setAppointmentMessage('')
+        setAppointmentError('') // SCRUM-189: Clear any edit error when toggling edit mode
     }
 
     // Scrum 84 method: Update appointment
     //EDITED from CSC 190-191:
     // Scrum 88 fix: Updates Supabase accepted_quotes table and acceptedQuotes state
+    // SCRUM-142: Only sends the fields the admin changed, validates required fields first,
+    // and confirms a row was really updated before touching the UI
+    // SCRUM-142 subtask 189: Shows an error message (not just console.error) when validation or the update fails
     const handleUpdateAppointment = async (quoteID) => {
         const quote = acceptedQuotes.find(q => q.id === quoteID)
         if (!quote) return
 
-        const { error } = await supabase
-            .from('accepted_quotes')
-            .update({
-                service: editedAppointment.service,
-                property: editedAppointment.property,
-                appointment_date: editedAppointment.appointmentDate,
-                appointment_time: editedAppointment.appointmentTime,
-                address: editedAppointment.address,
-                message: editedAppointment.message
-            })
-            .eq('id', quoteID)
+        setAppointmentMessage('')
+        setAppointmentError('') // SCRUM-189: Clear the previous error at the start of each attempt
 
-        if (error) {
-            console.error('Error updating appointment:', error.message)
+        // SCRUM-142: Compare each field against the saved value and keep only the ones that changed
+        const normalize = (value) => (value ?? '').toString().trim() // null -> '' and trims whitespace
+        const changes = {}         // { db_column: newValue } -> the only thing sent to Supabase
+        const changedFields = []   // [camelCase keys] -> what we validate
+        Object.entries(APPOINTMENT_FIELD_MAP).forEach(([field, column]) => {
+            if (normalize(editedAppointment[field]) !== normalize(quote[field])) {
+                changes[column] = normalize(editedAppointment[field])
+                changedFields.push(field)
+            }
+        })
+
+        // SCRUM-142: Nothing changed, so skip the database call
+        if (changedFields.length === 0) {
+            setAppointmentError('No changes to save. Edit a field first.') // SCRUM-189: shown via the error state
             return
         }
 
-        setAcceptedQuotes(prev => prev.map(q => q.id === quoteID ? { ...q, ...editedAppointment } : q))
-        setAppointmentMessage(`Appointment updated for ${quote.customerName}.`)
-        setEditingAppointmentId(null)
-        setEditedAppointment({}) // Scrum 87: Clear edits after saving
+        // SCRUM-142: Block the update if it would blank out a required column (e.g. phone)
+        const blankRequired = changedFields.filter(field => REQUIRED_APPOINTMENT_FIELDS[field] && changes[APPOINTMENT_FIELD_MAP[field]] === '')
+        if (blankRequired.length > 0) {
+            setAppointmentError(`${blankRequired.map(field => REQUIRED_APPOINTMENT_FIELDS[field]).join(', ')} cannot be empty.`) 
+            return
+        }
+
+        try { // SCRUM-142: Catches anything unexpected that throws
+            // SCRUM-142: .update(changes) sends only changed columns.
+            // .select() returns the updated row(s); without it, an RLS-blocked update looks like a success.
+            const { data, error } = await supabase
+                .from('accepted_quotes')
+                .update(changes)
+                .eq('id', quoteID)
+                .select('service, property, appointment_date, appointment_time, address, message')
+
+            // SCRUM-142: Network or database error
+            if (error) {
+                console.error('Error updating appointment:', error.message)
+                setAppointmentError(`Unable to save changes: ${error.message}`)
+                return // Stay in edit mode so the admin doesn't lose what they typed
+            }
+
+            // SCRUM-142: RLS rejections (or a deleted row) return no error but also zero updated rows
+            if (!data || data.length === 0) {
+                console.error('Appointment update matched no rows (RLS policy or missing row):', quoteID)
+                setAppointmentError('Changes were not saved. You may not have permission, or this appointment no longer exists.')
+                return
+            }
+
+            // SCRUM-142: Update the card from what Supabase actually stored, not from what was typed
+            const saved = data[0]
+            setAcceptedQuotes(prev => prev.map(q => q.id === quoteID ? {
+                ...q,
+                service: saved.service,
+                property: saved.property,
+                appointmentDate: saved.appointment_date,
+                appointmentTime: saved.appointment_time,
+                address: saved.address,
+                message: saved.message
+            } : q))
+            setAppointmentMessage(`Appointment updated for ${quote.customerName}.`)
+            setEditingAppointmentId(null)
+            setEditedAppointment({}) // Scrum 87: Clear edits after saving
+        } catch (err) {
+            console.error('Unexpected failure while updating appointment:', err)
+            setAppointmentError('Something went wrong while saving. Check your connection and try again.') // SCRUM-189
+        }
     }
     //Scrum 135 method: Approve or reject a customer review
     const handleReviewDecision = async (reviewId, approved) => {
@@ -741,6 +814,12 @@ export default function AdminDashboard() {
             {appointmentMessage && (
                 <p style={{ marginTop: '0.8rem', color: '#155724', fontSize: '0.9rem' }}>
                     {appointmentMessage}
+                </p>
+            )}
+            {/* SCRUM-142 subtask 189: Visible error for invalid or failed edits */}
+            {appointmentError && (
+                <p role="alert" style={{ marginTop: '0.8rem', color: '#dc3545', fontSize: '0.9rem' }}>
+                    {appointmentError}
                 </p>
             )}
         </div>
