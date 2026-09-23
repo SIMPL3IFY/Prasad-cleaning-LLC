@@ -85,7 +85,7 @@ ul {
 .header-inner {
   min-height: 72px;
   display: grid;
-  grid-template-columns: 150px 1fr 110px;
+  grid-template-columns: 150px 1fr auto;
   align-items: center;
   gap: 1.5rem;
 }
@@ -140,6 +140,28 @@ ul {
 .header-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.auth-status {
+  padding: var(--section-padding) var(--container-padding);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.form-error,
+.form-success {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.form-error {
+  color: #b91c1c;
+}
+
+.form-success {
+  color: #166534;
 }
 
 .button {

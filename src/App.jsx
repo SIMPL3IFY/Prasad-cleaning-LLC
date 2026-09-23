@@ -15,6 +15,7 @@ import CustomerPortal from './pages/CustomerPortal'
 import Settings from './pages/Settings'
 import AdminLogin from './pages/AdminLogin'
 import ProtectedAdminRoute from './components/ProtectedAdminRoute'
+import ProtectedCustomerRoute from './components/ProtectedCustomerRoute'
 // SCRUM-119: Admin dashboard page
 import AdminDashboard from './pages/AdminDashboard'
 

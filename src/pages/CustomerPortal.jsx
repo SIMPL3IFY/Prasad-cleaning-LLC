@@ -253,8 +253,9 @@ export default function CustomerPortal() {
         )
 }
     // Logout function to navigate back to landing page
-    const handleLogout = () => {
-        navigate('/')
+    const handleLogout = async () => {
+        const { error } = await supabase.auth.signOut()
+        if (!error) navigate('/', { replace: true })
     }
 
     return(
@@ -375,7 +376,7 @@ export default function CustomerPortal() {
                 zIndex: 999
             }}
         >
-            Logout
+            Sign Out
         </button>
 
         {/* SCRUM-34: Navigate to Service Area page */}

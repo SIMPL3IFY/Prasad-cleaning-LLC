@@ -101,6 +101,7 @@ export default function SignUp() {
       return
     }
 
+    // SCRUM-177: a session here means email confirmation is OFF in Supabase
     if (data.session) {
       setSuccessMessage('Account created successfully. Redirecting...')
       setTimeout(() => navigate('/portal'), 1200)
