@@ -339,7 +339,7 @@ export default function CustomerPortal() {
         {/* Scrum 41: View services button */}
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <button
-                onClick={toggleServicesModal}
+                onClick={() => navigate('/services')}
                 style={{
                     backgroundColor: '#7ec8e3',
                     color: 'white',
