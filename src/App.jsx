@@ -1,0 +1,61 @@
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import Header from './components/Header'
+import Footer from './components/Footer'
+import Home from './pages/Home'
+import About from './pages/About'
+import Services from './pages/Services'
+import Testimonials from './pages/Testimonials'
+import Contact from './pages/Contact'
+import SignIn from './pages/SignIn'
+import SignUp from './pages/SignUp'
+// Scrum 177: Email confirmation landing page
+import AuthCallback from './pages/AuthCallback'
+import ServiceArea from './pages/ServiceArea'
+import CustomerPortal from './pages/CustomerPortal'
+import Settings from './pages/Settings'
+import AdminLogin from './pages/AdminLogin'
+import ProtectedAdminRoute from './components/ProtectedAdminRoute'
+import ProtectedCustomerRoute from './components/ProtectedCustomerRoute'
+// SCRUM-119: Admin dashboard page
+import AdminDashboard from './pages/AdminDashboard'
+
+/* Scrum 39 for exporting the page */
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  )
+}
+
+/* Scrum 39 to add header depending on the page */
+function AppContent() {
+  const { pathname } = useLocation()
+  const removeHeader = ['/portal', '/admin', '/admin/login']
+  return (
+    <>
+      {/* Scrum 39 check if page should have a header */}
+      {!removeHeader.includes(pathname) && <Header />}
+      <main style={{ minHeight: '81vh' }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/testimonials" element={<Testimonials />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/service-area" element={<ServiceArea />} />
+          <Route path="/portal" element={<CustomerPortal />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route element={<ProtectedAdminRoute />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+          </Route>
+        </Routes>
+      </main>
+      <Footer />
+    </>
+  )
+}

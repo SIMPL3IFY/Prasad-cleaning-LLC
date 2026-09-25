@@ -1,0 +1,848 @@
+import { useState, useEffect, useRef } from 'react'
+//import { Link } from 'react-router-dom'
+import { SERVICES_LIST } from '../data/ServicesData';
+import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabaseClient'
+
+export default function CustomerPortal() {
+    const navigate = useNavigate()
+    const [isSettingsAccessible, setIsSettingsAccessible] = useState(true)
+
+    
+    // SCRUM 33: State Variables
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [customerName, setCustomerName] = useState('')
+    const [reviewText, setReviewText] = useState('')
+    const [rating, setRating] = useState(0)
+    const [errors, setErrors] = useState({})
+    const [reviewMessage, setReviewMessage] = useState('')
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+
+    // SCRUM 75: State Variables
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
+    const [startDate, setStartDate] = useState('')
+    const [endDate, setEndDate] = useState('')
+    const [scheduleErrors, setScheduleErrors] = useState({})
+
+    // SCRUM 76: State for contact modal and variables
+    const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+
+
+    // SCRUM-170: Owner contact details shown in the contact modal
+    const ownerName = 'Nigel Prasad'
+    const phoneNumber = '(916) 665-8474' // SCRUM-170: business number
+    const email = 'prasadscleaning@gmail.com'
+
+    // SCRUM-170: tel: links need bare digits, not the formatted display value
+    const phoneDigits = phoneNumber.replace(/\D/g, '')
+
+    //Scrum 41: State for services modal
+    const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
+    //Scrum 41: Toggle services modal
+    const toggleServicesModal = () => {
+        setIsServicesModalOpen(prev => !prev);
+    };
+
+    // SCRUM 33 Review methods
+    // Opens and closes the modal
+    const toggleModal = () => {
+        setIsModalOpen(prev => !prev)
+        setErrors({})
+        setCustomerName('')
+        setReviewText('')
+        setRating(0)
+        setReviewMessage('')
+    }
+
+    // Handles star rating selection
+    const handleStars = (starValue) => {
+        setRating(starValue)
+    }
+
+    //Captures text input from user
+    const handleReviewChange = (e) => {
+        const { name, value } = e.target
+        if (name === 'customerName') {
+            setCustomerName(value)
+        }
+        if (name === 'reviewText') {
+            setReviewText(value)
+        }
+    }
+
+    // Validates all fields are filled
+    const validateReview = () => {
+        const newErrors = {}
+        if (customerName.trim() === ''){
+            newErrors.customerName = 'Please enter your name.'
+        }
+        if (reviewText.trim() === ''){
+            newErrors.reviewText = 'Please enter a review'
+        }
+        if (rating === 0){
+            newErrors.rating = 'Please select a star rating'
+        }
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
+
+    // SCRUM 90: Function to submit the review to Supabase
+    const submitReview = async () => {
+        if (!validateReview()){
+            return
+        }
+
+        setIsSubmittingReview(true)
+        setReviewMessage('')
+        setErrors({})
+
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            setIsSubmittingReview(false)
+            setReviewMessage('Please sign in again before submitting a review.')
+            return
+        }
+
+        const { error } = await supabase.from('customer_reviews').insert({
+            user_id: user.id,
+            customer_name: customerName.trim(),
+            review: reviewText.trim(),
+            rating,
+            approved: rating === 5
+        })
+
+        setIsSubmittingReview(false)
+
+        if (error) {
+            setReviewMessage(error.message)
+            return
+        }
+
+        setReviewMessage('Review submitted and awaiting approval.')
+        setCustomerName('')
+        setReviewText('')
+        setRating(0)
+    }
+
+    // SCRUM-75: function to open and close the modal
+    const toggleScheduleModal = () => {
+        setIsScheduleModalOpen(prev => !prev)
+        setScheduleErrors({})
+        setStartDate('')
+        setEndDate('')
+    }
+    
+    // Handler for date input changes
+    const handleDateChange = (e) => {
+        const { name, value} = e.target
+        if (name === 'startDate') {
+            setStartDate(value)
+        }
+        if (name === 'endDate') {
+            setEndDate(value)
+        }
+    }
+
+    // Validation logic
+    const validateSchedule = () => {
+        const newErrors = {}
+
+        if (startDate.trim() === '') {
+            newErrors.startDate = 'Please select a start date.'
+        }
+
+        if (endDate.trim() === '') {
+            newErrors.endDate = 'Please select an end date.'
+        }
+
+        if (startDate && endDate && endDate < startDate) {
+            newErrors.dateRange = 'End date cannot be ealier than start date.'
+        }
+
+        setScheduleErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
+    // Submit function for scheduling
+    const submitSchedule = () => {
+        if (!validateSchedule()) {
+            return
+        }
+        console.log({ startDate, endDate })
+        toggleScheduleModal()
+    }
+
+    // SCRUM-76: Functions to open and close contact modal
+    const toggleContactModal = () => {
+        setIsContactModalOpen(prev => !prev)
+    }
+
+    // SCRUM-170: Lets keyboard users reach and dismiss the contact modal
+    const closeContactButtonRef = useRef(null)
+
+    useEffect(() => {
+        if (!isContactModalOpen) {
+            return
+        }
+
+        const handleContactKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                setIsContactModalOpen(false)
+            }
+        }
+
+        document.addEventListener('keydown', handleContactKeyDown)
+        // Move focus off the trigger button and into the modal
+        closeContactButtonRef.current?.focus()
+
+        return () => document.removeEventListener('keydown', handleContactKeyDown)
+    }, [isContactModalOpen])
+
+    const handleSettingsNavigation = () => {
+        navigate('/settings')
+    }
+
+    const renderFallback = () => {
+        return (
+            <span style={{ color: '#cc0000', fontSize: '0.9rem', padding: '0.5rem 1rem' }}>
+                Settings unavailable
+            </span>
+        )
+    }
+
+    const renderSettingsLink = () => {
+        if (!isSettingsAccessible) {
+            return renderFallback()
+        }
+        return (
+            <button
+                onClick={handleSettingsNavigation}
+                aria-label="Settings"
+                title="Settings"
+                style={{
+                    backgroundColor: 'transparent',
+                    color: '#6aa84f',
+                    border: '2px solid #6aa84f',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    padding: 0
+                }}
+            >
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                >
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        )
+}
+    // Logout function to navigate back to landing page
+    const handleLogout = async () => {
+        const { error } = await supabase.auth.signOut()
+        if (!error) navigate('/', { replace: true })
+    }
+
+    return(
+        <div>
+        {/*scrum 39 to navigate to landing page from logo
+        the logo is at the top center of the page
+        the header contains the company logo and when clicked, will redirect to Home.jsx
+        the logo png is in assests and is named logo.png */}
+        <header style={{ backgroundColor: 'transparent'}}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2.5rem 0', width: '100%'}}>
+                 <Link to="/" className="logo" aria-label="Prasad's Cleaning Services LLC">
+                    <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
+                </Link>
+            </div>
+            <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', paddingBottom: '1.5rem' }}>
+                {renderSettingsLink()}
+            </nav>
+        </header>
+
+        {/* scrum 33: leave a review button*/}
+        <div style={{ textAlign: 'center', marginTop: '2rem'}}>
+            <button
+                onClick={toggleModal}
+                style={{
+                     backgroundColor: '#8db87a',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '1rem 2rem',
+                        fontWeight: 'bold',
+                        fontSize: '0.85rem',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer'
+                }}
+            >
+                Leave a Review
+            </button>
+        </div>
+        {/* SCRUM-75: schedule appointment button*/}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <button
+                onClick={toggleScheduleModal}
+                style={{
+                    backgroundColor: '#7ec8e3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}
+            >
+                Schedule Appointment
+            </button>
+        </div>
+        {/* SCRUM-76: contact information button */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+             <button
+                onClick={toggleContactModal}
+                style={{
+                    backgroundColor: '#8db87a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}
+            >
+                Contact Information
+            </button>
+        </div>
+
+        {/* Scrum 41: View services button */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <button
+                onClick={toggleServicesModal}
+                style={{
+                    backgroundColor: '#7ec8e3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}
+            >
+                View Our Services
+            </button>
+        </div>
+        {/* SCRUM-32: Logout button */}
+        <button
+            onClick={handleLogout}
+            style={{
+                position: 'fixed',
+                top: '1.5rem',
+                right: '1.5rem',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '0.75rem 1.5rem',
+                fontWeight: 'bold',
+                fontSize: '0.85rem',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                zIndex: 999
+            }}
+        >
+            Sign Out
+        </button>
+
+        {/* SCRUM-34: Navigate to Service Area page */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <Link to="/service-area">
+                <button style={{
+                    backgroundColor: '#8db87a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}>
+                    Service Area
+                </button>
+            </Link>
+        </div>
+
+        {/* SCRUM-35: Navigate to Get a Quote page */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <Link to="/contact">
+                <button style={{
+                    backgroundColor: '#7ec8e3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer'
+                }}>
+                    Get a Quote
+                </button>
+            </Link>
+        </div>
+
+        {/*scrum 33: review modal*/}
+        {isModalOpen  &&(
+            <div style={{
+                 position: 'fixed',
+                top: 0, left: 0,
+                width: '100%', height: '100%',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000
+            }}>
+                <div style={{
+                    backgroundColor: 'white',
+                    borderRadius: '16px',
+                    padding: '2rem',
+                    width: '90%',
+                    maxWidth: '460px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    textAlign: 'center'
+                }}>
+                    {/* Modal Header*/}
+                    <p style={{
+                        fontSize: '0.8rem', 
+                        color: '#888', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.1em',
+                        marginBottom: '0.25rem'
+                    }}>
+                        Contact Us 
+                    </p>
+                    <h2 style={{
+                        fontSize: '2rem', 
+                        fontWeight: 'bold', 
+                        marginBottom: '1rem' 
+                    }}>
+                        Write a Review
+                    </h2>
+
+                    {/*Star rating*/}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                         {[1, 2, 3, 4, 5].map((star) => (
+                                <span
+                                key={star}
+                                onClick={() => handleStars(star)}
+                                style={{
+                                fontSize: '1.75rem',
+                                cursor: 'pointer',
+                                color: star <= rating ? '#f5a623' : '#ccc'
+                                }}
+                                >
+                                    ★
+                                </span>
+                            ))}
+                            {errors.rating && (
+                                <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                                {errors.rating}
+                                </p>
+                            )}
+                    </div>
+                    {/*Name input */}
+                    <div style={{ marginBottom: '1rem'}}>
+                        <input
+                         type="text"
+                            name="customerName"
+                            placeholder="Name"
+                            value={customerName}
+                            onChange={handleReviewChange}
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem 1rem',
+                                borderRadius: '25px',
+                                border: errors.customerName ? '2px solid red' : '1px solid #ccc',
+                                boxSizing: 'border-box',
+                                fontSize: '0.95rem',
+                                outline: 'none'
+                            }}
+                            />
+                            {errors.customerName && (
+                                <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                                {errors.customerName}
+                                </p>
+                            )}
+                        </div>
+                         {/* Review textarea */}
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <textarea
+                            name="reviewText"
+                            placeholder="Message"
+                            value={reviewText}
+                            onChange={handleReviewChange}
+                            rows={5}
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem 1rem',
+                                borderRadius: '12px',
+                                border: errors.reviewText ? '2px solid red' : '1px solid #ccc',
+                                boxSizing: 'border-box',
+                                fontSize: '0.95rem',
+                                resize: 'none',
+                                outline: 'none'
+                            }}
+                            />
+                            {errors.reviewText && (
+                                <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                                {errors.reviewText}
+                                </p>
+                            )}
+                        </div>
+
+                        {reviewMessage && (
+                            <p style={{ color: reviewMessage.includes('submitted') ? '#155724' : '#cc0000', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                {reviewMessage}
+                            </p>
+                        )}
+
+                         {/* Send button */}
+                        <button
+                            onClick={submitReview}
+                            disabled={isSubmittingReview}
+                            style={{
+                                backgroundColor: '#7ec8e3',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '25px',
+                                padding: '0.75rem 3rem',
+                                fontWeight: 'bold',
+                                fontSize: '1rem',
+                                cursor: 'pointer',
+                                marginBottom: '0.75rem'
+                            }}
+                        >
+                            {isSubmittingReview ? 'Sending...' : 'Send'}
+                        </button>
+                             {/* Cancel link */}
+                        <div>
+                            <span
+                                onClick={toggleModal}
+                                style={{
+                                    fontSize: '0.85rem',
+                                    color: '#888',
+                                    cursor: 'pointer',
+                                    textDecoration: 'underline'
+                                }}
+                            >
+                                Cancel
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+        )}
+        {/*SCRUM-75: appointment modal*/}
+        {isScheduleModalOpen && (
+            <div style={{
+                position: 'fixed',
+                top: 0, left: 0,
+                width: '100%', height: '100%',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000
+            }}>
+            <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '2rem',
+            width: '90%',
+            maxWidth: '460px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+            textAlign: 'center'
+            }}>
+            <p style={{
+                fontSize: '0.8rem',
+                color: '#888',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: '0.25rem'
+            }}>
+                Schedule Service
+            </p>
+
+            <h2 style={{
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                marginBottom: '1rem'
+            }}>
+                Schedule Appointment
+            </h2>
+
+            <div style={{ marginBottom: '1rem' }}>
+                <input
+                    type="date"
+                    name="startDate"
+                    value={startDate}
+                    onChange={handleDateChange}
+                    style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '12px',
+                        border: scheduleErrors.startDate ? '2px solid red' : '1px solid #ccc',
+                        boxSizing: 'border-box',
+                        fontSize: '0.95rem',
+                        outline: 'none'
+                    }}
+                />
+                {scheduleErrors.startDate && (
+                    <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                        {scheduleErrors.startDate}
+                    </p>
+                )}
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+                <input
+                    type="date"
+                    name="endDate"
+                    value={endDate}
+                    onChange={handleDateChange}
+                    style={{
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '12px',
+                        border: scheduleErrors.endDate || scheduleErrors.dateRange ? '2px solid red' : '1px solid #ccc',
+                        boxSizing: 'border-box',
+                        fontSize: '0.95rem',
+                        outline: 'none'
+                    }}
+                />
+                {scheduleErrors.endDate && (
+                    <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                        {scheduleErrors.endDate}
+                    </p>
+                )}
+                {scheduleErrors.dateRange && (
+                    <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                        {scheduleErrors.dateRange}
+                    </p>
+                )}
+            </div>
+
+            <button
+                onClick={submitSchedule}
+                style={{
+                    backgroundColor: '#8db87a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '25px',
+                    padding: '0.75rem 3rem',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    marginBottom: '0.75rem'
+                }}
+            >
+                Submit
+            </button>
+
+            <div>
+                <span
+                    onClick={toggleScheduleModal}
+                    style={{
+                        fontSize: '0.85rem',
+                        color: '#888',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                    }}
+                >
+                    Cancel
+                </span>
+            </div>
+            </div>
+        </div>
+        )}
+        {/* SCRUM-76: contact information modal */}
+        {/* SCRUM-170: clicking the backdrop dismisses the modal */}
+        {isContactModalOpen && (
+            <div
+                onClick={toggleContactModal}
+                style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000
+            }}>
+            {/* SCRUM-170: role/aria tell screen readers this is a dialog */}
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="contact-modal-title"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                padding: '2rem',
+                width: '90%',
+                maxWidth: '460px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                textAlign: 'center'
+            }}>
+            <p style={{
+                fontSize: '0.8rem',
+                color: '#888',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: '0.25rem'
+            }}>
+                Contact Us
+            </p>
+
+            <h2
+                id="contact-modal-title"
+                style={{
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                marginBottom: '1rem'
+            }}>
+                Contact Information
+            </h2>
+
+            <div style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.8' }}>
+                <p><strong>Owner's Name:</strong> {ownerName}</p>
+                {/* SCRUM-170: tel: opens the dialer on mobile */}
+                <p>
+                    <strong>Phone Number:</strong>{' '}
+                    <a href={`tel:+1${phoneDigits}`} style={{ color: '#6aa84f' }}>
+                        {phoneNumber}
+                    </a>
+                </p>
+                {/* SCRUM-170: mail to opens the customer's mail app */}
+                <p>
+                    <strong>Email:</strong>{' '}
+                    <a href={`mailto:${email}`} style={{ color: '#6aa84f' }}>
+                        {email}
+                    </a>
+                </p>
+            </div>
+
+            <div>
+                {/* SCRUM-170: a real <button> so it is focusable and announced as a control */}
+                <button
+                    ref={closeContactButtonRef}
+                    onClick={toggleContactModal}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '0.25rem',
+                        fontSize: '0.85rem',
+                        color: '#888',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                    }}
+                >
+                    Close
+                </button>
+            </div>
+            </div>
+            </div>
+        )}
+        
+        {/* Scrum 41: View Services modal */}
+        {isServicesModalOpen && (
+            <div style={{
+                position: 'fixed',
+                top: 0, left: 0,
+                width: '100%', height: '100%',
+                backgroundColor: '#333333',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000,
+                padding: '1rem'
+            }}>
+                <div style={{
+                    backgroundColor: 'var(--color-bg)',
+                    borderRadius: '1rem',
+                    padding: 'var(--space-xl)',
+                    width: '100%',
+                    maxWidth: '900px',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                    boxShadow: '0 10px 25px #1a1a1a'
+                }}>
+                    <h2 className="section-title">Our Services</h2>
+                    <p className="section-subtitle">Here is a list of the cleaning services we provide.</p>
+
+                    <div className="services-grid" style={{ marginTop: 'var(--space-xl)' }}>
+                        {SERVICES_LIST.map((service, index) => (
+                            <div key={index} className="service-card" style={{ padding: 'var(--space-md)' }}>
+                                <img 
+                                    src={service.img} 
+                                    alt={service.name} 
+                                    className="service-card-img" 
+                                />
+                                <h3 className="service-card-title" style={{ textAlign: 'center' }}>
+                                    {service.name}
+                                </h3>
+                            </div>
+                        ))}
+                    </div>
+                    <div>
+                        <span
+                            onClick={toggleServicesModal}
+                            style={{
+                                textAlign: 'center',
+                                fontSize: '0.85rem',
+                                color: '#888',
+                                cursor: 'pointer',
+                                textDecoration: 'underline'
+                            }}
+                        >
+                            Close
+                        </span>
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
+    )
+}
