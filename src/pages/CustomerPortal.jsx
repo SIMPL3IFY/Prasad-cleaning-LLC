@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 //import { Link } from 'react-router-dom'
 import { SERVICES_LIST } from '../data/ServicesData';
 import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabaseClient'
 
 export default function CustomerPortal() {
     const navigate = useNavigate()
@@ -14,6 +15,8 @@ export default function CustomerPortal() {
     const [reviewText, setReviewText] = useState('')
     const [rating, setRating] = useState(0)
     const [errors, setErrors] = useState({})
+    const [reviewMessage, setReviewMessage] = useState('')
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false)
 
     // SCRUM 75: State Variables
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
@@ -23,9 +26,15 @@ export default function CustomerPortal() {
 
     // SCRUM 76: State for contact modal and variables
     const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+
+
+    // SCRUM-170: Owner contact details shown in the contact modal
     const ownerName = 'Nigel Prasad'
-    const phoneNumber = '(XXX) XXX-XXXX' // To be changed
-    const email = 'PrasadsCleaning@gmail.com'
+    const phoneNumber = '(916) 665-8474' // SCRUM-170: business number
+    const email = 'prasadscleaning@gmail.com'
+
+    // SCRUM-170: tel: links need bare digits, not the formatted display value
+    const phoneDigits = phoneNumber.replace(/\D/g, '')
 
     //Scrum 41: State for services modal
     const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
@@ -42,6 +51,7 @@ export default function CustomerPortal() {
         setCustomerName('')
         setReviewText('')
         setRating(0)
+        setReviewMessage('')
     }
 
     // Handles star rating selection
@@ -77,13 +87,43 @@ export default function CustomerPortal() {
     }
 
 
-    // Submits review after validation
-    const submitReview = () => {
+    // SCRUM 90: Function to submit the review to Supabase
+    const submitReview = async () => {
         if (!validateReview()){
             return
         }
-        console.log({ customerName, reviewText, rating})
-        toggleModal()
+
+        setIsSubmittingReview(true)
+        setReviewMessage('')
+        setErrors({})
+
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            setIsSubmittingReview(false)
+            setReviewMessage('Please sign in again before submitting a review.')
+            return
+        }
+
+        const { error } = await supabase.from('customer_reviews').insert({
+            user_id: user.id,
+            customer_name: customerName.trim(),
+            review: reviewText.trim(),
+            rating,
+            approved: rating === 5
+        })
+
+        setIsSubmittingReview(false)
+
+        if (error) {
+            setReviewMessage(error.message)
+            return
+        }
+
+        setReviewMessage('Review submitted and awaiting approval.')
+        setCustomerName('')
+        setReviewText('')
+        setRating(0)
     }
 
     // SCRUM-75: function to open and close the modal
@@ -139,6 +179,27 @@ export default function CustomerPortal() {
         setIsContactModalOpen(prev => !prev)
     }
 
+    // SCRUM-170: Lets keyboard users reach and dismiss the contact modal
+    const closeContactButtonRef = useRef(null)
+
+    useEffect(() => {
+        if (!isContactModalOpen) {
+            return
+        }
+
+        const handleContactKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                setIsContactModalOpen(false)
+            }
+        }
+
+        document.addEventListener('keydown', handleContactKeyDown)
+        // Move focus off the trigger button and into the modal
+        closeContactButtonRef.current?.focus()
+
+        return () => document.removeEventListener('keydown', handleContactKeyDown)
+    }, [isContactModalOpen])
+
     const handleSettingsNavigation = () => {
         navigate('/settings')
     }
@@ -192,8 +253,9 @@ export default function CustomerPortal() {
         )
 }
     // Logout function to navigate back to landing page
-    const handleLogout = () => {
-        navigate('/')
+    const handleLogout = async () => {
+        const { error } = await supabase.auth.signOut()
+        if (!error) navigate('/', { replace: true })
     }
 
     return(
@@ -314,7 +376,7 @@ export default function CustomerPortal() {
                 zIndex: 999
             }}
         >
-            Logout
+            Sign Out
         </button>
 
         {/* SCRUM-34: Navigate to Service Area page */}
@@ -467,9 +529,16 @@ export default function CustomerPortal() {
                             )}
                         </div>
 
+                        {reviewMessage && (
+                            <p style={{ color: reviewMessage.includes('submitted') ? '#155724' : '#cc0000', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                {reviewMessage}
+                            </p>
+                        )}
+
                          {/* Send button */}
                         <button
                             onClick={submitReview}
+                            disabled={isSubmittingReview}
                             style={{
                                 backgroundColor: '#7ec8e3',
                                 color: 'white',
@@ -482,7 +551,7 @@ export default function CustomerPortal() {
                                 marginBottom: '0.75rem'
                             }}
                         >
-                            Send
+                            {isSubmittingReview ? 'Sending...' : 'Send'}
                         </button>
                              {/* Cancel link */}
                         <div>
@@ -626,8 +695,11 @@ export default function CustomerPortal() {
         </div>
         )}
         {/* SCRUM-76: contact information modal */}
+        {/* SCRUM-170: clicking the backdrop dismisses the modal */}
         {isContactModalOpen && (
-            <div style={{
+            <div
+                onClick={toggleContactModal}
+                style={{
                 position: 'fixed',
                 top: 0,
                 left: 0,
@@ -639,7 +711,13 @@ export default function CustomerPortal() {
                 alignItems: 'center',
                 zIndex: 1000
             }}>
-            <div style={{
+            {/* SCRUM-170: role/aria tell screen readers this is a dialog */}
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="contact-modal-title"
+                onClick={(e) => e.stopPropagation()}
+                style={{
                 backgroundColor: 'white',
                 borderRadius: '16px',
                 padding: '2rem',
@@ -658,7 +736,9 @@ export default function CustomerPortal() {
                 Contact Us
             </p>
 
-            <h2 style={{
+            <h2
+                id="contact-modal-title"
+                style={{
                 fontSize: '2rem',
                 fontWeight: 'bold',
                 marginBottom: '1rem'
@@ -668,14 +748,31 @@ export default function CustomerPortal() {
 
             <div style={{ marginBottom: '1rem', fontSize: '1rem', lineHeight: '1.8' }}>
                 <p><strong>Owner's Name:</strong> {ownerName}</p>
-                <p><strong>Phone Number:</strong> {phoneNumber}</p>
-                <p><strong>Email:</strong> {email}</p>
+                {/* SCRUM-170: tel: opens the dialer on mobile */}
+                <p>
+                    <strong>Phone Number:</strong>{' '}
+                    <a href={`tel:+1${phoneDigits}`} style={{ color: '#6aa84f' }}>
+                        {phoneNumber}
+                    </a>
+                </p>
+                {/* SCRUM-170: mail to opens the customer's mail app */}
+                <p>
+                    <strong>Email:</strong>{' '}
+                    <a href={`mailto:${email}`} style={{ color: '#6aa84f' }}>
+                        {email}
+                    </a>
+                </p>
             </div>
 
             <div>
-                <span
+                {/* SCRUM-170: a real <button> so it is focusable and announced as a control */}
+                <button
+                    ref={closeContactButtonRef}
                     onClick={toggleContactModal}
                     style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '0.25rem',
                         fontSize: '0.85rem',
                         color: '#888',
                         cursor: 'pointer',
@@ -683,7 +780,7 @@ export default function CustomerPortal() {
                     }}
                 >
                     Close
-                </span>
+                </button>
             </div>
             </div>
             </div>
