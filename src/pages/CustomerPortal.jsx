@@ -18,12 +18,6 @@ export default function CustomerPortal() {
     const [reviewMessage, setReviewMessage] = useState('')
     const [isSubmittingReview, setIsSubmittingReview] = useState(false)
 
-    // SCRUM 75: State Variables
-    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
-    const [startDate, setStartDate] = useState('')
-    const [endDate, setEndDate] = useState('')
-    const [scheduleErrors, setScheduleErrors] = useState({})
-
     // SCRUM 76: State for contact modal and variables
     const [isContactModalOpen, setIsContactModalOpen] = useState(false)
 
@@ -126,52 +120,10 @@ export default function CustomerPortal() {
         setRating(0)
     }
 
-    // SCRUM-75: function to open and close the modal
-    const toggleScheduleModal = () => {
-        setIsScheduleModalOpen(prev => !prev)
-        setScheduleErrors({})
-        setStartDate('')
-        setEndDate('')
-    }
-    
-    // Handler for date input changes
-    const handleDateChange = (e) => {
-        const { name, value} = e.target
-        if (name === 'startDate') {
-            setStartDate(value)
-        }
-        if (name === 'endDate') {
-            setEndDate(value)
-        }
-    }
-
-    // Validation logic
-    const validateSchedule = () => {
-        const newErrors = {}
-
-        if (startDate.trim() === '') {
-            newErrors.startDate = 'Please select a start date.'
-        }
-
-        if (endDate.trim() === '') {
-            newErrors.endDate = 'Please select an end date.'
-        }
-
-        if (startDate && endDate && endDate < startDate) {
-            newErrors.dateRange = 'End date cannot be ealier than start date.'
-        }
-
-        setScheduleErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
-    // Submit function for scheduling
-    const submitSchedule = () => {
-        if (!validateSchedule()) {
-            return
-        }
-        console.log({ startDate, endDate })
-        toggleScheduleModal()
+    // SCRUM-169: Schedule Appointment sends the customer to the Contact page form.
+    // Client-side navigation keeps the Supabase session, so they stay signed in.
+    const goToScheduleAppointment = () => {
+        navigate('/contact')
     }
 
     // SCRUM-76: Functions to open and close contact modal
@@ -296,9 +248,11 @@ export default function CustomerPortal() {
             </button>
         </div>
         {/* SCRUM-75: schedule appointment button*/}
+        {/* SCRUM-169: now redirects to the Contact page instead of opening a modal */}
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <button
-                onClick={toggleScheduleModal}
+                type="button"
+                onClick={goToScheduleAppointment}
                 style={{
                     backgroundColor: '#7ec8e3',
                     color: 'white',
@@ -570,129 +524,6 @@ export default function CustomerPortal() {
 
                     </div>
                 </div>
-        )}
-        {/*SCRUM-75: appointment modal*/}
-        {isScheduleModalOpen && (
-            <div style={{
-                position: 'fixed',
-                top: 0, left: 0,
-                width: '100%', height: '100%',
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 1000
-            }}>
-            <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '2rem',
-            width: '90%',
-            maxWidth: '460px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            textAlign: 'center'
-            }}>
-            <p style={{
-                fontSize: '0.8rem',
-                color: '#888',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                marginBottom: '0.25rem'
-            }}>
-                Schedule Service
-            </p>
-
-            <h2 style={{
-                fontSize: '2rem',
-                fontWeight: 'bold',
-                marginBottom: '1rem'
-            }}>
-                Schedule Appointment
-            </h2>
-
-            <div style={{ marginBottom: '1rem' }}>
-                <input
-                    type="date"
-                    name="startDate"
-                    value={startDate}
-                    onChange={handleDateChange}
-                    style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '12px',
-                        border: scheduleErrors.startDate ? '2px solid red' : '1px solid #ccc',
-                        boxSizing: 'border-box',
-                        fontSize: '0.95rem',
-                        outline: 'none'
-                    }}
-                />
-                {scheduleErrors.startDate && (
-                    <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                        {scheduleErrors.startDate}
-                    </p>
-                )}
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-                <input
-                    type="date"
-                    name="endDate"
-                    value={endDate}
-                    onChange={handleDateChange}
-                    style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '12px',
-                        border: scheduleErrors.endDate || scheduleErrors.dateRange ? '2px solid red' : '1px solid #ccc',
-                        boxSizing: 'border-box',
-                        fontSize: '0.95rem',
-                        outline: 'none'
-                    }}
-                />
-                {scheduleErrors.endDate && (
-                    <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                        {scheduleErrors.endDate}
-                    </p>
-                )}
-                {scheduleErrors.dateRange && (
-                    <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                        {scheduleErrors.dateRange}
-                    </p>
-                )}
-            </div>
-
-            <button
-                onClick={submitSchedule}
-                style={{
-                    backgroundColor: '#8db87a',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '25px',
-                    padding: '0.75rem 3rem',
-                    fontWeight: 'bold',
-                    fontSize: '1rem',
-                    cursor: 'pointer',
-                    marginBottom: '0.75rem'
-                }}
-            >
-                Submit
-            </button>
-
-            <div>
-                <span
-                    onClick={toggleScheduleModal}
-                    style={{
-                        fontSize: '0.85rem',
-                        color: '#888',
-                        cursor: 'pointer',
-                        textDecoration: 'underline'
-                    }}
-                >
-                    Cancel
-                </span>
-            </div>
-            </div>
-        </div>
         )}
         {/* SCRUM-76: contact information modal */}
         {/* SCRUM-170: clicking the backdrop dismisses the modal */}
