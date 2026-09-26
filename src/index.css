@@ -50,6 +50,7 @@ ul {
   --font-heading: var(--font-body);
   --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
+  --space-2xs: 0.125rem;
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
@@ -58,6 +59,44 @@ ul {
   --space-2xl: 3rem;
   --space-3xl: 4rem;
   --section-padding: clamp(3rem, 6vw, 5rem);
+
+  /* --- Typographic scale (SCRUM-187 D-2/D-3) ---
+     Consumed only by the .admin-* layer. Nudged one step above the public
+     site's 0.875rem small-text convention: the dashboard is dense, data-heavy
+     reading, so it earns slightly larger body copy than the marketing pages. */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-md: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.375rem;
+
+  /* Component-level weight (D-3). Page headings keep the site's literal 700. */
+  --weight-semibold: 600;
+
+  /* --- Surface & elevation (SCRUM-187 D-5) --- */
+  --color-surface: #ffffff;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 10px 24px rgba(0, 0, 0, 0.08);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-primary) 35%, transparent);
+
+  /* --- Status colors (SCRUM-187 D-4) --- */
+  --color-danger: #dc3545;
+  --color-danger-bg: #f8d7da;
+  --color-danger-text: #721c24;
+  --color-danger-subtle: #fff5f5;
+  --color-success: #28a745;
+  --color-success-bg: #d4edda;
+  --color-success-text: #155724;
+  --color-warning-bg: #fff3cd;
+  --color-warning-text: #856404;
 
   --container-max: 1200px;
   --container-padding: clamp(1rem, 4vw, 2rem);
@@ -732,4 +771,631 @@ ul {
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--color-bg);
+}
+
+/* ========== ADMIN DASHBOARD ========== */
+/* SCRUM-187: shared style layer for AdminDashboard.jsx.
+   Every size, colour, radius and space below comes from the :root tokens -
+   the page carries no inline styles and no raw values. Scoped entirely to
+   .admin-* and the .admin-page hook, so nothing here reaches the public
+   pages that share this stylesheet. */
+
+/* --- Page shell --- */
+/* Standard sticky footer, scoped to /admin via the .admin-page hook. The
+   dashboard is shorter than the viewport, so rather than padding the gap out
+   with stretched panels or a stretched footer, let <main> take the slack and
+   sit the footer flush on the bottom edge - no stray band under it. */
+#root:has(.admin-page) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#root:has(.admin-page) > main {
+  min-height: 0 !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Centre the panels in whatever height is left over instead of letting them
+   ride up against the masthead with all the slack below. */
+.admin-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Actions sit top-right, mirroring .header-actions on every other page, and
+   align with the panel grid below. */
+.admin-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-md) var(--space-lg) 0;
+  background-color: transparent;
+}
+
+.admin-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* The shared .button has no focus style of its own; add one here rather than
+   changing a class every page depends on. */
+.admin-nav .button:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
+/* The dashboard leads with data, not a hero - keep the masthead compact
+   and let it share one white block with the logo above it. */
+.admin-section {
+  padding: var(--space-md) 0 var(--space-lg);
+  background: transparent;
+}
+
+.admin-eyebrow {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-xs);
+}
+
+.admin-intro .section-title {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-xs);
+}
+
+.admin-intro .section-subtitle {
+  font-size: var(--text-md);
+  margin-bottom: 0;
+}
+
+/* --- Panel grid --- */
+/* Panels reflow from four columns down to one. min() keeps the track from
+   overflowing on viewports narrower than the 280px floor. */
+.admin-grid {
+  flex: 1;
+  align-content: center;
+  display: grid;
+  /* Required, not redundant: `margin: 0 auto` below cancels the flex
+     align-self: stretch, so the grid would otherwise size to max-content. */
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--space-lg);
+  align-items: stretch;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg);
+}
+
+/* --- Panel --- */
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+/* SCRUM-187 D-6: one accent per panel so sections read as distinct. */
+.admin-panel--quotes { border-top-color: var(--color-primary); }
+.admin-panel--appointments { border-top-color: var(--color-accent); }
+.admin-panel--declined { border-top-color: var(--color-danger); }
+.admin-panel--reviews { border-top-color: var(--color-primary-dark); }
+
+/* Scrum 87: active edit state on the appointments panel. */
+.admin-panel.is-editing {
+  border-color: var(--color-primary-dark);
+  box-shadow: var(--shadow-md);
+}
+
+.admin-panel--compact {
+  text-align: center;
+}
+
+.admin-panel-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  text-align: center;
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* --- Field rows --- */
+.admin-field {
+  margin-bottom: var(--space-md);
+}
+
+/* The last row in a card needs no trailing gap; previously this was managed
+   by hand, by omitting .admin-field from whichever row happened to be last. */
+.admin-field:last-child,
+.admin-field-grid:last-child {
+  margin-bottom: 0;
+}
+
+/* auto-fit rather than a hard 3 columns: the trio reflows to 2 or 1 in a
+   narrow panel instead of squeezing every value into a sliver. */
+.admin-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: var(--space-md) var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+/* Labels recede, values carry the weight. Bold labels the same size as their
+   values made every row compete for attention; this gives each card one clear
+   reading order. */
+.admin-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2xs);
+}
+
+.admin-value {
+  font-size: var(--text-md);
+  color: var(--color-text);
+  line-height: 1.45;
+  /* Emails and street addresses have no break opportunities; let them wrap
+     rather than push the panel wider than its column. */
+  overflow-wrap: anywhere;
+}
+
+/* The customer name is what an admin scans for, so it leads the card. */
+.admin-value--lead {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  line-height: 1.25;
+}
+
+.admin-value--muted {
+  color: var(--color-text-muted);
+}
+
+/* --- Buttons --- */
+.admin-btn {
+  font-family: inherit;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.admin-btn:disabled {
+  background-color: var(--color-bg-alt);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.admin-btn--success {
+  background-color: var(--color-success);
+  color: var(--color-surface);
+}
+
+.admin-btn--danger {
+  background-color: var(--color-danger);
+  color: var(--color-surface);
+}
+
+.admin-btn--primary {
+  background-color: var(--color-primary-dark);
+  color: var(--color-surface);
+}
+
+.admin-btn--ghost {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* margin-top:auto pins the button to the panel floor, but collapses to zero
+   when there is no free space - so guarantee a gap from whatever precedes it. */
+.admin-panel > *:has(+ .admin-btn--pill) {
+  margin-bottom: var(--space-lg);
+}
+
+.admin-btn--pill {
+  margin-top: auto;
+  width: 100%;
+  padding: var(--space-sm) var(--space-lg);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Actions are centred in every card, with clear air between them and the text
+   above and below - they used to hug the right edge and sit tight against the
+   copy, which made them read as part of the previous field. */
+.admin-btn-row {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin: var(--space-lg) 0;
+}
+
+.admin-btn-row:first-child {
+  margin-top: 0;
+}
+
+/* Pagination below supplies its own top margin; don't double up. */
+.admin-btn-row:last-child {
+  margin-bottom: 0;
+}
+
+/* --- Status badge --- */
+.admin-badge {
+  display: inline-block;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+.admin-badge--success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.admin-badge--danger {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+}
+
+.admin-badge--warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+/* --- Inline decline-reason panel (Scrum 149) --- */
+.admin-callout {
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm);
+  background-color: var(--color-danger-subtle);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+}
+
+.admin-error-text {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-sm);
+}
+
+/* --- Form controls --- */
+.admin-input,
+.admin-textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--text-md);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.admin-textarea {
+  resize: vertical;
+  margin-bottom: var(--space-sm);
+}
+
+.admin-input.is-invalid,
+.admin-textarea.is-invalid {
+  border: 2px solid var(--color-danger);
+}
+
+/* --- Empty state --- */
+.admin-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  padding: var(--space-lg) var(--space-sm);
+}
+
+/* --- Pagination --- */
+.admin-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.admin-pagination button {
+  font-family: inherit;
+  font-size: var(--text-base);
+  padding: var(--space-xs) var(--space-sm);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.admin-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-pagination-label {
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
+}
+
+/* --- Modals --- */
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.admin-modal-box {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.admin-modal-box--wide {
+  max-width: 700px;
+  text-align: left;
+}
+
+.admin-modal-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  margin: 0 0 var(--space-sm);
+}
+
+.admin-modal-text {
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+/* --- Card root --- */
+.admin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.admin-inline-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* --- Button variants used by the card renderers --- */
+.admin-btn--link {
+  border-color: transparent;
+  color: var(--color-primary-dark);
+  padding: 0;
+}
+
+.admin-btn--close {
+  border-color: transparent;
+  font-size: var(--text-xl);
+  color: var(--color-text);
+  padding: 0;
+}
+
+.admin-btn--lg {
+  padding: var(--space-sm) var(--space-lg);
+}
+
+.admin-btn.is-dimmed {
+  opacity: 0.6;
+}
+
+/* --- Inline notes under a card (edit / success / error) --- */
+.admin-note {
+  margin-top: var(--space-md);
+  font-size: var(--text-md);
+}
+
+.admin-note--info { color: var(--color-primary-dark); }
+.admin-note--success { color: var(--color-success-text); }
+.admin-note--danger { color: var(--color-danger); }
+
+/* --- Scrum 87: fields in edit mode --- */
+.admin-input--edit {
+  padding: var(--space-xs);
+  border-color: var(--color-primary);
+  margin-top: var(--space-xs);
+}
+
+/* --- Callout anchored below its trigger (Scrum 150) --- */
+.admin-callout--below {
+  margin-top: var(--space-md);
+  margin-bottom: 0;
+}
+
+/* --- Reviews modal --- */
+.admin-modal-box--scroll {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.admin-review-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.admin-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.admin-review-group-title {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.admin-review-group-title--pending { color: var(--color-primary-dark); }
+.admin-review-group-title--approved { color: var(--color-success-text); }
+
+.admin-review-card {
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.admin-review-text {
+  font-size: var(--text-md);
+  line-height: 1.5;
+  margin-bottom: var(--space-sm);
+}
+
+.admin-stars {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.admin-badge--pill {
+  font-size: var(--text-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-pill);
+}
+
+.admin-value--base {
+  font-size: var(--text-base);
+}
+
+.admin-loading {
+  text-align: center;
+  padding: var(--space-2xl);
+}
+
+.admin-intro {
+  text-align: center;
+}
+
+/* --- Interaction states (hover / focus) ---
+   Only genuinely clickable things get a hover response: giving panels or
+   cards one would blur what is actionable, which is the point of AC #4. */
+.admin-btn,
+.admin-pagination button,
+.admin-input,
+.admin-textarea {
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.admin-btn--success:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--color-success) 86%, #000);
+}
+
+.admin-btn--danger:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--color-danger) 86%, #000);
+}
+
+.admin-btn--primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--color-primary-dark) 86%, #000);
+}
+
+.admin-btn--ghost:hover:not(:disabled) {
+  background-color: var(--color-bg-alt);
+  border-color: var(--color-primary);
+}
+
+.admin-btn--link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.admin-btn--close:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+
+.admin-btn--pill:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border-color: var(--color-primary-dark);
+}
+
+.admin-pagination button:hover:not(:disabled) {
+  background-color: var(--color-bg-alt);
+  border-color: var(--color-primary);
+}
+
+.admin-input:hover:not(:disabled),
+.admin-textarea:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+
+/* Keyboard focus. Buttons keep a real outline so the ring is never clipped
+   by an ancestor; fields mirror the site's existing .form-group input:focus. */
+.admin-btn:focus-visible,
+.admin-pagination button:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
+.admin-input:focus-visible,
+.admin-textarea:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.admin-input.is-invalid:focus-visible,
+.admin-textarea.is-invalid:focus-visible {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-btn,
+  .admin-pagination button,
+  .admin-input,
+  .admin-textarea {
+    transition: none;
+  }
+}
+
+/* --- Admin dashboard: small screens --- */
+@media (max-width: 768px) {
+  .admin-grid {
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .admin-header {
+    padding: var(--space-sm) var(--space-md) 0;
+  }
+
+  .admin-modal {
+    padding: var(--space-sm);
+  }
+
+  .admin-field-grid {
+    gap: var(--space-xs);
+  }
 }
