@@ -259,165 +259,73 @@ export default function CustomerPortal() {
     }
 
     return(
-        <div>
-        {/*scrum 39 to navigate to landing page from logo
-        the logo is at the top center of the page
-        the header contains the company logo and when clicked, will redirect to Home.jsx
-        the logo png is in assests and is named logo.png */}
-        <header style={{ backgroundColor: 'transparent'}}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2.5rem 0', width: '100%'}}>
-                 <Link to="/" className="logo" aria-label="Prasad's Cleaning Services LLC">
-                    <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
+        <div className="portal-page">
+        {/* scrum 39: header with logo linking back to home */}
+        <header className="portal-header">
+            <div className="portal-header-inner">
+                <Link to="/" className="logo" aria-label="Prasad's Cleaning Services LLC">
+                    <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" />
                 </Link>
+                <div className="portal-header-actions">
+                    {renderSettingsLink()}
+                    {/* SCRUM-32: Logout button */}
+                    <button onClick={handleLogout} className="portal-signout-btn">
+                        Sign Out
+                    </button>
+                </div>
             </div>
-            <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', paddingBottom: '1.5rem' }}>
-                {renderSettingsLink()}
-            </nav>
         </header>
 
-        {/* scrum 33: leave a review button*/}
-        <div style={{ textAlign: 'center', marginTop: '2rem'}}>
-            <button
-                onClick={toggleModal}
-                style={{
-                     backgroundColor: '#8db87a',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '12px',
-                        padding: '1rem 2rem',
-                        fontWeight: 'bold',
-                        fontSize: '0.85rem',
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        cursor: 'pointer'
-                }}
-            >
-                Leave a Review
-            </button>
-        </div>
-        {/* SCRUM-75: schedule appointment button*/}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button
-                onClick={toggleScheduleModal}
-                style={{
-                    backgroundColor: '#7ec8e3',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}
-            >
-                Schedule Appointment
-            </button>
-        </div>
-        {/* SCRUM-76: contact information button */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-             <button
-                onClick={toggleContactModal}
-                style={{
-                    backgroundColor: '#8db87a',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}
-            >
-                Contact Information
-            </button>
-        </div>
+        <main className="portal-main">
+            <div className="portal-welcome">
+                <h1>Welcome back!</h1>
+                <p>What would you like to do today?</p>
+            </div>
 
-        {/* Scrum 41: View services button */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button
-                onClick={toggleServicesModal}
-                style={{
-                    backgroundColor: '#7ec8e3',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}
-            >
-                View Our Services
-            </button>
-        </div>
-        {/* SCRUM-32: Logout button */}
-        <button
-            onClick={handleLogout}
-            style={{
-                position: 'fixed',
-                top: '1.5rem',
-                right: '1.5rem',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '0.75rem 1.5rem',
-                fontWeight: 'bold',
-                fontSize: '0.85rem',
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                zIndex: 999
-            }}
-        >
-            Sign Out
-        </button>
-
-        {/* SCRUM-34: Navigate to Service Area page */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <Link to="/service-area">
-                <button style={{
-                    backgroundColor: '#8db87a',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}>
-                    Service Area
+            <div className="portal-grid">
+                {/* SCRUM-75: schedule appointment */}
+                <button onClick={toggleScheduleModal} className="portal-card portal-card-green">
+                    <span className="portal-card-icon">📅</span>
+                    <span className="portal-card-title">Schedule Appointment</span>
+                    <span className="portal-card-desc">Book a cleaning at a time that works for you.</span>
                 </button>
-            </Link>
-        </div>
 
-        {/* SCRUM-35: Navigate to Get a Quote page */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <Link to="/contact">
-                <button style={{
-                    backgroundColor: '#7ec8e3',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}>
-                    Get a Quote
+                {/* SCRUM-35: get a quote */}
+                <Link to="/contact" className="portal-card portal-card-blue">
+                    <span className="portal-card-icon">💬</span>
+                    <span className="portal-card-title">Get a Quote</span>
+                    <span className="portal-card-desc">Request a free estimate for your needs.</span>
+                </Link>
+
+                {/* scrum 33: leave a review */}
+                <button onClick={toggleModal} className="portal-card portal-card-green">
+                    <span className="portal-card-icon">⭐</span>
+                    <span className="portal-card-title">Leave a Review</span>
+                    <span className="portal-card-desc">Share your experience with us.</span>
                 </button>
-            </Link>
-        </div>
+
+                {/* Scrum 41: view our services */}
+                <button onClick={() => navigate('/services')} className="portal-card portal-card-blue">
+                    <span className="portal-card-icon">🧹</span>
+                    <span className="portal-card-title">View Our Services</span>
+                    <span className="portal-card-desc">Browse all the services we offer.</span>
+                </button>
+
+                {/* SCRUM-34: service area */}
+                <Link to="/service-area" className="portal-card portal-card-green">
+                    <span className="portal-card-icon">📍</span>
+                    <span className="portal-card-title">Service Area</span>
+                    <span className="portal-card-desc">See if we service your area.</span>
+                </Link>
+
+                {/* SCRUM-76: contact information */}
+                <button onClick={toggleContactModal} className="portal-card portal-card-blue">
+                    <span className="portal-card-icon">📞</span>
+                    <span className="portal-card-title">Contact Us</span>
+                    <span className="portal-card-desc">Get in touch with any questions.</span>
+                </button>
+            </div>
+        </main>
 
         {/*scrum 33: review modal*/}
         {isModalOpen  &&(
