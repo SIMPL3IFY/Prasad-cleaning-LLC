@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { SERVICES_LIST } from '../data/ServicesData';
 import { supabase } from '../lib/supabaseClient'
@@ -22,10 +22,46 @@ export default function Home() {
     service.name === "Special Offers"
   );
 
+  const serviceDescriptions = {
+    'Residential Cleaning': 'Routine cleaning for living spaces, bedrooms, kitchens, and bathrooms with dependable attention to detail.',
+    'Commercial Cleaning': 'Professional upkeep for offices and shared spaces to maintain a clean, welcoming atmosphere.',
+    'Special Offers': 'Flexible cleaning bundles and seasonal promos designed to fit your schedule and budget.'
+  }
+
   // Scrum 15: Quote form field values
   const [quoteForm, setQuoteForm] = useState(INITIAL_QUOTE_FORM)
   // Scrum 15: Tracks submit status/messages shown near the button
   const [quoteStatus, setQuoteStatus] = useState({ loading: false, error: '', success: '' })
+  const [featuredReviews, setFeaturedReviews] = useState([])
+  const [flippedServices, setFlippedServices] = useState({})
+
+  const toggleServiceCard = (serviceName) => {
+    setFlippedServices((prev) => ({
+      ...prev,
+      [serviceName]: !prev[serviceName]
+    }))
+  }
+
+  useEffect(() => {
+    const fetchFeaturedReviews = async () => {
+      const { data, error } = await supabase
+        .from('customer_reviews')
+        .select('id, customer_name, review, rating')
+        .eq('approved', true)
+        .order('created_at', { ascending: false })
+        .limit(3)
+
+      if (error) {
+        console.error('Error fetching featured reviews:', error)
+        setFeaturedReviews([])
+        return
+      }
+
+      setFeaturedReviews(data || [])
+    }
+
+    fetchFeaturedReviews()
+  }, [])
 
   // Scrum 15: Updates quote form state as the user types/selects
   const handleQuoteChange = (e) => {
@@ -88,15 +124,32 @@ export default function Home() {
         </div>
       </section>
 
+      {/* SCRUM 141: Service cards flip to reveal a brief description on click */}
       <section id="services" className="section services">
         <div className="container">
           <h2 className="section-title">Our Services</h2>
           <p className="section-subtitle">We offer a range of cleaning solutions tailored to your needs.</p>
           <ul className="services-grid">
             {featuredServices.map((service, index) => (
-              <li key={index} className="service-card">
-                <img src={service.img} alt={service.name} className="service-card-img" />
-                <h3 className="service-card-title">{service.name}</h3>
+              <li key={index} className="service-card-wrapper">
+                <button
+                  type="button"
+                  className={`service-card ${flippedServices[service.name] ? 'is-flipped' : ''}`}
+                  onClick={() => toggleServiceCard(service.name)}
+                  aria-label={`Toggle details for ${service.name}`}
+                  aria-pressed={!!flippedServices[service.name]}
+                >
+                  <div className="service-card-inner">
+                    <div className="service-card-face service-card-front">
+                      <img src={service.img} alt={service.name} className="service-card-img" />
+                      <h3 className="service-card-title">{service.name}</h3>
+                    </div>
+                    <div className="service-card-face service-card-back">
+                      <h3>{service.name}</h3>
+                      <p>{serviceDescriptions[service.name] || 'Customized cleaning solutions designed around your needs.'}</p>
+                    </div>
+                  </div>
+                </button>
               </li>
             ))}
           </ul>
@@ -106,23 +159,36 @@ export default function Home() {
         </div>
       </section>
 
+      {/* SCRUM 141: Why Choose Us section is wrapped in a subtle card with a link to the About page */}
       <section id="about" className="section about">
         <div className="container about-inner">
-          <div className="about-content">
+          <div className="about-content about-card-box">
             <h2 className="section-title">Why Choose Us</h2>
-            <p>About / value proposition copy — replace with content from Figma.</p>
+            <p>At Prasad’s Cleaning Service, we take pride in delivering reliable, high-quality cleaning solutions tailored to meet the needs of homes and businesses alike. With a strong commitment to excellence and attention to detail, our team works diligently to create clean, healthy, and welcoming environments for every client we serve.</p>
+            <div className="about-link-row">
+              <Link to="/about" className="about-link">Learn more about us</Link>
+            </div>
           </div>
           <div className="about-media" aria-hidden="true"></div>
         </div>
       </section>
 
+      {/* SCRUM 140: Landing page includes customer testimonials for social proof */}
       <section id="testimonials" className="section testimonials">
         <div className="container">
           <h2 className="section-title">What Our Customers Say</h2>
           <ul className="testimonials-list">
-            <li className="testimonial-card">Testimonial 1 — placeholder</li>
-            <li className="testimonial-card">Testimonial 2 — placeholder</li>
-            <li className="testimonial-card">Testimonial 3 — placeholder</li>
+            {featuredReviews.length > 0 ? (
+              featuredReviews.map((review) => (
+                <li key={review.id} className="testimonial-card">
+                  <h3>{review.customer_name || 'Verified Customer'}</h3>
+                  <p>{review.review}</p>
+                  <span>{'⭐'.repeat(review.rating || 0)}</span>
+                </li>
+              ))
+            ) : (
+              <li className="testimonial-card">No testimonials available at this time.</li>
+            )}
           </ul>
         </div>
       </section>
