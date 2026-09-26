@@ -550,6 +550,7 @@ ul {
 }
 
 .contact-form input,
+.contact-form select,
 .contact-form textarea {
   padding: var(--space-md);
   border-radius: 0.5rem;
