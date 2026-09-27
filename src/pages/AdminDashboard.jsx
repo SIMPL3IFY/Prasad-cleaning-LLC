@@ -588,54 +588,29 @@ export default function AdminDashboard() {
     }
 
     const renderReviewCard = (review, isApproved) => (
-        <div key={review.id} style={{ border: '1px solid #d9d9d9', borderRadius: '10px', padding: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.5rem', alignItems: 'center' }}>
-                <strong style={{ fontSize: '0.95rem' }}>{review.customer_name}</strong>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#555' }}>{'⭐'.repeat(review.rating)}</span>
-                    <span style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 'bold',
-                        padding: '0.2rem 0.5rem',
-                        borderRadius: '999px',
-                        backgroundColor: isApproved ? '#d4edda' : '#fff3cd',
-                        color: isApproved ? '#155724' : '#856404'
-                    }}>
+        <div key={review.id} className="admin-review-card">
+            <div className="admin-row">
+                <strong className="admin-value admin-value--base">{review.customer_name}</strong>
+                <div className="admin-inline-group">
+                    <span className="admin-stars">{'⭐'.repeat(review.rating)}</span>
+                    <span className={`admin-badge admin-badge--pill ${isApproved ? 'admin-badge--success' : 'admin-badge--warning'}`}>
                         {isApproved ? 'Approved' : 'Pending'}
                     </span>
                 </div>
             </div>
-            <p style={{ fontSize: '0.85rem', lineHeight: '1.5', marginBottom: '0.75rem' }}>
+            <p className="admin-review-text">
                 {review.review}
             </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <div className="admin-btn-row">
                 <button
                     onClick={() => handleReviewDecision(review.id, true)}
-                    style={{
-                        backgroundColor: '#28a745',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '0.35rem 0.8rem',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        opacity: review.approved ? 0.6 : 1
-                    }}
+                    className={`admin-btn admin-btn--success${review.approved ? ' is-dimmed' : ''}`}
                 >
                     {review.approved ? 'Approved' : 'Approve'}
                 </button>
                 <button
                     onClick={() => handleReviewDecision(review.id, false)}
-                    style={{
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '0.35rem 0.8rem',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        opacity: !review.approved ? 0.6 : 1
-                    }}
+                    className={`admin-btn admin-btn--danger${!review.approved ? ' is-dimmed' : ''}`}
                 >
                     {review.approved ? 'Reject' : 'Rejected'}
                 </button>
@@ -646,120 +621,105 @@ export default function AdminDashboard() {
     // Scrum 84 method: Renders and displays each appointment card on screen
     // Scrum 150 method: Added Decline button to cancel accepted appointments
     const renderAppointmentCard = (quote) => (
-        <div key={quote.id} style={{ width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div key={quote.id}>
+            <div className="admin-row">
                 <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Customer Name:</p>
-                    <p style={{ fontSize: '0.9rem' }}>{quote.customerName}</p>
+                    <p className="admin-label">Customer Name</p>
+                    <p className="admin-value admin-value--lead">{quote.customerName}</p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div className="admin-inline-group">
                     <button
                         onClick={() => handleEditAppointment(quote.id)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#1a73e8',
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                        }}
+                        className="admin-btn admin-btn--link"
                     >
                         {editingAppointmentId === quote.id ? 'Cancel' : 'Edit'}{/* Scrum 87: Toggle label based on edit mode */}
                     </button>
                 </div>
             </div>
 
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Contact Info:</p>
-                <p style={{ fontSize: '0.85rem' }}>Email: {quote.email}</p>
-                <p style={{ fontSize: '0.85rem' }}>Phone #: {quote.phone}</p>
+            <div className="admin-field">
+                <p className="admin-label">Contact</p>
+                <p className="admin-value">{quote.email}</p>
+                <p className="admin-value admin-value--muted">{quote.phone}</p>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+            <div className="admin-field-grid">
                 <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Service:</p>
+                    <p className="admin-label">Service</p>
                     {editingAppointmentId === quote.id ? ( // Scrum 87: Editable service field
                         <input
                             value={editedAppointment.service || ''}
                             onChange={e => setEditedAppointment(prev => ({ ...prev, service: e.target.value }))}
-                            style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0' }}
+                            className="admin-input admin-input--edit"
                         />
                     ) : (
-                        <p style={{ fontSize: '0.85rem' }}>{quote.service}</p>
+                        <p className="admin-value">{quote.service}</p>
                     )}
                 </div>
                 <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Property:</p>
+                    <p className="admin-label">Property</p>
                     {editingAppointmentId === quote.id ? ( // Scrum 87: Editable property field
                         <input
                             value={editedAppointment.property || ''}
                             onChange={e => setEditedAppointment(prev => ({ ...prev, property: e.target.value }))}
-                            style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0' }}
+                            className="admin-input admin-input--edit"
                         />
                     ) : (
-                        <p style={{ fontSize: '0.85rem' }}>{quote.property}</p>
+                        <p className="admin-value">{quote.property}</p>
                     )}
                 </div>
                 <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Appointment:</p>
+                    <p className="admin-label">Appointment</p>
                     {editingAppointmentId === quote.id ? ( // Scrum 87: Editable date and time fields
                         <>
                             <input
                                 value={editedAppointment.appointmentDate || ''}
                                 onChange={e => setEditedAppointment(prev => ({ ...prev, appointmentDate: e.target.value }))}
-                                style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0', marginBottom: '0.2rem' }}
+                                className="admin-input admin-input--edit"
                             />
                             <input
                                 value={editedAppointment.appointmentTime || ''}
                                 onChange={e => setEditedAppointment(prev => ({ ...prev, appointmentTime: e.target.value }))}
-                                style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0' }}
+                                className="admin-input admin-input--edit"
                             />
                         </>
                     ) : (
                         <>
-                            <p style={{ fontSize: '0.85rem' }}>{quote.appointmentDate}</p>
-                            <p style={{ fontSize: '0.85rem' }}>{quote.appointmentTime}</p>
+                            <p className="admin-value">{quote.appointmentDate}</p>
+                            <p className="admin-value">{quote.appointmentTime}</p>
                         </>
                     )}
                 </div>
             </div>
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Address:</p>
+            <div className="admin-field">
+                <p className="admin-label">Address</p>
                 {editingAppointmentId === quote.id ? ( // Scrum 87: Editable address field
                     <input
                         value={editedAppointment.address || ''}
                         onChange={e => setEditedAppointment(prev => ({ ...prev, address: e.target.value }))}
-                        style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0', marginTop: '0.3rem' }}
+                        className="admin-input admin-input--edit"
                     />
                 ) : (
-                    <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
+                    <p className="admin-value">{quote.address}</p>
                 )}
             </div>
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Message</p>
+            <div className="admin-field">
+                <p className="admin-label">Message</p>
                 {editingAppointmentId === quote.id ? ( // Scrum 87: Editable message field
                     <textarea
                         value={editedAppointment.message || ''}
                         onChange={e => setEditedAppointment(prev => ({ ...prev, message: e.target.value }))}
-                        style={{ width: '100%', fontSize: '0.85rem', padding: '0.2rem', borderRadius: '4px', border: '1px solid #5ba3d0', marginTop: '0.3rem', resize: 'vertical' }}
+                        className="admin-textarea admin-input--edit"
                     />
                 ) : (
-                    <span style={{ fontSize: '0.85rem' }}>{quote.message}</span>
+                    <p className="admin-value">{quote.message}</p>
                 )}
             </div>
 
             {/* Scrum 150: Centered Cancel Appointment button below Message */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+            <div className="admin-btn-row">
                 <button
                     onClick={() => handleDecline(quote.id)}
-                    style={{
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '0.35rem 1rem',
-                        fontWeight: 'bold',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer'
-                    }}
+                    className="admin-btn admin-btn--danger"
                 >
                     Cancel Appointment
                 </button>
@@ -767,8 +727,8 @@ export default function AdminDashboard() {
 
             {/* Scrum 150: Decline reason input prompt for cancelling an accepted appointment */}
             {decliningQuoteId === quote.id && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#fff5f5', borderRadius: '6px', border: '1px solid #dc3545' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                <div className="admin-callout admin-callout--below">
+                    <p className="admin-label">
                         Reason for cancelling appointment:
                     </p>
                     <textarea
@@ -778,27 +738,23 @@ export default function AdminDashboard() {
                             if (declineReasonError) setDeclineReasonError(false)
                         }}
                         rows={2}
-                        style={{
-                            width: '100%', fontSize: '0.85rem', padding: '0.4rem', borderRadius: '4px',
-                            border: declineReasonError ? '2px solid #dc3545' : '1px solid #ccc',
-                            resize: 'vertical', marginBottom: '0.5rem'
-                        }}
+                        className={`admin-textarea${declineReasonError ? ' is-invalid' : ''}`}
                     />
                     {declineReasonError && (
-                        <p style={{ color: '#dc3545', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                        <p className="admin-error-text">
                             A reason is required before you can cancel this appointment.
                         </p>
                     )}
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                    <div className="admin-btn-row">
                         <button
                             onClick={() => confirmDecline(quote.id)}
-                            style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                            className="admin-btn admin-btn--danger"
                         >
                             Confirm Cancellation
                         </button>
                         <button
                             onClick={() => handleDecline(quote.id)}
-                            style={{ background: 'none', color: '#333', border: '1px solid #ccc', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                            className="admin-btn admin-btn--ghost"
                         >
                             Keep Appointment
                         </button>
@@ -807,79 +763,97 @@ export default function AdminDashboard() {
             )}
 
             {editingAppointmentId === quote.id && (
-                <p style={{ marginTop: '0.8rem', color: '#1a73e8', fontSize: '0.9rem' }}>
+                <p className="admin-note admin-note--info">
                     Editing appointment details for {quote.customerName}.
                 </p>
             )}
             {appointmentMessage && (
-                <p style={{ marginTop: '0.8rem', color: '#155724', fontSize: '0.9rem' }}>
+                <p className="admin-note admin-note--success">
                     {appointmentMessage}
                 </p>
             )}
             {/* SCRUM-142 subtask 189: Visible error for invalid or failed edits */}
             {appointmentError && (
-                <p role="alert" style={{ marginTop: '0.8rem', color: '#dc3545', fontSize: '0.9rem' }}>
+                <p role="alert" className="admin-note admin-note--danger">
                     {appointmentError}
                 </p>
             )}
         </div>
     )
+    // Scrum 128 / 149: the read-only detail rows shared by the pending-quote
+    // and declined-quote cards. Kept in one place so the two stay in step.
+    const renderQuoteDetails = (quote) => (
+        <>
+            <div className="admin-field">
+                <p className="admin-label">Customer Name</p>
+                <p className="admin-value admin-value--lead">{quote.customerName}</p>
+            </div>
+
+            <div className="admin-field">
+                <p className="admin-label">Contact</p>
+                <p className="admin-value">{quote.email}</p>
+                <p className="admin-value admin-value--muted">{quote.phone}</p>
+            </div>
+
+            <div className="admin-field-grid">
+                <div>
+                    <p className="admin-label">Service</p>
+                    <p className="admin-value">{quote.service}</p>
+                </div>
+                <div>
+                    <p className="admin-label">Property</p>
+                    <p className="admin-value">{quote.property}</p>
+                </div>
+                <div>
+                    <p className="admin-label">Appointment</p>
+                    <p className="admin-value">{quote.appointmentDate}</p>
+                    <p className="admin-value">{quote.appointmentTime}</p>
+                </div>
+            </div>
+
+            <div className="admin-field">
+                <p className="admin-label">Address</p>
+                <p className="admin-value">{quote.address}</p>
+            </div>
+
+            <div className="admin-field">
+                <p className="admin-label">Message</p>
+                <p className="admin-value">{quote.message}</p>
+            </div>
+        </>
+    )
+
     // Scrum 128 method: Renders and displays each quote card on screen
     // Scrum 150 method: Updated Accept button to trigger confirmation modal instead of directly accepting
     const renderQuoteCard = (quote) => (
-        <div key={quote.id} style={{ width: '100%' }}>
+        <div key={quote.id}>
             {/* Accept / Decline buttons */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <div className="admin-btn-row">
                 {quote.status === 'pending' ? (
                     <>
                         {/* Scrum 150: Accept button now triggers handleAcceptClick confirmation modal */}
                         <button
                             onClick={() => handleAcceptClick(quote.id)}
-                            style={{
-                                backgroundColor: '#28a745',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '0.35rem 1rem',
-                                fontWeight: 'bold',
-                                fontSize: '0.85rem',
-                                cursor: 'pointer'
-                            }}
+                            className="admin-btn admin-btn--success"
                         >
                             Accept
                         </button>
                         <button
                             onClick={() => handleDecline(quote.id)}
-                            style={{
-                                backgroundColor: '#dc3545',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '0.35rem 1rem',
-                                fontWeight: 'bold',
-                                fontSize: '0.85rem',
-                                cursor: 'pointer'
-                            }}
+                            className="admin-btn admin-btn--danger"
                         >
                             Decline
                         </button>
                     </>
                 ) : (
-                    <span style={{
-                        padding: '0.35rem 1rem',
-                        borderRadius: '6px',
-                        fontWeight: 'bold',
-                        fontSize: '0.85rem',
-                        backgroundColor: quote.status === 'accepted' ? '#d4edda' : '#f8d7da',
-                        color: quote.status === 'accepted' ? '#155724' : '#721c24'
-                    }}>
+                    <span className={`admin-badge ${quote.status === 'accepted' ? 'admin-badge--success' : 'admin-badge--danger'}`}>
                         {quote.status === 'accepted' ? 'Accepted' : 'Declined'}
                     </span>
                 )}
             </div>
             {decliningQuoteId === quote.id && (
-                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fff5f5', borderRadius: '6px', border: '1px solid #dc3545' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                <div className="admin-callout">
+                    <p className="admin-label">
                         Reason for declining:
                     </p>
                     <textarea
@@ -889,27 +863,23 @@ export default function AdminDashboard() {
                             if (declineReasonError) setDeclineReasonError(false)
                         }}
                         rows={2}
-                        style={{
-                            width: '100%', fontSize: '0.85rem', padding: '0.4rem', borderRadius: '4px',
-                            border: declineReasonError ? '2px solid #dc3545' : '1px solid #ccc',
-                            resize: 'vertical', marginBottom: '0.5rem'
-                        }}
+                        className={`admin-textarea${declineReasonError ? ' is-invalid' : ''}`}
                     />
                     {declineReasonError && (
-                        <p style={{ color: '#dc3545', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                        <p className="admin-error-text">
                             A reason is required before you can decline this quote.
                         </p>
                     )}
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className="admin-btn-row">
                         <button
                             onClick={() => confirmDecline(quote.id)}
-                            style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                            className="admin-btn admin-btn--danger"
                         >
                             Confirm Decline
                         </button>
                         <button
                             onClick={() => handleDecline(quote.id)}
-                            style={{ background: 'none', color: '#333', border: '1px solid #ccc', borderRadius: '6px', padding: '0.35rem 1rem', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer' }}
+                            className="admin-btn admin-btn--ghost"
                         >
                             Cancel
                         </button>
@@ -917,112 +887,29 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* Customer Name */}
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Customer Name:</p>
-                <p style={{ fontSize: '0.9rem' }}>{quote.customerName}</p>
-            </div>
-
-            {/* Contact Info */}
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Contact Info:</p>
-                <p style={{ fontSize: '0.85rem' }}>Email: {quote.email}</p>
-                <p style={{ fontSize: '0.85rem' }}>Phone #: {quote.phone}</p>
-            </div>
-
-            {/* Service / Property / Appointment */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
-                <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Service:</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.service}</p>
-                </div>
-                <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Property:</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.property}</p>
-                </div>
-                <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Appointment:</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentDate}</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentTime}</p>
-                </div>
-            </div>
-
-            {/* Address */}
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Address:</p>
-                <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
-            </div>
-
-            {/* Message */}
-            <div>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Message</p>
-                <span style={{ fontSize: '0.85rem' }}>{quote.message}</span>
-            </div>
+            {renderQuoteDetails(quote)}
         </div>
     )
 
     // Scrum 149 method: Renders and displays each declined quote card on screen
     //Scrum 183: Move declined quotes (Manage Quotes) to pending with button
     const renderDeclinedQuoteCard = (quote) => (
-        <div key={quote.id} style={{ width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
-                <span style={{
-                    padding: '0.35rem 1rem', borderRadius: '6px', fontWeight: 'bold',
-                    fontSize: '0.85rem', backgroundColor: '#f8d7da', color: '#721c24'
-                }}>
+        <div key={quote.id}>
+            <div className="admin-btn-row">
+                <span className="admin-badge admin-badge--danger">
                     Declined
                 </span>
             </div>
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Customer Name:</p>
-                <p style={{ fontSize: '0.9rem' }}>{quote.customerName}</p>
-            </div>
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '0.2rem' }}>Contact Info:</p>
-                <p style={{ fontSize: '0.85rem' }}>Email: {quote.email}</p>
-                <p style={{ fontSize: '0.85rem' }}>Phone #: {quote.phone}</p>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
-                <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Service:</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.service}</p>
-                </div>
-                <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Property:</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.property}</p>
-                </div>
-                <div>
-                    <p style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>Appointment:</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentDate}</p>
-                    <p style={{ fontSize: '0.85rem' }}>{quote.appointmentTime}</p>
-                </div>
-            </div>
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Address:</p>
-                <span style={{ fontSize: '0.85rem' }}>{quote.address}</span>
-            </div>
-            <div style={{ marginBottom: '1rem' }}>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Message</p>
-                <span style={{ fontSize: '0.85rem' }}>{quote.message}</span>
-            </div>
-            <div>
-                <p style={{ fontWeight: 'bold', fontSize: '0.85rem', display: 'inline', marginRight: '0.5rem' }}>Decline Reason:</p>
-                <span style={{ fontSize: '0.85rem' }}>{quote.declineReason}</span>
+            {renderQuoteDetails(quote)}
+            <div className="admin-field">
+                <p className="admin-label">Decline Reason</p>
+                <p className="admin-value">{quote.declineReason}</p>
             </div>
             {/* Scrum 183: Button triggers the "Are you sure?" modal to verify admin want to move declined quote */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+            <div className="admin-btn-row">
                 <button
                     onClick={() => handleReopenClick(quote)}
-                    style={{
-                        backgroundColor: '#1a73e8',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '0.35rem 0.8rem',
-                        fontWeight: 'bold',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer'
-                    }}
+                    className="admin-btn admin-btn--primary"
                 >
                     Move to Manage Quotes
                 </button>
@@ -1034,38 +921,14 @@ export default function AdminDashboard() {
     const renderPagination = (currentPage, totalItems, itemsPerPage, onPageChange) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage)
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
-                <button
-                    onClick={() => onPageChange('prev')}
-                    disabled={currentPage === 1}
-                    style={{
-                        background: 'none',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        padding: '0.25rem 0.6rem',
-                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                        opacity: currentPage === 1 ? 0.4 : 1,
-                        fontSize: '1rem'
-                    }}
-                >
+            <div className="admin-pagination">
+                <button onClick={() => onPageChange('prev')} disabled={currentPage === 1}>
                     ‹
                 </button>
-                <span style={{ fontSize: '0.85rem', color: '#555' }}>
+                <span className="admin-pagination-label">
                     Page {currentPage}/{totalPages}
                 </span>
-                <button
-                    onClick={() => onPageChange('next')}
-                    disabled={currentPage === totalPages}
-                    style={{
-                        background: 'none',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        padding: '0.25rem 0.6rem',
-                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                        opacity: currentPage === totalPages ? 0.4 : 1,
-                        fontSize: '1rem'
-                    }}
-                >
+                <button onClick={() => onPageChange('next')} disabled={currentPage === totalPages}>
                     ›
                 </button>
             </div>
@@ -1088,127 +951,78 @@ export default function AdminDashboard() {
     const approvedReviews = allReviews.filter(review => review.approved)
 
     if (!isAdmin) {
-        return <div style={{ textAlign: 'center', padding: '3rem' }}>Checking admin access...</div>
+        return <div className="admin-loading">Checking admin access...</div>
     }
     const visibleDeclinedQuotes = paginateDeclinedQuotes()
     // Main return
     return (
-        <div>
-            <header style={{ backgroundColor: 'transparent' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2.5rem 0', width: '100%' }}>
-                    <Link to="/" className="logo" aria-label="Prasad's Cleaning Services LLC">
-                        <img
-                            className="logo-img"
-                            src="/assets/logo.png"
-                            alt="Prasad's Cleaning Services LLC"
-                            style={{ height: '80px', width: 'auto', objectFit: 'contain' }}
-                        />
-                    </Link>
-                </div>
+        <div className="admin-page">
+            {/* SCRUM 172 / 187: admin masthead. Scrum 39 keeps the marketing
+                header off /admin, so the dashboard carries its own minimal nav.
+                Uses the shared .button/.button-alt classes so the controls match
+                the header actions on every other page. */}
+            <header className="admin-header">
+                <nav className="admin-nav" aria-label="Admin">
+                    <Link to="/" className="button button-alt">Home</Link>
+                    <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="button button-alt"
+                    >
+                        Sign Out
+                    </button>
+                </nav>
             </header>
 
-            <section className="section">
-                <div className="container" style={{ textAlign: 'center' }}>
-                    <p style={{
-                        fontSize: '0.8rem',
-                        color: '#888',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em',
-                        marginBottom: '0.5rem'
-                    }}>
+            <section className="section admin-section">
+                <div className="container admin-intro">
+                    <p className="admin-eyebrow">
                         Admin Portal
                     </p>
                     <h1 className="section-title">Welcome</h1>
-                    <p className="section-subtitle" style={{ marginBottom: 'var(--space-xl)' }}>
-                     Admin Dashboard
+                    <p className="section-subtitle">
+                        Admin Dashboard
                     </p>
                 </div>
             </section>
-             {/* Dashboard Cards */}
-            <div style={{
-                display: 'flex',
-                gap: '1.5rem',
-                padding: '0 1.5rem 2rem',
-                alignItems: 'stretch',
-                justifyContent: 'space-between',
-                width: '100%',
-                maxWidth: '1400px',
-                margin: '0 auto'
-            }}>
-                {/* Manage Appointments Section */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'space-between', height: '100%' }}>
-                    {/* Manage Appointments Card */}
-                    <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '1.5rem',
-                        width: '300px',
-                        minWidth: '300px',
-                        maxWidth: '300px',
-                        flex: '0 0 300px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        border: editingAppointmentId ? '2px solid #1a73e8' : '2px solid #5ba3d0' // Scrum 87: Blue border when editing
-                    }}>
-                        <h2 style={{
-                            fontWeight: 'bold',
-                            fontSize: '1.1rem',
-                            textAlign: 'center',
-                            marginBottom: '1.25rem'
-                        }}>
-                            Manage Appointments
-                        </h2>
 
-                        {acceptedQuotes.length === 0 ? (
-                            <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No appointments available.</p>
-                        ) : (
-                            <>
-                                {visibleAppointments.map(quote => renderAppointmentCard(quote))}
-                                {renderPagination(currentAppointmentPage, acceptedQuotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
-                            </>
-                        )}
-                    </div>
+            {/* Dashboard Cards */}
+            <div className="admin-grid">
+                {/* Manage Appointments Section */}
+                {/* Manage Appointments Card */}
+                {/* Scrum 87: is-editing swaps the panel to the blue editing border */}
+                <div className={`admin-panel admin-panel--appointments${editingAppointmentId ? ' is-editing' : ''}`}>
+                    <h2 className="admin-panel-title">
+                        Manage Appointments
+                    </h2>
+
+                    {acceptedQuotes.length === 0 ? (
+                        <p className="admin-empty">No appointments available.</p>
+                    ) : (
+                        <>
+                            {visibleAppointments.map(quote => renderAppointmentCard(quote))}
+                            {renderPagination(currentAppointmentPage, acceptedQuotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
+                        </>
+                    )}
+
                     {/* Update Appointment Button */}
                     <button
                         onClick={() => editingAppointmentId && handleUpdateAppointment(editingAppointmentId)} // Scrum 87: Update whichever appointment is being edited
                         disabled={!editingAppointmentId} // Scrum 87: Only enabled when an appointment is in edit mode
-                        style={{
-                            backgroundColor: !editingAppointmentId ? '#ccc' : 'white',
-                            color: !editingAppointmentId ? '#888' : '#333',
-                            border: '2px solid #5ba3d0',
-                            borderRadius: '50px',
-                            padding: '0.9rem 1.5rem',
-                            fontWeight: 'bold',
-                            cursor: !editingAppointmentId ? 'not-allowed' : 'pointer',
-                            textTransform: 'uppercase',
-                            textAlign: 'center'
-                        }}
+                        className="admin-btn admin-btn--pill"
                     >
                         Update Appointment
                     </button>
                 </div>
+
                 {/* Manage Quotes Card */}
-                <div style={{
-                    backgroundColor: 'white',
-                    borderRadius: '12px',
-                    padding: '1.5rem',
-                    width: '300px',
-                    minWidth: '300px',
-                    maxWidth: '300px',
-                    flex: '0 0 300px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    border: '2px solid #5ba3d0'
-                }}>
-                    <h2 style={{
-                        fontWeight: 'bold',
-                        fontSize: '1.1rem',
-                        textAlign: 'center',
-                        marginBottom: '1.25rem'
-                    }}>
+                <div className="admin-panel admin-panel--quotes">
+                    <h2 className="admin-panel-title">
                         Manage Quotes
                     </h2>
 
                     {quotes.length === 0 ? (
-                        <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No quotes available.</p>
+                        <p className="admin-empty">No quotes available.</p>
                     ) : (
                         <>
                             {visibleQuotes.map(quote => renderQuoteCard(quote))}
@@ -1216,29 +1030,15 @@ export default function AdminDashboard() {
                         </>
                     )}
                 </div>
+
                 {/* Declined Quotes Card */}
-                <div style={{
-                    backgroundColor: 'white',
-                    borderRadius: '12px',
-                    padding: '1.5rem',
-                    width: '300px',
-                    minWidth: '300px',
-                    maxWidth: '300px',
-                    flex: '0 0 300px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    border: '2px solid #5ba3d0'
-                }}>
-                    <h2 style={{ 
-                        fontWeight: 'bold', 
-                        fontSize: '1.1rem', 
-                        textAlign: 'center', 
-                        marginBottom: '1.25rem' 
-                    }}>
+                <div className="admin-panel admin-panel--declined">
+                    <h2 className="admin-panel-title">
                         Declined Quotes
                     </h2>
 
                     {declinedQuotes.length === 0 ? (
-                        <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No declined quotes.</p>
+                        <p className="admin-empty">No declined quotes.</p>
                     ) : (
                         <>
                             {visibleDeclinedQuotes.map(quote => renderDeclinedQuoteCard(quote))}
@@ -1248,107 +1048,45 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Customer Reviews Trigger */}
-                <div style={{
-                    backgroundColor: 'white',
-                    borderRadius: '12px',
-                    padding: '0.9rem 1.25rem 0.75rem',
-                    width: '250px',
-                    minWidth: '250px',
-                    maxWidth: '250px',
-                    flex: '0 0 250px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    border: '2px solid #5ba3d0',
-                    textAlign: 'center',
-                    alignSelf: 'stretch',
-                    height: 'fit-content'
-                }}>
-                    <h2 style={{
-                        fontWeight: 'bold',
-                        fontSize: '1.1rem',
-                        textAlign: 'center',
-                        marginBottom: '1rem'
-                    }}>
+                <div className="admin-panel admin-panel--reviews admin-panel--compact">
+                    <h2 className="admin-panel-title">
                         Customer Reviews
                     </h2>
 
                     {reviewMessage && (
-                        <p style={{ marginBottom: '1rem', color: '#155724', fontSize: '0.9rem' }}>
+                        <p className="admin-note admin-note--success">
                             {reviewMessage}
                         </p>
                     )}
 
                     <button
                         onClick={() => setShowReviewsModal(true)}
-                        style={{
-                            backgroundColor: '#1a73e8',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            padding: '0.75rem 1.25rem',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            fontSize: '0.9rem'
-                        }}
+                        className="admin-btn admin-btn--primary"
                     >
                         View Review Table
                     </button>
                 </div>
-            </div>                          
+            </div>
 
             {/* Scrum 150: Confirmation Modal before accepting quote */}
             {acceptingQuoteId && (
-                <div style={{
-                    position: 'fixed',
-                    inset: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    padding: '1rem'
-                }}>
-                    <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        width: '100%',
-                        maxWidth: '400px',
-                        padding: '1.5rem',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                        textAlign: 'center'
-                    }}>
-                        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Accept Quote?</h3>
-                        <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1.25rem' }}>
+                <div className="admin-modal">
+                    <div className="admin-modal-box">
+                        <h3 className="admin-modal-title">Accept Quote?</h3>
+                        <p className="admin-modal-text">
                             Are you sure you want to accept the quote for{' '}
                             <strong>{quotes.find(q => q.id === acceptingQuoteId)?.customerName}</strong>?
                         </p>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
+                        <div className="admin-btn-row">
                             <button
                                 onClick={() => acceptQuote(acceptingQuoteId)}
-                                style={{
-                                    backgroundColor: '#28a745',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    padding: '0.5rem 1.25rem',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.85rem',
-                                    cursor: 'pointer'
-                                }}
+                                className="admin-btn admin-btn--success admin-btn--lg"
                             >
                                 Yes, Accept
                             </button>
                             <button
                                 onClick={() => setAcceptingQuoteId(null)}
-                                style={{
-                                    backgroundColor: '#fff',
-                                    color: '#333',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '6px',
-                                    padding: '0.5rem 1.25rem',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.85rem',
-                                    cursor: 'pointer'
-                                }}
+                                className="admin-btn admin-btn--ghost admin-btn--lg"
                             >
                                 Cancel
                             </button>
@@ -1359,62 +1097,24 @@ export default function AdminDashboard() {
 
             {/* Scrum 183: Confirmation Modal Popup for moving a declined quote back to pending */}
             {reopenModalQuote && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyIn: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000
-                }}>
-                    <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '8px',
-                        padding: '1.5rem',
-                        width: '90%',
-                        maxWidth: '400px',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                        textAlign: 'center'
-                    }}>
-                        <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem', color: '#333' }}>
+                <div className="admin-modal">
+                    <div className="admin-modal-box">
+                        <h3 className="admin-modal-title">
                             Move Quote to Pending?
                         </h3>
-                        <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1.5rem' }}>
+                        <p className="admin-modal-text">
                             Are you sure you want to move the quote for <strong>{reopenModalQuote.customerName || reopenModalQuote.customer_name}</strong> back to Pending Quotes?
                         </p>
-                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                        <div className="admin-btn-row">
                             <button
                                 onClick={handleConfirmReopen}
-                                style={{
-                                    backgroundColor: '#1a73e8',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    padding: '0.5rem 1.25rem',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.85rem',
-                                    cursor: 'pointer'
-                                }}
+                                className="admin-btn admin-btn--primary admin-btn--lg"
                             >
                                 Yes, Move to Manage Quotes
                             </button>
                             <button
                                 onClick={() => setReopenModalQuote(null)}
-                                style={{
-                                    backgroundColor: 'white',
-                                    color: '#333',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '6px',
-                                    padding: '0.5rem 1.25rem',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.85rem',
-                                    cursor: 'pointer'
-                                }}
+                                className="admin-btn admin-btn--ghost admin-btn--lg"
                             >
                                 Cancel
                             </button>
@@ -1424,65 +1124,41 @@ export default function AdminDashboard() {
             )}
 
             {showReviewsModal && (
-                <div style={{
-                    position: 'fixed',
-                    inset: 0,
-                    backgroundColor: 'rgba(0,0,0,0.6)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    padding: '1rem'
-                }}>
-                    <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '12px',
-                        width: '100%',
-                        maxWidth: '700px',
-                        maxHeight: '80vh',
-                        overflowY: 'auto',
-                        padding: '1.5rem',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h3 style={{ margin: 0 }}>Customer Reviews</h3>
+                <div className="admin-modal">
+                    <div className="admin-modal-box admin-modal-box--wide admin-modal-box--scroll">
+                        <div className="admin-row">
+                            <h3 className="admin-modal-title">Customer Reviews</h3>
                             <button
                                 onClick={() => setShowReviewsModal(false)}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    fontSize: '1.25rem',
-                                    cursor: 'pointer',
-                                    color: '#333'
-                                }}
+                                className="admin-btn admin-btn--close"
                             >
                                 ×
                             </button>
                         </div>
 
                         {loadingReviews ? (
-                            <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>Loading reviews...</p>
+                            <p className="admin-empty">Loading reviews...</p>
                         ) : allReviews.length === 0 ? (
-                            <p style={{ textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>No reviews available.</p>
+                            <p className="admin-empty">No reviews available.</p>
                         ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div className="admin-review-groups">
                                 <div>
-                                    <h4 style={{ margin: '0 0 0.75rem', color: '#1a73e8' }}>Pending Reviews</h4>
+                                    <h4 className="admin-review-group-title admin-review-group-title--pending">Pending Reviews</h4>
                                     {pendingReviews.length === 0 ? (
-                                        <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>No pending reviews.</p>
+                                        <p className="admin-empty">No pending reviews.</p>
                                     ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <div className="admin-review-list">
                                             {pendingReviews.map(review => renderReviewCard(review, false))}
                                         </div>
                                     )}
                                 </div>
 
                                 <div>
-                                    <h4 style={{ margin: '0 0 0.75rem', color: '#155724' }}>Approved Reviews</h4>
+                                    <h4 className="admin-review-group-title admin-review-group-title--approved">Approved Reviews</h4>
                                     {approvedReviews.length === 0 ? (
-                                        <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>No approved reviews.</p>
+                                        <p className="admin-empty">No approved reviews.</p>
                                     ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <div className="admin-review-list">
                                             {approvedReviews.map(review => renderReviewCard(review, true))}
                                         </div>
                                     )}
@@ -1492,27 +1168,7 @@ export default function AdminDashboard() {
                     </div>
                 </div>
             )}
-            <button
-                onClick={handleLogout}
-                style={{
-                    position: 'fixed',
-                    top: '1.5rem',
-                    right: '1.5rem',
-                    backgroundColor: '#dc3545',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '0.75rem 1.5rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    zIndex: 999
-                }}
-            >
-                Sign Out
-            </button>
+
         </div>
     )
 }
