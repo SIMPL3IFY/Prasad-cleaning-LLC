@@ -18,12 +18,6 @@ export default function CustomerPortal() {
     const [reviewMessage, setReviewMessage] = useState('')
     const [isSubmittingReview, setIsSubmittingReview] = useState(false)
 
-    // SCRUM 75: State Variables
-    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
-    const [startDate, setStartDate] = useState('')
-    const [endDate, setEndDate] = useState('')
-    const [scheduleErrors, setScheduleErrors] = useState({})
-
     // SCRUM 76: State for contact modal and variables
     const [isContactModalOpen, setIsContactModalOpen] = useState(false)
 
@@ -126,52 +120,10 @@ export default function CustomerPortal() {
         setRating(0)
     }
 
-    // SCRUM-75: function to open and close the modal
-    const toggleScheduleModal = () => {
-        setIsScheduleModalOpen(prev => !prev)
-        setScheduleErrors({})
-        setStartDate('')
-        setEndDate('')
-    }
-    
-    // Handler for date input changes
-    const handleDateChange = (e) => {
-        const { name, value} = e.target
-        if (name === 'startDate') {
-            setStartDate(value)
-        }
-        if (name === 'endDate') {
-            setEndDate(value)
-        }
-    }
-
-    // Validation logic
-    const validateSchedule = () => {
-        const newErrors = {}
-
-        if (startDate.trim() === '') {
-            newErrors.startDate = 'Please select a start date.'
-        }
-
-        if (endDate.trim() === '') {
-            newErrors.endDate = 'Please select an end date.'
-        }
-
-        if (startDate && endDate && endDate < startDate) {
-            newErrors.dateRange = 'End date cannot be ealier than start date.'
-        }
-
-        setScheduleErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
-    // Submit function for scheduling
-    const submitSchedule = () => {
-        if (!validateSchedule()) {
-            return
-        }
-        console.log({ startDate, endDate })
-        toggleScheduleModal()
+    // SCRUM-169: Schedule Appointment sends the customer to the Contact page form.
+    // Client-side navigation keeps the Supabase session, so they stay signed in.
+    const goToScheduleAppointment = () => {
+        navigate('/contact')
     }
 
     // SCRUM-76: Functions to open and close contact modal
@@ -259,165 +211,74 @@ export default function CustomerPortal() {
     }
 
     return(
-        <div>
-        {/*scrum 39 to navigate to landing page from logo
-        the logo is at the top center of the page
-        the header contains the company logo and when clicked, will redirect to Home.jsx
-        the logo png is in assests and is named logo.png */}
-        <header style={{ backgroundColor: 'transparent'}}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2.5rem 0', width: '100%'}}>
-                 <Link to="/" className="logo" aria-label="Prasad's Cleaning Services LLC">
-                    <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
+        <div className="portal-page">
+        {/* scrum 39: header with logo linking back to home */}
+        <header className="portal-header">
+            <div className="portal-header-inner">
+                <Link to="/" className="logo" aria-label="Prasad's Cleaning Services LLC">
+                    <img className="logo-img" src="/assets/logo.png" alt="Prasad's Cleaning Services LLC" />
                 </Link>
+                <div className="portal-header-actions">
+                    {renderSettingsLink()}
+                    {/* SCRUM-32: Logout button */}
+                    <button onClick={handleLogout} className="portal-signout-btn">
+                        Sign Out
+                    </button>
+                </div>
             </div>
-            <nav style={{ display: 'flex', justifyContent: 'center', gap: '1rem', paddingBottom: '1.5rem' }}>
-                {renderSettingsLink()}
-            </nav>
         </header>
 
-        {/* scrum 33: leave a review button*/}
-        <div style={{ textAlign: 'center', marginTop: '2rem'}}>
-            <button
-                onClick={toggleModal}
-                style={{
-                     backgroundColor: '#8db87a',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '12px',
-                        padding: '1rem 2rem',
-                        fontWeight: 'bold',
-                        fontSize: '0.85rem',
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        cursor: 'pointer'
-                }}
-            >
-                Leave a Review
-            </button>
-        </div>
-        {/* SCRUM-75: schedule appointment button*/}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button
-                onClick={toggleScheduleModal}
-                style={{
-                    backgroundColor: '#7ec8e3',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}
-            >
-                Schedule Appointment
-            </button>
-        </div>
-        {/* SCRUM-76: contact information button */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-             <button
-                onClick={toggleContactModal}
-                style={{
-                    backgroundColor: '#8db87a',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}
-            >
-                Contact Information
-            </button>
-        </div>
+        <main className="portal-main">
+            <div className="portal-welcome">
+                <h1>Welcome back!</h1>
+                <p>What would you like to do today?</p>
+            </div>
 
-        {/* Scrum 41: View services button */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button
-                onClick={toggleServicesModal}
-                style={{
-                    backgroundColor: '#7ec8e3',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}
-            >
-                View Our Services
-            </button>
-        </div>
-        {/* SCRUM-32: Logout button */}
-        <button
-            onClick={handleLogout}
-            style={{
-                position: 'fixed',
-                top: '1.5rem',
-                right: '1.5rem',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '0.75rem 1.5rem',
-                fontWeight: 'bold',
-                fontSize: '0.85rem',
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                zIndex: 999
-            }}
-        >
-            Sign Out
-        </button>
-
-        {/* SCRUM-34: Navigate to Service Area page */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <Link to="/service-area">
-                <button style={{
-                    backgroundColor: '#8db87a',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}>
-                    Service Area
+            <div className="portal-grid">
+                {/* SCRUM-75: schedule appointment */}
+                {/* SCRUM-169: now redirects to the Contact page instead of opening a modal */}
+                <button onClick={goToScheduleAppointment} className="portal-card portal-card-green">
+                    <span className="portal-card-icon">📅</span>
+                    <span className="portal-card-title">Schedule Appointment</span>
+                    <span className="portal-card-desc">Book a cleaning at a time that works for you.</span>
                 </button>
-            </Link>
-        </div>
 
-        {/* SCRUM-35: Navigate to Get a Quote page */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <Link to="/contact">
-                <button style={{
-                    backgroundColor: '#7ec8e3',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontWeight: 'bold',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer'
-                }}>
-                    Get a Quote
+                {/* SCRUM-35: get a quote */}
+                <Link to="/contact" className="portal-card portal-card-blue">
+                    <span className="portal-card-icon">💬</span>
+                    <span className="portal-card-title">Get a Quote</span>
+                    <span className="portal-card-desc">Request a free estimate for your needs.</span>
+                </Link>
+
+                {/* scrum 33: leave a review */}
+                <button onClick={toggleModal} className="portal-card portal-card-green">
+                    <span className="portal-card-icon">⭐</span>
+                    <span className="portal-card-title">Leave a Review</span>
+                    <span className="portal-card-desc">Share your experience with us.</span>
                 </button>
-            </Link>
-        </div>
+
+                {/* Scrum 41: view our services */}
+                <button onClick={() => navigate('/services')} className="portal-card portal-card-blue">
+                    <span className="portal-card-icon">🧹</span>
+                    <span className="portal-card-title">View Our Services</span>
+                    <span className="portal-card-desc">Browse all the services we offer.</span>
+                </button>
+
+                {/* SCRUM-34: service area */}
+                <Link to="/service-area" className="portal-card portal-card-green">
+                    <span className="portal-card-icon">📍</span>
+                    <span className="portal-card-title">Service Area</span>
+                    <span className="portal-card-desc">See if we service your area.</span>
+                </Link>
+
+                {/* SCRUM-76: contact information */}
+                <button onClick={toggleContactModal} className="portal-card portal-card-blue">
+                    <span className="portal-card-icon">📞</span>
+                    <span className="portal-card-title">Contact Us</span>
+                    <span className="portal-card-desc">Get in touch with any questions.</span>
+                </button>
+            </div>
+        </main>
 
         {/*scrum 33: review modal*/}
         {isModalOpen  &&(
@@ -570,129 +431,6 @@ export default function CustomerPortal() {
 
                     </div>
                 </div>
-        )}
-        {/*SCRUM-75: appointment modal*/}
-        {isScheduleModalOpen && (
-            <div style={{
-                position: 'fixed',
-                top: 0, left: 0,
-                width: '100%', height: '100%',
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 1000
-            }}>
-            <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '2rem',
-            width: '90%',
-            maxWidth: '460px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            textAlign: 'center'
-            }}>
-            <p style={{
-                fontSize: '0.8rem',
-                color: '#888',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                marginBottom: '0.25rem'
-            }}>
-                Schedule Service
-            </p>
-
-            <h2 style={{
-                fontSize: '2rem',
-                fontWeight: 'bold',
-                marginBottom: '1rem'
-            }}>
-                Schedule Appointment
-            </h2>
-
-            <div style={{ marginBottom: '1rem' }}>
-                <input
-                    type="date"
-                    name="startDate"
-                    value={startDate}
-                    onChange={handleDateChange}
-                    style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '12px',
-                        border: scheduleErrors.startDate ? '2px solid red' : '1px solid #ccc',
-                        boxSizing: 'border-box',
-                        fontSize: '0.95rem',
-                        outline: 'none'
-                    }}
-                />
-                {scheduleErrors.startDate && (
-                    <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                        {scheduleErrors.startDate}
-                    </p>
-                )}
-            </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-                <input
-                    type="date"
-                    name="endDate"
-                    value={endDate}
-                    onChange={handleDateChange}
-                    style={{
-                        width: '100%',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '12px',
-                        border: scheduleErrors.endDate || scheduleErrors.dateRange ? '2px solid red' : '1px solid #ccc',
-                        boxSizing: 'border-box',
-                        fontSize: '0.95rem',
-                        outline: 'none'
-                    }}
-                />
-                {scheduleErrors.endDate && (
-                    <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                        {scheduleErrors.endDate}
-                    </p>
-                )}
-                {scheduleErrors.dateRange && (
-                    <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                        {scheduleErrors.dateRange}
-                    </p>
-                )}
-            </div>
-
-            <button
-                onClick={submitSchedule}
-                style={{
-                    backgroundColor: '#8db87a',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '25px',
-                    padding: '0.75rem 3rem',
-                    fontWeight: 'bold',
-                    fontSize: '1rem',
-                    cursor: 'pointer',
-                    marginBottom: '0.75rem'
-                }}
-            >
-                Submit
-            </button>
-
-            <div>
-                <span
-                    onClick={toggleScheduleModal}
-                    style={{
-                        fontSize: '0.85rem',
-                        color: '#888',
-                        cursor: 'pointer',
-                        textDecoration: 'underline'
-                    }}
-                >
-                    Cancel
-                </span>
-            </div>
-            </div>
-        </div>
         )}
         {/* SCRUM-76: contact information modal */}
         {/* SCRUM-170: clicking the backdrop dismisses the modal */}

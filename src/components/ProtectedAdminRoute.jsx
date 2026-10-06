@@ -28,7 +28,7 @@ export default function ProtectedAdminRoute() {
             if (!isMounted) return
 
             if(profileError || profile?.is_admin !== true) {
-                setStatus('fordibben')
+                setStatus('forbidden')
                 return
             }
 
@@ -54,7 +54,7 @@ export default function ProtectedAdminRoute() {
     if (status !== 'authorized') {
         return (
             <Navigate
-                to="admin/login"
+                to="/signin"
                 replace
                 state={{
                     from: location.pathname,

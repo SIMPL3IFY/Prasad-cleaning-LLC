@@ -1,10 +1,10 @@
-import residentialImage from '../ServicesImages/ResidentialCleaning.jpeg';
-import commercialImage from '../ServicesImages/CommercialCleaning.jpeg';
-import moveImage from '../ServicesImages/MoveInOutCleaning.jpeg';
-import deepCleanImage from '../ServicesImages/DeepCleaning.jpeg';
-import maintenanceImage from '../ServicesImages/MaintenanceCleaning.jpeg';
-import customImage from '../ServicesImages/CustomCleaning.jpeg';
-import specialOfferImage from '../ServicesImages/SpecialOffers.jpeg';
+import residentialImage from '../ServicesImages/ResidentialCleaning.jpg';
+import commercialImage from '../ServicesImages/CommercialCleaning.jpg';
+import moveImage from '../ServicesImages/MoveInOutCleaning.jpg';
+import deepCleanImage from '../ServicesImages/DeepCleaning.jpg';
+import maintenanceImage from '../ServicesImages/MaintenanceCleaning.jpg';
+import customImage from '../ServicesImages/CustomCleaning.jpg';
+import specialOfferImage from '../ServicesImages/SpecialOffers.jpg';
 
 export const SERVICES_LIST = [
     { name: "Residential Cleaning", img: residentialImage },
