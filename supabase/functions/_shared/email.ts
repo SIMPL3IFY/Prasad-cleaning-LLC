@@ -2,7 +2,7 @@
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
 const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") ||
-  "Prasad's Cleaning Services <onboarding@resend.dev>" // swap once domain is verified
+  "Prasad's Cleaning Services <notifications@prasadscleaning.com>" // swap once domain is verified
 
 export const BUSINESS_TIMEZONE = "America/Los_Angeles"
 
