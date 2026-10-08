@@ -36,6 +36,7 @@ export default function AdminDashboard() {
     const [appointmentError, setAppointmentError] = useState('') // SCRUM-142 Subtask 189: Visible error for invalid or failed appointment edits
     const [appointmentMessage, setAppointmentMessage] = useState('') // Scrum 84: Appointment message state
     const [editedAppointment, setEditedAppointment] = useState({}) // Scrum 87: Tracks in-progress field edits
+    const [pendingSync, setPendingSync] = useState(null) // SCRUM-184: { quoteId, previous, customerName } when a calendar/email sync failed and can be retried
     const [declinedQuotes, setDeclinedQuotes] = useState([])       // Scrum 149: Holds declined quotes fetched from the archive table
     const [currentDeclinedPage, setCurrentDeclinedPage] = useState(1)   // Scrum 149: Current page for Declined Quotes pagination
     const [decliningQuoteId, setDecliningQuoteId] = useState(null) // Scrum 149: Which quote's reason prompt is open
@@ -227,6 +228,7 @@ export default function AdminDashboard() {
         setEditedAppointment({}) // Scrum 87: Clear in-progress edits when navigating pages
         setAppointmentMessage('') // Clear any success message when navigating pages
         setAppointmentError('') // SCRUM-142 sub task 189: Clear any edit error when navigating pages
+        setPendingSync(null) // SCRUM-184: Retry belongs to the card that failed
     }
     // Scrum 149 method: Navigates between declined quote pages
     const handleDeclinedPage = (direction) => {
@@ -385,6 +387,18 @@ export default function AdminDashboard() {
             return
         }
 
+        // SCRUM-184: Cancel the Calendly booking and email both sides while the row still exists
+        // (the edge function reads it). A failure doesn't block the cancellation; the admin is told to clean up by hand.
+        let syncProblems = []
+        if (!isDemoAdmin()) {
+            try {
+                syncProblems = await invokeAppointmentSync({ quoteId: quoteID, mode: 'cancel', reason })
+            } catch (err) {
+                console.error('SCRUM-184: sync-appointment cancel call failed:', err)
+                syncProblems = ['the calendar and emails could not be updated']
+            }
+        }
+
         const { error: deleteError } = await supabase
             .from('accepted_quotes')
             .delete()
@@ -399,6 +413,12 @@ export default function AdminDashboard() {
         setDecliningQuoteId(null)
         setDeclineReason('')
         setDeclineReasonError(false)
+        setPendingSync(null)
+
+        // SCRUM-184: The card is gone, so a failure needs an alert rather than an inline note
+        if (syncProblems.length > 0) {
+            alert(`Appointment for ${appointment.customerName} was cancelled, but ${syncProblems.join('; ')}. Remove the booking from Calendly by hand and let the client know.`)
+        }
 
         if (acceptedQuotes.length - 1 <= (currentAppointmentPage - 1) * APPOINTMENTS_PER_PAGE && currentAppointmentPage > 1) {
             setCurrentAppointmentPage(prev => prev - 1)
@@ -486,6 +506,59 @@ export default function AdminDashboard() {
         }
         setAppointmentMessage('')
         setAppointmentError('') // SCRUM-189: Clear any edit error when toggling edit mode
+        setPendingSync(null)
+    }
+
+    // SCRUM-184: The localStorage demo login has no Supabase session, so the edge function can't be called
+    const isDemoAdmin = () => typeof window !== 'undefined' && localStorage.getItem('prasad-admin-demo-access') === 'true'
+
+    // SCRUM-184: Calls the sync-appointment edge function and returns a list of what went wrong (empty = all good)
+    const invokeAppointmentSync = async (body) => {
+        const { data, error } = await supabase.functions.invoke('sync-appointment', { body })
+        if (error) {
+            let detail = error.message
+            try {
+                const errorBody = await error.context?.json()
+                if (errorBody?.error) detail = errorBody.error
+            } catch { /* response had no JSON body */ }
+            return [`calendar sync failed (${detail})`]
+        }
+        const problems = []
+        if (!data?.calendar?.ok) problems.push(`Calendly was not updated (${data?.calendar?.error || 'unknown error'})`)
+        if (!data?.clientEmail?.sent) problems.push('the client email was not sent')
+        if (!data?.adminEmail?.sent) problems.push("Nigel's email was not sent")
+        return problems
+    }
+
+    // SCRUM-184: Books the saved time on Calendly and emails the client and Nigel
+    const syncAppointmentTime = async (quoteID, previous, customerName) => {
+        if (isDemoAdmin()) {
+            setAppointmentMessage(`Appointment updated for ${customerName}. Calendar sync unavailable in demo mode.`)
+            return
+        }
+        setAppointmentMessage(`Appointment updated for ${customerName}. Updating calendar and sending emails…`)
+        try {
+            const problems = await invokeAppointmentSync({ quoteId: quoteID, mode: 'schedule', previous })
+            if (problems.length === 0) {
+                setAppointmentMessage(`Appointment updated for ${customerName}. Calendar updated and emails sent.`)
+                setPendingSync(null)
+                return
+            }
+            setAppointmentMessage('')
+            setAppointmentError(`Saved, but ${problems.join('; ')}.`)
+        } catch (err) {
+            console.error('SCRUM-184: sync-appointment call failed:', err)
+            setAppointmentMessage('')
+            setAppointmentError('Saved, but the calendar and emails could not be updated. Check your connection and retry.')
+        }
+        setPendingSync({ quoteId: quoteID, previous, customerName })
+    }
+
+    // SCRUM-184: Re-saving an unchanged time stops at "No changes", so retry calls the sync directly
+    const handleRetrySync = () => {
+        if (!pendingSync) return
+        setAppointmentError('')
+        syncAppointmentTime(pendingSync.quoteId, pendingSync.previous, pendingSync.customerName)
     }
 
     // Scrum 84 method: Update appointment
@@ -521,9 +594,25 @@ export default function AdminDashboard() {
         // SCRUM-142: Block the update if it would blank out a required column (e.g. phone)
         const blankRequired = changedFields.filter(field => REQUIRED_APPOINTMENT_FIELDS[field] && changes[APPOINTMENT_FIELD_MAP[field]] === '')
         if (blankRequired.length > 0) {
-            setAppointmentError(`${blankRequired.map(field => REQUIRED_APPOINTMENT_FIELDS[field]).join(', ')} cannot be empty.`) 
+            setAppointmentError(`${blankRequired.map(field => REQUIRED_APPOINTMENT_FIELDS[field]).join(', ')} cannot be empty.`)
             return
         }
+
+        // SCRUM-184: A changed date or time gets booked on Calendly, so it can't be in the past
+        const timeChanged = 'appointment_date' in changes || 'appointment_time' in changes
+        if (timeChanged) {
+            const date = normalize(editedAppointment.appointmentDate)
+            const time = normalize(editedAppointment.appointmentTime)
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}/.test(time)) {
+                setAppointmentError('Pick both an appointment date and time.')
+                return
+            }
+            if (new Date(`${date}T${time.slice(0, 5)}`) <= new Date()) {
+                setAppointmentError('Appointment time must be in the future.')
+                return
+            }
+        }
+        setPendingSync(null)
 
         try { // SCRUM-142: Catches anything unexpected that throws
             // SCRUM-142: .update(changes) sends only changed columns.
@@ -562,6 +651,11 @@ export default function AdminDashboard() {
             setAppointmentMessage(`Appointment updated for ${quote.customerName}.`)
             setEditingAppointmentId(null)
             setEditedAppointment({}) // Scrum 87: Clear edits after saving
+
+            // SCRUM-184: Push the new time to Calendly and email the client and Nigel
+            if (timeChanged) {
+                await syncAppointmentTime(quoteID, { date: quote.appointmentDate, time: quote.appointmentTime }, quote.customerName)
+            }
         } catch (err) {
             console.error('Unexpected failure while updating appointment:', err)
             setAppointmentError('Something went wrong while saving. Check your connection and try again.') // SCRUM-189
@@ -671,12 +765,15 @@ export default function AdminDashboard() {
                     <p className="admin-label">Appointment</p>
                     {editingAppointmentId === quote.id ? ( // Scrum 87: Editable date and time fields
                         <>
+                            {/* SCRUM-184: Real pickers so the value is always YYYY-MM-DD / HH:MM for Calendly */}
                             <input
+                                type="date"
                                 value={editedAppointment.appointmentDate || ''}
                                 onChange={e => setEditedAppointment(prev => ({ ...prev, appointmentDate: e.target.value }))}
                                 className="admin-input admin-input--edit"
                             />
                             <input
+                                type="time"
                                 value={editedAppointment.appointmentTime || ''}
                                 onChange={e => setEditedAppointment(prev => ({ ...prev, appointmentTime: e.target.value }))}
                                 className="admin-input admin-input--edit"
@@ -777,6 +874,14 @@ export default function AdminDashboard() {
                 <p role="alert" className="admin-note admin-note--danger">
                     {appointmentError}
                 </p>
+            )}
+            {/* SCRUM-184: Retry a failed calendar/email sync without re-saving */}
+            {pendingSync?.quoteId === quote.id && (
+                <div className="admin-btn-row">
+                    <button onClick={handleRetrySync} className="admin-btn admin-btn--ghost">
+                        Retry sync
+                    </button>
+                </div>
             )}
         </div>
     )
