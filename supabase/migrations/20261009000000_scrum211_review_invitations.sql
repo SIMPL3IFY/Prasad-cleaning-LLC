@@ -1,6 +1,6 @@
--- SCRUM-211: Reviews reached from an appointment email have no Auth session.
--- Keep customer_reviews as the single review store and associate guest reviews
--- with the accepted appointment rather than inventing an Auth user.
+-- scrum211: Allow customer_reviews.user_id to be empty for reviews submitted through an email link.
+-- Add accepted_quote_id to reviews and enforce at most one review per appointment.
+-- Add invitation claim and sent timestamps to accepted_quotes
 alter table public.customer_reviews
     alter column user_id drop not null,
     add column accepted_quote_id uuid references public.accepted_quotes(id) on delete set null;
