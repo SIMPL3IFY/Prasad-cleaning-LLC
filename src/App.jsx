@@ -12,6 +12,7 @@ import SignUp from './pages/SignUp'
 import AuthCallback from './pages/AuthCallback'
 import ServiceArea from './pages/ServiceArea'
 import CustomerPortal from './pages/CustomerPortal'
+import AppointmentReview from './pages/AppointmentReview'
 import Settings from './pages/Settings'
 import ProtectedAdminRoute from './components/ProtectedAdminRoute'
 import ProtectedCustomerRoute from './components/ProtectedCustomerRoute'
@@ -47,6 +48,7 @@ function AppContent() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/service-area" element={<ServiceArea />} />
           <Route path="/portal" element={<CustomerPortal />} />
+          <Route path="/review/:token" element={<AppointmentReview />} />
           <Route path="/settings" element={<Settings />} />
           <Route element={<ProtectedAdminRoute />}>
             <Route path="/admin" element={<AdminDashboard />} />
