@@ -23,6 +23,22 @@ serve(async (req) => {
   if (!cronSecret || req.headers.get("x-review-cron-secret") !== cronSecret) {
     return json({ error: "Unauthorized" }, 401)
   }
+  let body: { testQuoteId?: unknown }
+  try {
+    const raw = await req.text()
+    const parsed = raw ? JSON.parse(raw) : {}
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid body")
+    body = parsed
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400)
+  }
+  const { testQuoteId } = body
+  if (testQuoteId !== undefined &&
+      (typeof testQuoteId !== "string" || !/^[0-9a-f-]{36}$/.test(testQuoteId))) {
+    return json({ error: "Invalid testQuoteId" }, 400)
+  }
+  const testEmail = env("REVIEW_TEST_EMAIL").trim().toLowerCase()
+  if (testQuoteId && !testEmail) return json({ error: "REVIEW_TEST_EMAIL is required for a test" }, 500)
   const site = env("REVIEW_SITE_URL").replace(/\/+$/, "")
   const key = env("RESEND_API_KEY")
   const linkSecret = env("REVIEW_LINK_SECRET")
@@ -34,15 +50,21 @@ serve(async (req) => {
   const now = Date.now()
   const today = pacificDate(now)
   const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86400000).toISOString().slice(0, 10)
-  const { data: appointments, error } = await admin.from("accepted_quotes")
+  let query = admin.from("accepted_quotes")
     .select("id,email,customer_name,appointment_date,appointment_time,status,review_invite_claimed_at,review_invite_sent_at")
     .eq("status", "accepted")
     .is("review_invite_sent_at", null)
     .gte("appointment_date", yesterday)
     .lte("appointment_date", today)
     .order("appointment_date", { ascending: false })
-    .limit(500)
+    .limit(testQuoteId ? 1 : 500)
+  if (testQuoteId) query = query.eq("id", testQuoteId)
+  const { data: appointments, error } = await query
   if (error) return json({ error: error.message }, 500)
+
+  if (testQuoteId && appointments?.[0]?.email?.trim().toLowerCase() !== testEmail) {
+    return json({ error: "Test recipient does not match REVIEW_TEST_EMAIL" }, 403)
+  }
 
   let sent = 0
   let failed = 0
