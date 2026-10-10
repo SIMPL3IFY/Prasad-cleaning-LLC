@@ -317,6 +317,30 @@ ul {
   justify-content: center;
 }
 
+/* SCRUM-198 / SCRUM-201: Gradient banner shared by the Contact and Services pages */
+.banner-glow {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(194, 216, 130, 0.35), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(128, 187, 226, 0.4), transparent 50%),
+    linear-gradient(180deg, #f8fbff 0%, #f3f5f7 100%);
+  padding-bottom: calc(var(--section-padding) + 2rem);
+}
+
+.banner-glow .page-subtitle {
+  margin-bottom: 0;
+}
+
+.banner-eyebrow {
+  display: inline-block;
+  margin-bottom: var(--space-md);
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: #374151;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
 /* ========== SECTIONS ========== */
 .section {
   padding: var(--section-padding) 0;
@@ -736,6 +760,193 @@ ul {
 
 .contact-form .button-main:hover {
   background: var(--color-bg-alt);
+}
+
+/* ========== CONTACT PAGE ========== */
+/* SCRUM-198: Scoped to .contact-page so the shared QuoteForm keeps its blue
+   action-section look on the Home page. */
+.contact-main {
+  padding: 0 0 var(--section-padding);
+  background: var(--color-bg-alt);
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: var(--space-xl);
+  align-items: start;
+  margin-top: -3rem;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.contact-info-card,
+.contact-form-card {
+  background: var(--color-surface);
+  border: 1px solid rgba(31, 41, 55, 0.08);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-md);
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.contact-info-card {
+  border-top: 6px solid var(--color-primary);
+}
+
+.contact-info-card--accent {
+  border-top-color: var(--color-accent);
+}
+
+.contact-info-title {
+  font-size: 1.25rem;
+  margin-bottom: var(--space-lg);
+  color: var(--color-text);
+}
+
+.contact-info-text {
+  color: #4b5563;
+  margin: calc(-1 * var(--space-sm)) 0 var(--space-md);
+}
+
+.contact-steps {
+  list-style: none;
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.contact-step {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+
+.contact-step-num {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 18%, white);
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
+.contact-step h3 {
+  font-size: 1rem;
+  color: var(--color-text);
+  margin-bottom: var(--space-2xs);
+}
+
+.contact-step p {
+  font-size: 0.93rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.contact-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.contact-chips li {
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-accent) 25%, white);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 60%, white);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.contact-link {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.contact-link:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.contact-form-title {
+  font-size: 1.5rem;
+  color: var(--color-text);
+}
+
+.contact-form-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-lg);
+}
+
+.contact-page .contact-form {
+  max-width: none;
+}
+
+.contact-page .contact-form input,
+.contact-page .contact-form select,
+.contact-page .contact-form textarea {
+  background: #fafbfc;
+  color: var(--color-text);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.contact-page .contact-form input:hover,
+.contact-page .contact-form select:hover,
+.contact-page .contact-form textarea:hover {
+  border-color: var(--color-primary);
+}
+
+.contact-page .contact-form input:focus,
+.contact-page .contact-form select:focus,
+.contact-page .contact-form textarea:focus {
+  outline: none;
+  background: white;
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.contact-page .contact-form textarea {
+  resize: vertical;
+}
+
+/* SCRUM-198: The base rule paints the button white for the blue Home section; on a
+   white card it needs the primary fill back. */
+.contact-page .contact-form .button-main {
+  background: var(--color-primary-dark);
+  color: white;
+  padding: var(--space-md);
+  font-size: 1.0625rem;
+  border-radius: 0.75rem;
+}
+
+.contact-page .contact-form .button-main:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary-dark) 86%, #000);
+}
+
+.contact-page .contact-form .button-main:disabled {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Form first on small screens - it's what people came for. */
+  .contact-form-card {
+    order: -1;
+  }
 }
 
 /* ========== FOOTER ========== */
