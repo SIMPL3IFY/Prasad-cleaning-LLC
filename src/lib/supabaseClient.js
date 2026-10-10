@@ -3,6 +3,13 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
+// Capture the recovery token before Supabase processes and removes the URL fragment.
+const recoveryParams = new URLSearchParams(window.location.hash.slice(1))
+export const recoveryLinkAccessToken = recoveryParams.get('type') === 'recovery'
+  ? recoveryParams.get('access_token')
+  : null
+export const recoveryLinkError = recoveryParams.get('error')
+
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
     'Missing Supabase env vars. Copy .env.example to .env and fill in ' +
