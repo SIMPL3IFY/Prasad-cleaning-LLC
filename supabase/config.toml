@@ -431,3 +431,17 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/sync-appointment/deno.json"
 entrypoint = "./functions/sync-appointment/index.ts"
+
+# SCRUM-211: Scheduler uses REVIEW_CRON_SECRET; customer submission uses a
+# signed one-appointment link and checks it before writing through service role.
+[functions.send-review-invites]
+enabled = true
+verify_jwt = false
+import_map = "./functions/send-review-invites/deno.json"
+entrypoint = "./functions/send-review-invites/index.ts"
+
+[functions.submit-appointment-review]
+enabled = true
+verify_jwt = false
+import_map = "./functions/submit-appointment-review/deno.json"
+entrypoint = "./functions/submit-appointment-review/index.ts"
