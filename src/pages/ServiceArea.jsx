@@ -6,19 +6,7 @@ export default function ServiceArea() {
   // Scrum 29 methods
   // Renders each city as a card
   const renderCityCard = (city) => (
-    <li
-      key={city}
-      className="service-card"
-      style={{
-        textAlign: 'center',
-        fontWeight: 500,
-        fontSize: '0.95rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '80px',
-      }}
-    >
+    <li key={city} className="city-card">
       {city}
     </li>
   )
@@ -26,25 +14,16 @@ export default function ServiceArea() {
   const renderCitiesGrid =() => {
     if(!cities || cities.length === 0){
       return (
-        <p style={{ textAlign: 'center', color: '#888', marginTop: 'var(--space-x1)'}}>
-          Service areas not avaliable.
+        <p className="city-empty">
+          Service areas not available.
         </p>
       )
     }
 
     return (
-      <div style={{ marginTop: 'var(--space-2xl)' }}>
-        <h2 className="section-title" style={{ textAlign: 'center' }}>Cities We Serve</h2>
-        <ul
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-            gap: 'var(--space-md, 1rem)',
-            listStyle: 'none',
-            padding: 0,
-            marginTop: 'var(--space-xl)',
-          }}
-        >
+      <div className="city-section">
+        <h2 className="section-title">Cities We Serve</h2>
+        <ul className="city-grid">
           {cities.map((city) => renderCityCard(city))}
         </ul>
       </div>
