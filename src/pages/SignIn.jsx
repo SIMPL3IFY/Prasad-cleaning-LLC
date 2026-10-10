@@ -44,7 +44,7 @@ export default function SignIn() {
       setError('Please enter a valid email address.')
       return
     }
-    
+
     setIsLoading(true) // Scrum 168: Indicate that the sign-in request is in progress
 
     const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
@@ -67,7 +67,7 @@ export default function SignIn() {
       setError('Unable to identify the signed-in account. Please try again.')
       return
     }
-    
+
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
@@ -119,16 +119,20 @@ export default function SignIn() {
   const handleSignUp = () => {
     navigate('/signup')
   }
-  
+
 
   // Scrum 71: Handles forgot password form submission
   const handleForgotSubmit = async (e) => {
     e.preventDefault()
     setResetMessage('')
     setResetError('')
+    const normalizedEmail = resetEmail.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setResetError('Please enter a valid email address.')
+      return
+    }
     setIsSendingReset(true)
 
-    const normalizedEmail = resetEmail.trim()
     const { error: resetRequestError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
@@ -140,7 +144,7 @@ export default function SignIn() {
       return
     }
 
-    setResetMessage(`A reset link has been sent to ${normalizedEmail}. Please check your inbox.`)
+    setResetMessage('If an account exists for that email, a reset link has been sent. Please check your inbox.')
     setResetEmail('')
   }
 
@@ -245,7 +249,7 @@ export default function SignIn() {
                   <a
                     href="#"
                     className="forgot-link"
-                    onClick={(e) => { e.preventDefault(); setShowForgotPassword(true) }}
+                    onClick={(e) => { e.preventDefault(); setResetEmail(email.trim()); setShowForgotPassword(true) }}
                   >
                     Forgot password?
                   </a>
@@ -254,7 +258,7 @@ export default function SignIn() {
             <button type="submit" className="button button-main button-big signin-btn" disabled={isLoading}>
               {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
-            
+
             {/* Scrum 36: Redirects a user without an account to the sign up page */}
             <button
               type="button"
