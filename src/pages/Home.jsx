@@ -13,12 +13,6 @@ export default function Home() {
     service.name === "Special Offers"
   );
 
-  const serviceDescriptions = {
-    'Residential Cleaning': 'Routine cleaning for living spaces, bedrooms, kitchens, and bathrooms with dependable attention to detail.',
-    'Commercial Cleaning': 'Professional upkeep for offices and shared spaces to maintain a clean, welcoming atmosphere.',
-    'Special Offers': 'Flexible cleaning bundles and seasonal promos designed to fit your schedule and budget.'
-  }
-
   const [featuredReviews, setFeaturedReviews] = useState([])
   const [flippedServices, setFlippedServices] = useState({})
 
@@ -85,7 +79,8 @@ export default function Home() {
                     </div>
                     <div className="service-card-face service-card-back">
                       <h3>{service.name}</h3>
-                      <p>{serviceDescriptions[service.name] || 'Customized cleaning solutions designed around your needs.'}</p>
+                      {/* SCRUM-201: Description now comes from the shared ServicesData */}
+                      <p>{service.description || 'Customized cleaning solutions designed around your needs.'}</p>
                     </div>
                   </div>
                 </button>
