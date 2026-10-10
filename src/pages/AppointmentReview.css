@@ -1,0 +1,129 @@
+.appointment-review-page {
+  min-height: calc(100vh - var(--header-height));
+  padding: 2rem 1rem;
+  background: var(--color-bg-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.appointment-review-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 2rem;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+.appointment-review-eyebrow {
+  margin: 0 0 0.25rem;
+  color: #888;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.appointment-review-card h1 {
+  margin: 0 0 1rem;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.appointment-review-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.appointment-review-rating {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  margin: 0 0 0.25rem;
+  padding: 0;
+  border: 0;
+}
+
+.appointment-review-star {
+  position: relative;
+}
+
+.appointment-review-star input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.appointment-review-star label {
+  color: #ccc;
+  cursor: pointer;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.appointment-review-star label.selected {
+  color: #f5a623;
+}
+
+.appointment-review-star input:focus-visible + label {
+  outline: 2px solid #235c82;
+  outline-offset: 2px;
+}
+
+.appointment-review-form > input,
+.appointment-review-form > textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ccc;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.appointment-review-form > input {
+  border-radius: 25px;
+}
+
+.appointment-review-form > textarea {
+  border-radius: 12px;
+  resize: none;
+}
+
+.appointment-review-send {
+  margin-top: 0.5rem;
+  padding: 0.75rem 3rem;
+  border: 0;
+  border-radius: 25px;
+  background: #7ec8e3;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.appointment-review-send:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.appointment-review-cancel {
+  color: #888;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+.appointment-review-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

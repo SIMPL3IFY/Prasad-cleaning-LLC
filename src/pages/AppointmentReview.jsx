@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import './AppointmentReview.css'
 
 // SCRUM-211: The email link authorizes only this review. It does not sign in
 // the visitor or grant access to the rest of the customer portal.
@@ -61,66 +62,66 @@ export default function AppointmentReview() {
   }
 
   return (
-    <section className="section signin-section">
-      <div className="container">
-        <div className="signin-card">
-          <h1 className="section-title">Leave a Review</h1>
-          {linkStatus === 'checking' ? (
-            <p role="status">Checking your review link...</p>
-          ) : linkStatus === 'invalid' ? (
-            <p role="alert">{message}</p>
-          ) : submitted ? (
-            <p role="status">Thank you for sharing your experience with us.</p>
-          ) : (
-            <form className="signin-form" onSubmit={submit}>
-              <p>Tell us about your cleaning appointment.</p>
-
-              <label htmlFor="review-name">Your name</label>
-              <input
-                id="review-name"
-                value={customerName}
-                maxLength={120}
-                onChange={(event) => setCustomerName(event.target.value)}
-                required
-              />
-
-              <fieldset>
-                <legend>Star rating</legend>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <label key={star} style={{ marginRight: '1rem' }}>
-                    <input
-                      type="radio"
-                      name="rating"
-                      value={star}
-                      checked={rating === star}
-                      onChange={() => setRating(star)}
-                      required
-                    />{' '}
-                    {star}
-                  </label>
-                ))}
-              </fieldset>
-
-              <label htmlFor="review-text">Your review</label>
-              <textarea
-                id="review-text"
-                value={review}
-                maxLength={2000}
-                onChange={(event) => setReview(event.target.value)}
-                required
-              />
-
-              {message && <p role="alert">{message}</p>}
-              <button
-                type="submit"
-                className="button button-main button-big signin-btn"
-                disabled={submitting}
-              >
-                {submitting ? 'Submitting...' : 'Submit Review'}
-              </button>
-            </form>
-          )}
-        </div>
+    <section className="appointment-review-page">
+      <div className="appointment-review-card">
+        <p className="appointment-review-eyebrow">Contact Us</p>
+        <h1>Write a Review</h1>
+        {linkStatus === 'checking' ? (
+          <p role="status">Checking your review link...</p>
+        ) : linkStatus === 'invalid' ? (
+          <p role="alert">{message}</p>
+        ) : submitted ? (
+          <p role="status">Thank you for sharing your experience with us.</p>
+        ) : (
+          <form className="appointment-review-form" onSubmit={submit}>
+            <fieldset className="appointment-review-rating">
+              <legend className="appointment-review-visually-hidden">Star rating</legend>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span key={star} className="appointment-review-star">
+                  <input
+                    id={`review-star-${star}`}
+                    type="radio"
+                    name="rating"
+                    value={star}
+                    checked={rating === star}
+                    onChange={() => setRating(star)}
+                    required
+                  />
+                  <label
+                    htmlFor={`review-star-${star}`}
+                    aria-label={`${star} ${star === 1 ? 'star' : 'stars'}`}
+                    className={star <= rating ? 'selected' : ''}
+                  >★</label>
+                </span>
+              ))}
+            </fieldset>
+            <label className="appointment-review-visually-hidden" htmlFor="review-name">Name</label>
+            <input
+              id="review-name"
+              type="text"
+              placeholder="Name"
+              value={customerName}
+              maxLength={120}
+              onChange={(event) => setCustomerName(event.target.value)}
+              required
+            />
+            <label className="appointment-review-visually-hidden" htmlFor="review-text">Message</label>
+            <textarea
+              id="review-text"
+              placeholder="Message"
+              value={review}
+              maxLength={2000}
+              rows={5}
+              onChange={(event) => setReview(event.target.value)}
+              required
+            />
+            {message && <p role="alert">{message}</p>}
+            <button type="submit" className="appointment-review-send" disabled={submitting}>
+              {submitting ? 'Sending...' : 'Send'}
+            </button>
+            <Link className="appointment-review-cancel" to="/">Cancel</Link>
+          </form>
+        )}
       </div>
     </section>
   )
