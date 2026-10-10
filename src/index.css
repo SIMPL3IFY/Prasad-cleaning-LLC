@@ -660,6 +660,50 @@ ul {
   gap: var(--space-sm);
 }
 
+.testimonials-page-title,
+.testimonials-cta {
+  text-align: center;
+}
+
+.testimonials-list--spaced {
+  padding-top: var(--space-2xl);
+}
+
+.review-rating {
+  color: #8a5a00;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.review-date {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  margin-top: auto;
+}
+
+.review-status {
+  color: var(--color-text);
+  margin-top: var(--space-2xl);
+  text-align: center;
+}
+
+.review-status--error {
+  color: var(--color-danger-text);
+  font-weight: 600;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ========== ACTION-SECTION / CONTACT ========== */
 .action-section {
   background: var(--color-primary);
