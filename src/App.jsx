@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Home from './pages/Home'
@@ -27,12 +28,19 @@ export default function App() {
   )
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
+
 /* Scrum 39 to add header depending on the page */
 function AppContent() {
   const { pathname } = useLocation()
   const removeHeader = ['/portal', '/admin']
   return (
     <>
+      <ScrollToTop />
       {/* Scrum 39 check if page should have a header */}
       {!removeHeader.includes(pathname) && <Header />}
       <main style={{ minHeight: '81vh' }}>

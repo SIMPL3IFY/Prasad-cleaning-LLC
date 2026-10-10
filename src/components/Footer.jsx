@@ -5,7 +5,7 @@ export default function Footer() {
     <footer className="footer">
       <div className="container footer-inner">
         <div className="footer-brand">Prasad's Cleaning LLC</div>
-        <div className="footer-links" style={{ whiteSpace: 'nowrap' }}>
+        <div className="footer-links">
           <Link to="/services">Services</Link> ·{' '}
           <Link to="/about">About</Link> ·{' '}
           <Link to="/testimonials">Testimonials</Link> ·{' '}
