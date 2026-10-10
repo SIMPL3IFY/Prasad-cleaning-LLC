@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     const [appointmentError, setAppointmentError] = useState('') // SCRUM-142 Subtask 189: Visible error for invalid or failed appointment edits
     const [appointmentMessage, setAppointmentMessage] = useState('') // Scrum 84: Appointment message state
     const [editedAppointment, setEditedAppointment] = useState({}) // Scrum 87: Tracks in-progress field edits
-    const [pendingSync, setPendingSync] = useState(null) // SCRUM-184: { quoteId, previous, customerName } when a calendar/email sync failed and can be retried
+    const [pendingSync, setPendingSync] = useState(null) // SCRUM-184: { quoteId, previous, customerName } when an email sync failed and can be retried
     const [declinedQuotes, setDeclinedQuotes] = useState([])       // Scrum 149: Holds declined quotes fetched from the archive table
     const [currentDeclinedPage, setCurrentDeclinedPage] = useState(1)   // Scrum 149: Current page for Declined Quotes pagination
     const [decliningQuoteId, setDecliningQuoteId] = useState(null) // Scrum 149: Which quote's reason prompt is open
@@ -387,15 +387,15 @@ export default function AdminDashboard() {
             return
         }
 
-        // SCRUM-184: Cancel the Calendly booking and email both sides while the row still exists
-        // (the edge function reads it). A failure doesn't block the cancellation; the admin is told to clean up by hand.
+        // SCRUM-184: Email both sides while the row still exists (the edge function reads it).
+        // A failure doesn't block the cancellation; the admin is told to contact the client by hand.
         let syncProblems = []
         if (!isDemoAdmin()) {
             try {
                 syncProblems = await invokeAppointmentSync({ quoteId: quoteID, mode: 'cancel', reason })
             } catch (err) {
                 console.error('SCRUM-184: sync-appointment cancel call failed:', err)
-                syncProblems = ['the calendar and emails could not be updated']
+                syncProblems = ['the emails could not be sent']
             }
         }
 
@@ -417,7 +417,7 @@ export default function AdminDashboard() {
 
         // SCRUM-184: The card is gone, so a failure needs an alert rather than an inline note
         if (syncProblems.length > 0) {
-            alert(`Appointment for ${appointment.customerName} was cancelled, but ${syncProblems.join('; ')}. Remove the booking from Calendly by hand and let the client know.`)
+            alert(`Appointment for ${appointment.customerName} was cancelled, but ${syncProblems.join('; ')}. Let the client know by hand.`)
         }
 
         if (acceptedQuotes.length - 1 <= (currentAppointmentPage - 1) * APPOINTMENTS_PER_PAGE && currentAppointmentPage > 1) {
@@ -521,27 +521,26 @@ export default function AdminDashboard() {
                 const errorBody = await error.context?.json()
                 if (errorBody?.error) detail = errorBody.error
             } catch { /* response had no JSON body */ }
-            return [`calendar sync failed (${detail})`]
+            return [`email sending failed (${detail})`]
         }
-       const problems = []
-        if (!data?.calendar?.ok) problems.push(`Calendly was not updated (${data?.calendar?.error || 'unknown error'})`)
+        const problems = []
         // SCRUM-199: On a reschedule the client email is skipped on purpose (notify-appointment-updated sends it)
         if (!data?.clientEmail?.sent && !data?.clientEmail?.skipped) problems.push('the client email was not sent')
         if (!data?.adminEmail?.sent) problems.push("Nigel's email was not sent")
         return problems
     }
 
-    // SCRUM-184: Books the saved time on Calendly and emails the client and Nigel
+    // SCRUM-184: Emails the client and Nigel about the saved time
     const syncAppointmentTime = async (quoteID, previous, customerName) => {
         if (isDemoAdmin()) {
-            setAppointmentMessage(`Appointment updated for ${customerName}. Calendar sync unavailable in demo mode.`)
+            setAppointmentMessage(`Appointment updated for ${customerName}. Emails unavailable in demo mode.`)
             return
         }
-        setAppointmentMessage(`Appointment updated for ${customerName}. Updating calendar and sending emails…`)
+        setAppointmentMessage(`Appointment updated for ${customerName}. Sending emails…`)
         try {
             const problems = await invokeAppointmentSync({ quoteId: quoteID, mode: 'schedule', previous })
             if (problems.length === 0) {
-                setAppointmentMessage(`Appointment updated for ${customerName}. Calendar updated and emails sent.`)
+                setAppointmentMessage(`Appointment updated for ${customerName}. Emails sent.`)
                 setPendingSync(null)
                 return
             }
@@ -550,7 +549,7 @@ export default function AdminDashboard() {
         } catch (err) {
             console.error('SCRUM-184: sync-appointment call failed:', err)
             setAppointmentMessage('')
-            setAppointmentError('Saved, but the calendar and emails could not be updated. Check your connection and retry.')
+            setAppointmentError('Saved, but the emails could not be sent. Check your connection and retry.')
         }
         setPendingSync({ quoteId: quoteID, previous, customerName })
     }
@@ -599,7 +598,7 @@ export default function AdminDashboard() {
             return
         }
 
-        // SCRUM-184: A changed date or time gets booked on Calendly, so it can't be in the past
+        // SCRUM-184: A changed date or time is emailed to the client, so it can't be in the past
         const timeChanged = 'appointment_date' in changes || 'appointment_time' in changes
         if (timeChanged) {
             const date = normalize(editedAppointment.appointmentDate)
@@ -653,7 +652,7 @@ export default function AdminDashboard() {
             setEditingAppointmentId(null)
             setEditedAppointment({}) // Scrum 87: Clear edits after saving
 
-            // SCRUM-184: Push the new time to Calendly and email the client and Nigel
+            // SCRUM-184: Email the new time to the client and Nigel
             if (timeChanged) {
                 await syncAppointmentTime(quoteID, { date: quote.appointmentDate, time: quote.appointmentTime }, quote.customerName)
             }
@@ -767,7 +766,7 @@ export default function AdminDashboard() {
                     <p className="admin-label">Appointment</p>
                     {editingAppointmentId === quote.id ? ( // Scrum 87: Editable date and time fields
                         <>
-                            {/* SCRUM-184: Real pickers so the value is always YYYY-MM-DD / HH:MM for Calendly */}
+                            {/* SCRUM-184: Real pickers so the value is always YYYY-MM-DD / HH:MM */}
                             <input
                                 type="date"
                                 value={editedAppointment.appointmentDate || ''}
@@ -877,7 +876,7 @@ export default function AdminDashboard() {
                     {appointmentError}
                 </p>
             )}
-            {/* SCRUM-184: Retry a failed calendar/email sync without re-saving */}
+            {/* SCRUM-184: Retry a failed email sync without re-saving */}
             {pendingSync?.quoteId === quote.id && (
                 <div className="admin-btn-row">
                     <button onClick={handleRetrySync} className="admin-btn admin-btn--ghost">
