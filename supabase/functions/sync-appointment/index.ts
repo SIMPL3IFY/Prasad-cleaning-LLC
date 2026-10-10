@@ -139,7 +139,8 @@ serve(async (req) => {
 
   const calendlyConfigured = Boolean(CALENDLY_API_TOKEN && CALENDLY_EVENT_TYPE_URI)
   let calendar: { ok: boolean; skipped?: boolean; error?: string } = { ok: true }
-  let clientEmail: EmailResult
+// SCRUM-199: Can also be "skipped" when the webhook sends the customer email instead
+  let clientEmail: EmailResult | { sent: false; skipped: string }
   let adminEmail: EmailResult
   const when = formatPacific(record.appointment_date, record.appointment_time)
   const name = escapeHtml(record.customer_name || "there")
@@ -182,25 +183,30 @@ serve(async (req) => {
     }
 
 
-    // Only a reschedule if this appointment was already booked and confirmed before.
-    const wasRescheduled = Boolean(record.calendly_event_uri && (previous?.date || previous?.time))
+    // SCRUM-199: A reschedule = the appointment already had a date AND time before this save.
+    // Same rule as notify-appointment-updated, so exactly one of the two functions emails the customer.
+    const wasRescheduled = Boolean(previous?.date && previous?.time)
     const previousWhen = wasRescheduled ? formatPacific(previous?.date, previous?.time) : ""
 
 
-    clientEmail = await sendEmail({
-      to: record.email,
-      replyTo: ADMIN_NOTIFY_EMAIL || undefined,
-      subject: wasRescheduled ? "Your cleaning appointment has been rescheduled" : "Your cleaning appointment is confirmed",
-      html: `
-        <h2>${wasRescheduled ? "Your appointment has been rescheduled" : "Your appointment is confirmed"}</h2>
-        <p>Hi ${name},</p>
-        <p>Your <strong>${service}</strong> service is scheduled for <strong>${escapeHtml(when)}</strong>
-        ${wasRescheduled ? ` (previously ${escapeHtml(previousWhen)})` : ""}.</p>
-        <p><strong>Address:</strong> ${escapeHtml(record.address || record.property)}</p>
-        <p>If you need to change anything, just reply to this email.</p>
-        <p>— Prasad's Cleaning Services</p>
-      `,
-    })
+    // SCRUM-199: Reschedules are emailed by notify-appointment-updated (webhook), so only the first confirmation is sent here
+    if (wasRescheduled) {
+      clientEmail = { sent: false, skipped: "handled by notify-appointment-updated" }
+    } else {
+      clientEmail = await sendEmail({
+        to: record.email,
+        replyTo: ADMIN_NOTIFY_EMAIL || undefined,
+        subject: "Your cleaning appointment is confirmed",
+        html: `
+          <h2>Your appointment is confirmed</h2>
+          <p>Hi ${name},</p>
+          <p>Your <strong>${service}</strong> service is scheduled for <strong>${escapeHtml(when)}</strong>.</p>
+          <p><strong>Address:</strong> ${escapeHtml(record.address || record.property)}</p>
+          <p>If you need to change anything, just reply to this email.</p>
+          <p>— Prasad's Cleaning Services</p>
+        `,
+      })
+    }
     adminEmail = await sendEmail({
       to: ADMIN_NOTIFY_EMAIL,
       replyTo: record.email,

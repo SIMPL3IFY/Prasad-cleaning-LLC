@@ -523,9 +523,10 @@ export default function AdminDashboard() {
             } catch { /* response had no JSON body */ }
             return [`calendar sync failed (${detail})`]
         }
-        const problems = []
+       const problems = []
         if (!data?.calendar?.ok) problems.push(`Calendly was not updated (${data?.calendar?.error || 'unknown error'})`)
-        if (!data?.clientEmail?.sent) problems.push('the client email was not sent')
+        // SCRUM-199: On a reschedule the client email is skipped on purpose (notify-appointment-updated sends it)
+        if (!data?.clientEmail?.sent && !data?.clientEmail?.skipped) problems.push('the client email was not sent')
         if (!data?.adminEmail?.sent) problems.push("Nigel's email was not sent")
         return problems
     }
