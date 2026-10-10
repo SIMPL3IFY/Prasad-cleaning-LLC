@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     const [appointmentError, setAppointmentError] = useState('') // SCRUM-142 Subtask 189: Visible error for invalid or failed appointment edits
     const [appointmentMessage, setAppointmentMessage] = useState('') // Scrum 84: Appointment message state
     const [editedAppointment, setEditedAppointment] = useState({}) // Scrum 87: Tracks in-progress field edits
-    const [pendingSync, setPendingSync] = useState(null) // SCRUM-184: { quoteId, previous, customerName } when a calendar/email sync failed and can be retried
+    const [pendingSync, setPendingSync] = useState(null) // SCRUM-184: { quoteId, previous, customerName } when an email sync failed and can be retried
     const [declinedQuotes, setDeclinedQuotes] = useState([])       // Scrum 149: Holds declined quotes fetched from the archive table
     const [currentDeclinedPage, setCurrentDeclinedPage] = useState(1)   // Scrum 149: Current page for Declined Quotes pagination
     const [decliningQuoteId, setDecliningQuoteId] = useState(null) // Scrum 149: Which quote's reason prompt is open
@@ -523,8 +523,7 @@ export default function AdminDashboard() {
             } catch { /* response had no JSON body */ }
             return [`email sending failed (${detail})`]
         }
-       const problems = []
-        if (!data?.calendar?.ok) problems.push(`Calendly was not updated (${data?.calendar?.error || 'unknown error'})`)
+        const problems = []
         // SCRUM-199: On a reschedule the client email is skipped on purpose (notify-appointment-updated sends it)
         if (!data?.clientEmail?.sent && !data?.clientEmail?.skipped) problems.push('the client email was not sent')
         if (!data?.adminEmail?.sent) problems.push("Nigel's email was not sent")
@@ -877,7 +876,7 @@ export default function AdminDashboard() {
                     {appointmentError}
                 </p>
             )}
-            {/* SCRUM-184: Retry a failed calendar/email sync without re-saving */}
+            {/* SCRUM-184: Retry a failed email sync without re-saving */}
             {pendingSync?.quoteId === quote.id && (
                 <div className="admin-btn-row">
                     <button onClick={handleRetrySync} className="admin-btn admin-btn--ghost">

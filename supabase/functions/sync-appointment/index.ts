@@ -75,9 +75,7 @@ serve(async (req) => {
   if (!record) return json({ error: "Appointment not found" }, 404)
 
 
-  const calendlyConfigured = Boolean(CALENDLY_API_TOKEN && CALENDLY_EVENT_TYPE_URI)
-  let calendar: { ok: boolean; skipped?: boolean; error?: string } = { ok: true }
-// SCRUM-199: Can also be "skipped" when the webhook sends the customer email instead
+  // SCRUM-199: Can also be "skipped" when the webhook sends the customer email instead
   let clientEmail: EmailResult | { sent: false; skipped: string }
   let adminEmail: EmailResult
   const when = formatPacific(record.appointment_date, record.appointment_time)
@@ -88,35 +86,6 @@ serve(async (req) => {
   if (mode === "schedule") {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(record.appointment_date ?? "") || !/^\d{1,2}:\d{2}/.test(record.appointment_time ?? "")) {
       return json({ error: "Appointment date/time must be YYYY-MM-DD and HH:MM" }, 400)
-    }
-
-
-    if (!calendlyConfigured) {
-      calendar = { ok: false, skipped: true, error: "Calendly secrets not set" }
-    } else {
-      try {
-        if (record.calendly_event_uri) {
-          await cancelCalendlyEvent(record.calendly_event_uri, "Rescheduled by Prasad's Cleaning Services")
-        }
-        const created = await calendly("/invitees", {
-          event_type: CALENDLY_EVENT_TYPE_URI,
-          start_time: startTime,
-          invitee: {
-            name: record.customer_name || record.email,
-            email: record.email,
-            timezone: BUSINESS_TIMEZONE,
-          },
-          location: { kind: CALENDLY_LOCATION_KIND, location: record.address || record.property || "" },
-        })
-        const eventUri = created?.resource?.event ?? null
-        await admin
-          .from("accepted_quotes")
-          .update({ calendly_event_uri: eventUri, calendar_synced_at: new Date().toISOString() })
-          .eq("id", quoteId)
-      } catch (err) {
-        console.error("SCRUM-184: Calendly booking failed", err)
-        calendar = { ok: false, error: String(err) }
-      }
     }
 
 
