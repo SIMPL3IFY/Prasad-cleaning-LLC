@@ -439,6 +439,41 @@ ul {
 }
 /*End edit for service pictures*/
 
+/* ========== SERVICE AREA (SCRUM-207) ========== */
+.city-section {
+  margin-top: var(--space-2xl);
+}
+
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+.city-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.city-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  margin-top: var(--space-xl);
+}
+
 /* ========== ABOUT ========== */
 .about-page {
   background: linear-gradient(to bottom, #f3f4f6 0%, #ffffff 20%, #f3f4f6 100%);
