@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import ServicePhotosManager from '../components/ServicePhotosManager'
 
 const QUOTES_PER_PAGE = 1
 const APPOINTMENTS_PER_PAGE = 1 // Scrum 84: Appointments pagination
@@ -43,6 +44,7 @@ export default function AdminDashboard() {
     const [declineReason, setDeclineReason] = useState('')  // Scrum 149: In-progress text for the decline reason field
     const [declineReasonError, setDeclineReasonError] = useState(false) // Scrum 149: Drives the required-field highlight
     const [reviews, setReviews] = useState([])
+    const [showServicePhotosModal, setShowServicePhotosModal] = useState(false) // SCRUM-204
     const [loadingReviews, setLoadingReviews] = useState(true)
     const [reviewMessage, setReviewMessage] = useState('')
     const [showReviewsModal, setShowReviewsModal] = useState(false)
@@ -1195,6 +1197,20 @@ export default function AdminDashboard() {
                         View Review Table
                     </button>
                 </div>
+
+                {/* SCRUM-204: Service photos trigger */}
+                <div className="admin-panel admin-panel--compact">
+                    <h2 className="admin-panel-title">
+                        Service Photos
+                    </h2>
+
+                    <button
+                        onClick={() => setShowServicePhotosModal(true)}
+                        className="admin-btn admin-btn--primary"
+                    >
+                        Manage Service Photos
+                    </button>
+                </div>
             </div>
 
             {/* Scrum 150: Confirmation Modal before accepting quote */}
@@ -1250,6 +1266,11 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* SCRUM-204: Service photos popup */}
+            {showServicePhotosModal && (
+                <ServicePhotosManager onClose={() => setShowServicePhotosModal(false)} />
             )}
 
             {showReviewsModal && (
