@@ -523,8 +523,10 @@ export default function AdminDashboard() {
             } catch { /* response had no JSON body */ }
             return [`email sending failed (${detail})`]
         }
-        const problems = []
-        if (!data?.clientEmail?.sent) problems.push('the client email was not sent')
+       const problems = []
+        if (!data?.calendar?.ok) problems.push(`Calendly was not updated (${data?.calendar?.error || 'unknown error'})`)
+        // SCRUM-199: On a reschedule the client email is skipped on purpose (notify-appointment-updated sends it)
+        if (!data?.clientEmail?.sent && !data?.clientEmail?.skipped) problems.push('the client email was not sent')
         if (!data?.adminEmail?.sent) problems.push("Nigel's email was not sent")
         return problems
     }
@@ -713,8 +715,9 @@ export default function AdminDashboard() {
 
     // Scrum 84 method: Renders and displays each appointment card on screen
     // Scrum 150 method: Added Decline button to cancel accepted appointments
+    // Scrum 200: Added admin-card-body wrapper class to separate card content from pagination
     const renderAppointmentCard = (quote) => (
-        <div key={quote.id}>
+        <div key={quote.id} className="admin-card-body">{/* Scrum 200 */}
             <div className="admin-row">
                 <div>
                     <p className="admin-label">Customer Name</p>
@@ -929,8 +932,9 @@ export default function AdminDashboard() {
 
     // Scrum 128 method: Renders and displays each quote card on screen
     // Scrum 150 method: Updated Accept button to trigger confirmation modal instead of directly accepting
+    // Scrum 200: Added admin-card-body wrapper class to separate card content from pagination
     const renderQuoteCard = (quote) => (
-        <div key={quote.id}>
+        <div key={quote.id} className="admin-card-body">{/* Scrum 200 */}
             {/* Accept / Decline buttons */}
             <div className="admin-btn-row">
                 {quote.status === 'pending' ? (
@@ -997,8 +1001,9 @@ export default function AdminDashboard() {
 
     // Scrum 149 method: Renders and displays each declined quote card on screen
     //Scrum 183: Move declined quotes (Manage Quotes) to pending with button
+    // Scrum 200: Added admin-card-body wrapper class to separate card content from pagination
     const renderDeclinedQuoteCard = (quote) => (
-        <div key={quote.id}>
+        <div key={quote.id} className="admin-card-body">{/* Scrum 200 */}
             <div className="admin-btn-row">
                 <span className="admin-badge admin-badge--danger">
                     Declined
@@ -1061,6 +1066,27 @@ export default function AdminDashboard() {
     // Main return
     return (
         <div className="admin-page">
+            {/* Scrum 200: Inject styles to fix pagination arrow positions across categories */}
+            <style>{`
+                /* Scrum 200: Enforce unified panel height and flex column alignment */
+                .admin-panel {
+                    display: flex !important;
+                    flex-direction: column !important;
+                    height: 100% !important;
+                }
+                /* Scrum 200: Ensure quote content expands flexibly & allows scrolling for extra long messages */
+                .admin-card-body {
+                    flex: 1 1 auto !important;
+                    overflow-y: auto !important; /* Scrum 200: Adds vertical scrollbar if content exceeds max height */
+                    max-height: 600px !important;  /* Scrum 200: Keeps all cards uniform height regardless of quote length */
+                }
+                /* Scrum 200: Pin pagination controls to bottom of panel at a fixed position */
+                .admin-pagination {
+                    margin-top: auto !important;
+                    padding-top: 1rem !important;
+                }
+            `}</style>
+
             {/* SCRUM 172 / 187: admin masthead. Scrum 39 keeps the marketing
                 header off /admin, so the dashboard carries its own minimal nav.
                 Uses the shared .button/.button-alt classes so the controls match
