@@ -47,11 +47,17 @@ values ('service-images', 'service-images', true, 5242880,
         array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do nothing;
 
--- 4. Storage policies: anyone can view, only admins can upload/replace/delete
+-- 4. Storage policies: photos are served through public URLs, so only admins
+--    need to list files (deleting a file also requires select permission)
 drop policy if exists "Service images are publicly viewable" on storage.objects;
-create policy "Service images are publicly viewable"
+drop policy if exists "Admins can list service images" on storage.objects;
+create policy "Admins can list service images"
   on storage.objects for select
-  using (bucket_id = 'service-images');
+  to authenticated
+  using (
+    bucket_id = 'service-images'
+    and exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+  );
 
 drop policy if exists "Admins can upload service images" on storage.objects;
 create policy "Admins can upload service images"
