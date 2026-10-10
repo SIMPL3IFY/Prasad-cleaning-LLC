@@ -3,7 +3,7 @@
 const encoder = new TextEncoder()
 const TIMEZONE = "America/Los_Angeles"
 
-// Web Crypto expects an ArrayBuffer.
+
 function bytesBuffer(bytes: Uint8Array): ArrayBuffer {
   const buffer = new ArrayBuffer(bytes.byteLength)
   new Uint8Array(buffer).set(bytes)
