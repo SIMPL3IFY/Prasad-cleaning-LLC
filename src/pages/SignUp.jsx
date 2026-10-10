@@ -19,6 +19,8 @@ export default function SignUp() {
   const [pendingEmail, setPendingEmail] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
   const [resendMessage, setResendMessage] = useState('')
+  const [showPassword, setShowPassword] = useState(false) // SCRUM-212: Toggle password visibility
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false) // SCRUM-212: Toggle confirm password visibility
 
   // Scrum 177: Count down the resend cooldown one second at a time
   useEffect(() => {
@@ -223,33 +225,56 @@ export default function SignUp() {
 
             <div className="form-group">
               <label htmlFor="password">Password</label>
-              <input 
-                id="password" 
-                name="password"
-                type="password" 
-                placeholder="••••••••" 
-                value={formData.password}
-                onChange={handleInputChange}
-                className={errors.password ? 'input-error' : ''}
-              />
-               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted, #666)', display: 'block', marginTop: '0.25rem' }}>
+              <div className="password-wrapper">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className={errors.password ? 'input-error' : ''}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  )}
+                </button>
+              </div>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted, #666)', display: 'block', marginTop: '0.25rem' }}>
                 Must be at least 8 characters and include 1 special character
               </span>
-              
               {renderErrorMessages('password')}
             </div>
 
             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
               <label htmlFor="confirmPassword">Confirm Password</label>
-              <input 
-                id="confirmPassword" 
-                name="confirmPassword"
-                type="password" 
-                placeholder="••••••••" 
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className={errors.confirmPassword ? 'input-error' : ''}
-              />
+              <div className="password-wrapper">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className={errors.confirmPassword ? 'input-error' : ''}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowConfirmPassword(prev => !prev)}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? '👁️‍🗨️' : '👁️'}
+                </button>
+              </div>
               {renderErrorMessages('confirmPassword')}
             </div>
 
