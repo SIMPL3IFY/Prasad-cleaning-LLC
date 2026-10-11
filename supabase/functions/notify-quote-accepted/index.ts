@@ -72,7 +72,7 @@ serve(async (req) => {
       subject: `New job accepted: ${record.customer_name || record.email}`,
       html: `
         <h2>New job accepted</h2>
-        <p>Set the appointment time in the Admin Dashboard to book it on Calendly.</p>
+        <p>Set the appointment time in the Admin Dashboard.</p>
         ${jobDetailsHtml(record)}
       `
     })
