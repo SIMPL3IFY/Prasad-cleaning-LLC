@@ -106,7 +106,7 @@ export default function CustomerPortal() {
             customer_name: customerName.trim(),
             review: reviewText.trim(),
             rating,
-            approved: rating === 5
+            approved: false
         })
 
         setIsSubmittingReview(false)

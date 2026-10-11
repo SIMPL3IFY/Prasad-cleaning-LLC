@@ -5,6 +5,24 @@ import { useServices } from '../hooks/useServices';
 import { supabase } from '../lib/supabaseClient'
 import QuoteForm from '../components/QuoteForm'
 
+const formatReviewDate = (createdAt) => {
+  if (!createdAt) {
+    return 'Date unavailable'
+  }
+
+  const date = new Date(createdAt)
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Date unavailable'
+  }
+
+  return new Intl.DateTimeFormat('en-US', { 
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(date)
+}
+
 export default function Home() {
 
    // SCRUM-204: Featured cards come from the services table's is_featured flag
@@ -12,13 +30,9 @@ export default function Home() {
    const featuredServices = services.filter(service => service.isFeatured)
  
 
-  const serviceDescriptions = {
-    'Residential Cleaning': 'Routine cleaning for living spaces, bedrooms, kitchens, and bathrooms with dependable attention to detail.',
-    'Commercial Cleaning': 'Professional upkeep for offices and shared spaces to maintain a clean, welcoming atmosphere.',
-    'Special Offers': 'Flexible cleaning bundles and seasonal promos designed to fit your schedule and budget.'
-  }
-
   const [featuredReviews, setFeaturedReviews] = useState([])
+  const [loadingFeaturedReviews, setLoadingFeaturedReviews] = useState(true) // SCRUM-202: Added loading state for featured reviews
+  const [featuredReviewsError, setFeaturedReviewsError] = useState('') // SCRUM-202: Added error state for featured reviews
   const [flippedServices, setFlippedServices] = useState({})
 
   const toggleServiceCard = (serviceName) => {
@@ -29,10 +43,15 @@ export default function Home() {
   }
 
   useEffect(() => {
+    let isMounted = true
+
     const fetchFeaturedReviews = async () => {
+      setLoadingFeaturedReviews(true)
+      setFeaturedReviewsError('')
+
       const { data, error } = await supabase
         .from('customer_reviews')
-        .select('id, customer_name, review, rating')
+        .select('id, customer_name, review, rating, created_at')
         .eq('approved', true)
         .order('created_at', { ascending: false })
         .limit(3)
@@ -40,13 +59,19 @@ export default function Home() {
       if (error) {
         console.error('Error fetching featured reviews:', error)
         setFeaturedReviews([])
-        return
+        setFeaturedReviewsError('We could not load testimonials right now.')
+      } else {
+        setFeaturedReviews(data || [])
       }
 
-      setFeaturedReviews(data || [])
+      setLoadingFeaturedReviews(false)
     }
 
     fetchFeaturedReviews()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   return (
@@ -84,7 +109,8 @@ export default function Home() {
                     </div>
                     <div className="service-card-face service-card-back">
                       <h3>{service.name}</h3>
-                      <p>{serviceDescriptions[service.name] || 'Customized cleaning solutions designed around your needs.'}</p>
+                      {/* SCRUM-201: Description now comes from the shared ServicesData */}
+                      <p>{service.description || 'Customized cleaning solutions designed around your needs.'}</p>
                     </div>
                   </div>
                 </button>
@@ -115,19 +141,37 @@ export default function Home() {
       <section id="testimonials" className="section testimonials">
         <div className="container">
           <h2 className="section-title">What Our Customers Say</h2>
-          <ul className="testimonials-list">
-            {featuredReviews.length > 0 ? (
-              featuredReviews.map((review) => (
+          {loadingFeaturedReviews ? (
+            <p className="review-status" role="status">Loading testimonials...</p>
+          ) : featuredReviewsError ? (
+            <p className="review-status review-status--error" role="alert">
+              {featuredReviewsError}
+            </p>
+          ) : featuredReviews.length === 0 ? (
+            <p className="review-status">
+              No customer reviews are available at this time. Please check back soon.
+            </p>
+          ) : (
+            <ul className="testimonials-list">
+              {featuredReviews.map((review) => (
                 <li key={review.id} className="testimonial-card">
                   <h3>{review.customer_name || 'Verified Customer'}</h3>
                   <p>{review.review}</p>
-                  <span>{'⭐'.repeat(review.rating || 0)}</span>
+                  
+                  {review.rating ? (
+                    <p className="review-rating" aria-label={`${review.rating} out of 5 stars`}>
+                      <span aria-hidden="true">{'★'.repeat(review.rating)}</span>
+                      <span className="sr-only">{`${review.rating} out of 5 stars`}</span>
+                    </p>
+                  ) : null}
+
+                  <time className="review-date" dateTime={review.created_at || undefined}>
+                    Submitted {formatReviewDate(review.created_at)}
+                  </time>
                 </li>
-              ))
-            ) : (
-              <li className="testimonial-card">No testimonials available at this time.</li>
-            )}
-          </ul>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
