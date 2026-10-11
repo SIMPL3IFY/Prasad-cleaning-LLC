@@ -463,6 +463,147 @@ ul {
 }
 /*End edit for service pictures*/
 
+/* ========== SERVICES PAGE ========== */
+/* SCRUM-201: Scoped to .services-page; the flip cards keep their shared styles so the
+   landing page is unaffected. */
+.services-main {
+  padding: var(--space-xl) 0 var(--section-padding);
+  background: var(--color-bg-alt);
+}
+
+.services-hint {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: var(--space-xl);
+}
+
+/* SCRUM-201: 7 cards left a lone card in the bottom-left corner of the grid.
+   Flex-wrap with centering keeps any short last row centred instead:
+   4 + 3 on wide screens, 3 per row on mid-size, 2 on tablets, 1 on phones. */
+.services-page .services-grid {
+  --services-gap: var(--space-xl);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--services-gap);
+}
+
+.services-page .service-card-wrapper {
+  flex: 0 0 calc((100% - 3 * var(--services-gap)) / 4);
+}
+
+@media (max-width: 1100px) {
+  .services-page .service-card-wrapper {
+    flex-basis: calc((100% - 2 * var(--services-gap)) / 3);
+  }
+}
+
+@media (max-width: 860px) {
+  .services-page .service-card-wrapper {
+    flex-basis: calc((100% - var(--services-gap)) / 2);
+  }
+}
+
+@media (max-width: 560px) {
+  .services-page .service-card-wrapper {
+    flex-basis: 100%;
+  }
+}
+
+.services-page .service-card-face {
+  border-radius: 1.1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.services-page .service-card-img {
+  border-radius: 1rem 1rem 0 0;
+}
+
+.services-page .service-card-wrapper {
+  transition: transform 0.2s ease;
+}
+
+.services-page .service-card-wrapper:hover {
+  transform: translateY(-4px);
+}
+
+.services-page .service-card-back {
+  border-top: 6px solid var(--color-accent);
+}
+
+.services-page .service-card-title {
+  padding-bottom: 0;
+}
+
+/* SCRUM-201: Extra height for the "Learn more" cue; the faces clip overflow. */
+.services-page .service-card,
+.services-page .service-card-inner {
+  min-height: 320px;
+}
+
+.service-card-cue {
+  padding: 0 var(--space-xl) var(--space-lg);
+  margin-top: auto;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.services-page .service-card:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 4px;
+  border-radius: 1.1rem;
+}
+
+.services-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-top: var(--space-2xl);
+  padding: clamp(1.5rem, 3vw, 2rem) clamp(1.5rem, 4vw, 2.5rem);
+  background: linear-gradient(120deg, rgba(128, 187, 226, 0.18), rgba(194, 216, 130, 0.2));
+  border: 1px solid rgba(128, 187, 226, 0.35);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-md);
+}
+
+.services-cta-title {
+  font-size: 1.4rem;
+  color: var(--color-text);
+}
+
+.services-cta-text {
+  color: #4b5563;
+}
+
+.services-cta .button-main {
+  background: var(--color-primary-dark);
+}
+
+.services-cta .button-main:hover {
+  background: color-mix(in srgb, var(--color-primary-dark) 86%, #000);
+}
+
+@media (max-width: 700px) {
+  .services-cta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .services-page .service-card-wrapper {
+    transition: none;
+  }
+
+  .services-page .service-card-wrapper:hover {
+    transform: none;
+  }
+}
+
 /* ========== ABOUT ========== */
 .about-page {
   background: linear-gradient(to bottom, #f3f4f6 0%, #ffffff 20%, #f3f4f6 100%);
