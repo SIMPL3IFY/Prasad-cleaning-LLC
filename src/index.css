@@ -225,19 +225,132 @@ ul {
   background: rgba(128, 187, 226, 0.08);
 }
 
-@media (max-width: 900px) {
+/* hamburger button — hidden on desktop */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.4rem;
+  margin-left: auto;
+}
+
+.hamburger-icon,
+.hamburger-icon::before,
+.hamburger-icon::after {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: #1f2937;
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  position: relative;
+}
+
+.hamburger-icon::before,
+.hamburger-icon::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+
+.hamburger-icon::before { top: -7px; }
+.hamburger-icon::after  { top: 7px; }
+
+.hamburger-icon.open { background: transparent; }
+.hamburger-icon.open::before { transform: translateY(7px) rotate(45deg); }
+.hamburger-icon.open::after  { transform: translateY(-7px) rotate(-45deg); }
+
+@media (max-width: 768px) {
   .header-inner {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    gap: 0.9rem;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+    gap: 0;
+  }
+
+  .logo {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .hamburger {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* hide desktop auth buttons on mobile */
+  .header-actions {
+    display: none;
+  }
+
+  /* nav hidden by default, drops into row 2 when open */
+  .nav {
+    display: none;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+
+  .nav.nav-open {
+    display: block;
+    border-top: 1px solid #e5e7eb;
+    padding: 0.75rem 0;
   }
 
   .logo-img {
     height: 38px;
   }
 
+  .nav-list {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .nav-list li {
+    width: 100%;
+  }
+
+  .nav-list a {
+    display: block;
+    padding: 0.65rem 0;
+    border-bottom: none;
+    font-size: 1rem;
+  }
+
+  .nav-mobile-auth {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.25rem;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 0.5rem;
+  }
+
+  .nav-mobile-auth .button {
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-appearance: none;
+    border-radius: 0.8rem;
+    min-height: 42px;
+    padding: 0.65rem 1.1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 900px) {
   .nav-list {
     flex-wrap: wrap;
     gap: 0.85rem 1.25rem;
@@ -315,6 +428,30 @@ ul {
   flex-wrap: wrap;
   gap: var(--space-md);
   justify-content: center;
+}
+
+/* SCRUM-198 / SCRUM-201: Gradient banner shared by the Contact and Services pages */
+.banner-glow {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(194, 216, 130, 0.35), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(128, 187, 226, 0.4), transparent 50%),
+    linear-gradient(180deg, #f8fbff 0%, #f3f5f7 100%);
+  padding-bottom: calc(var(--section-padding) + 2rem);
+}
+
+.banner-glow .page-subtitle {
+  margin-bottom: 0;
+}
+
+.banner-eyebrow {
+  display: inline-block;
+  margin-bottom: var(--space-md);
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: #374151;
+  font-weight: 700;
+  font-size: 0.9rem;
 }
 
 /* ========== SECTIONS ========== */
@@ -438,6 +575,180 @@ ul {
   margin-top: -0.25rem;
 }
 /*End edit for service pictures*/
+
+/* ========== SERVICE AREA (SCRUM-207) ========== */
+.city-section {
+  margin-top: var(--space-2xl);
+}
+
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+.city-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.city-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  margin-top: var(--space-xl);
+/* ========== SERVICES PAGE ========== */
+/* SCRUM-201: Scoped to .services-page; the flip cards keep their shared styles so the
+   landing page is unaffected. */
+.services-main {
+  padding: var(--space-xl) 0 var(--section-padding);
+  background: var(--color-bg-alt);
+}
+
+.services-hint {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: var(--space-xl);
+}
+
+/* SCRUM-201: 7 cards left a lone card in the bottom-left corner of the grid.
+   Flex-wrap with centering keeps any short last row centred instead:
+   4 + 3 on wide screens, 3 per row on mid-size, 2 on tablets, 1 on phones. */
+.services-page .services-grid {
+  --services-gap: var(--space-xl);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--services-gap);
+}
+
+.services-page .service-card-wrapper {
+  flex: 0 0 calc((100% - 3 * var(--services-gap)) / 4);
+}
+
+@media (max-width: 1100px) {
+  .services-page .service-card-wrapper {
+    flex-basis: calc((100% - 2 * var(--services-gap)) / 3);
+  }
+}
+
+@media (max-width: 860px) {
+  .services-page .service-card-wrapper {
+    flex-basis: calc((100% - var(--services-gap)) / 2);
+  }
+}
+
+@media (max-width: 560px) {
+  .services-page .service-card-wrapper {
+    flex-basis: 100%;
+  }
+}
+
+.services-page .service-card-face {
+  border-radius: 1.1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.services-page .service-card-img {
+  border-radius: 1rem 1rem 0 0;
+}
+
+.services-page .service-card-wrapper {
+  transition: transform 0.2s ease;
+}
+
+.services-page .service-card-wrapper:hover {
+  transform: translateY(-4px);
+}
+
+.services-page .service-card-back {
+  border-top: 6px solid var(--color-accent);
+}
+
+.services-page .service-card-title {
+  padding-bottom: 0;
+}
+
+/* SCRUM-201: Extra height for the "Learn more" cue; the faces clip overflow. */
+.services-page .service-card,
+.services-page .service-card-inner {
+  min-height: 320px;
+}
+
+.service-card-cue {
+  padding: 0 var(--space-xl) var(--space-lg);
+  margin-top: auto;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.services-page .service-card:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 4px;
+  border-radius: 1.1rem;
+}
+
+.services-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  margin-top: var(--space-2xl);
+  padding: clamp(1.5rem, 3vw, 2rem) clamp(1.5rem, 4vw, 2.5rem);
+  background: linear-gradient(120deg, rgba(128, 187, 226, 0.18), rgba(194, 216, 130, 0.2));
+  border: 1px solid rgba(128, 187, 226, 0.35);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-md);
+}
+
+.services-cta-title {
+  font-size: 1.4rem;
+  color: var(--color-text);
+}
+
+.services-cta-text {
+  color: #4b5563;
+}
+
+.services-cta .button-main {
+  background: var(--color-primary-dark);
+}
+
+.services-cta .button-main:hover {
+  background: color-mix(in srgb, var(--color-primary-dark) 86%, #000);
+}
+
+@media (max-width: 700px) {
+  .services-cta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .services-page .service-card-wrapper {
+    transition: none;
+  }
+
+  .services-page .service-card-wrapper:hover {
+    transform: none;
+  }
+}
 
 /* ========== ABOUT ========== */
 .about-page {
@@ -640,6 +951,82 @@ ul {
     padding: 1rem;
   }
 }
+/* ========== SERVICE AREA: CITY PICKER ========== */
+/* SCRUM-203: The city button fills its card and inherits the card's look, so the
+   grid looks as before - only the selected city is marked. */
+.city-button {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.city-button:hover {
+  color: var(--color-primary-dark);
+}
+
+.city-button:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
+.city-button.is-selected {
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
+/* SCRUM-203 + SCRUM-207: Inside a .city-card the button takes over the card's
+   padding so the whole card is clickable, and the selected card is tinted. */
+.city-card:has(> .city-button) {
+  padding: 0;
+}
+
+.city-card > .city-button {
+  padding: var(--space-md);
+  border-radius: inherit;
+}
+
+.city-card:has(> .city-button:hover) {
+  border-color: var(--color-primary);
+}
+
+.city-card:has(> .city-button.is-selected) {
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  border-color: var(--color-primary-dark);
+}
+
+.map-selection-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.95rem;
+}
+
+.map-reset {
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.map-reset:hover {
+  text-decoration: underline;
+}
+
 /* ========== TESTIMONIALS ========== */
 .testimonials-list {
   display: grid;
@@ -658,6 +1045,50 @@ ul {
   flex-direction: column;
   justify-content: flex-start;
   gap: var(--space-sm);
+}
+
+.testimonials-page-title,
+.testimonials-cta {
+  text-align: center;
+}
+
+.testimonials-list--spaced {
+  padding-top: var(--space-2xl);
+}
+
+.review-rating {
+  color: #8a5a00;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.review-date {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  margin-top: auto;
+}
+
+.review-status {
+  color: var(--color-text);
+  margin-top: var(--space-2xl);
+  text-align: center;
+}
+
+.review-status--error {
+  color: var(--color-danger-text);
+  font-weight: 600;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ========== ACTION-SECTION / CONTACT ========== */
@@ -703,6 +1134,193 @@ ul {
   background: var(--color-bg-alt);
 }
 
+/* ========== CONTACT PAGE ========== */
+/* SCRUM-198: Scoped to .contact-page so the shared QuoteForm keeps its blue
+   action-section look on the Home page. */
+.contact-main {
+  padding: 0 0 var(--section-padding);
+  background: var(--color-bg-alt);
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: var(--space-xl);
+  align-items: start;
+  margin-top: -3rem;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.contact-info-card,
+.contact-form-card {
+  background: var(--color-surface);
+  border: 1px solid rgba(31, 41, 55, 0.08);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-md);
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.contact-info-card {
+  border-top: 6px solid var(--color-primary);
+}
+
+.contact-info-card--accent {
+  border-top-color: var(--color-accent);
+}
+
+.contact-info-title {
+  font-size: 1.25rem;
+  margin-bottom: var(--space-lg);
+  color: var(--color-text);
+}
+
+.contact-info-text {
+  color: #4b5563;
+  margin: calc(-1 * var(--space-sm)) 0 var(--space-md);
+}
+
+.contact-steps {
+  list-style: none;
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.contact-step {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+
+.contact-step-num {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 18%, white);
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
+.contact-step h3 {
+  font-size: 1rem;
+  color: var(--color-text);
+  margin-bottom: var(--space-2xs);
+}
+
+.contact-step p {
+  font-size: 0.93rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.contact-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.contact-chips li {
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-accent) 25%, white);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 60%, white);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.contact-link {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.contact-link:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.contact-form-title {
+  font-size: 1.5rem;
+  color: var(--color-text);
+}
+
+.contact-form-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-lg);
+}
+
+.contact-page .contact-form {
+  max-width: none;
+}
+
+.contact-page .contact-form input,
+.contact-page .contact-form select,
+.contact-page .contact-form textarea {
+  background: #fafbfc;
+  color: var(--color-text);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.contact-page .contact-form input:hover,
+.contact-page .contact-form select:hover,
+.contact-page .contact-form textarea:hover {
+  border-color: var(--color-primary);
+}
+
+.contact-page .contact-form input:focus,
+.contact-page .contact-form select:focus,
+.contact-page .contact-form textarea:focus {
+  outline: none;
+  background: white;
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.contact-page .contact-form textarea {
+  resize: vertical;
+}
+
+/* SCRUM-198: The base rule paints the button white for the blue Home section; on a
+   white card it needs the primary fill back. */
+.contact-page .contact-form .button-main {
+  background: var(--color-primary-dark);
+  color: white;
+  padding: var(--space-md);
+  font-size: 1.0625rem;
+  border-radius: 0.75rem;
+}
+
+.contact-page .contact-form .button-main:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary-dark) 86%, #000);
+}
+
+.contact-page .contact-form .button-main:disabled {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Form first on small screens - it's what people came for. */
+  .contact-form-card {
+    order: -1;
+  }
+}
+
 /* ========== FOOTER ========== */
 .footer {
   background: var(--color-text);
@@ -715,6 +1333,21 @@ ul {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-xl);
   margin-bottom: var(--space-xl);
+}
+
+@media (max-width: 600px) {
+  .footer-inner {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .footer-contact {
+    margin-left: 0 !important;
+  }
+
+  .footer-links {
+    white-space: normal !important;
+  }
 }
 
 .footer-bottom {
@@ -815,6 +1448,36 @@ ul {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+/* SCRUM-212/213: Password show/hide toggle */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 2.75rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle:focus {
+  outline: none;
 }
 
 .form-footer-row {
@@ -983,6 +1646,12 @@ ul {
 
   .portal-main {
     padding: 2rem 1rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .portal-grid {
+    grid-template-columns: 1fr;
   }
 }
 

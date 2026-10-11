@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { Link } from 'react-router-dom'
+import { recoveryLinkAccessToken, recoveryLinkError, supabase } from '../lib/supabaseClient'
 
 export default function ResetPassword() {
-  const navigate = useNavigate()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isCheckingLink, setIsCheckingLink] = useState(true)
@@ -14,12 +13,14 @@ export default function ResetPassword() {
 
   useEffect(() => {
     let isMounted = true
+    let recoveryEventReceived = false
 
-    // SCRUM-177: depends on detectSessionInUrl — regression-test this ticket
     const checkRecoverySession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session }, error } = await supabase.auth.getSession()
       if (isMounted) {
-        setIsReady(Boolean(session))
+        // A regular signed-in session must never make an unverified reset link usable.
+        setIsReady(!recoveryLinkError && !error && Boolean(recoveryEventReceived ||
+          (recoveryLinkAccessToken && session?.access_token === recoveryLinkAccessToken)))
         setIsCheckingLink(false)
       }
     }
@@ -27,7 +28,8 @@ export default function ResetPassword() {
     checkRecoverySession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (isMounted && (event === 'PASSWORD_RECOVERY' || session)) {
+      if (isMounted && !recoveryLinkError && event === 'PASSWORD_RECOVERY' && session) {
+        recoveryEventReceived = true
         setIsReady(true)
         setIsCheckingLink(false)
       }
@@ -49,22 +51,37 @@ export default function ResetPassword() {
       return
     }
 
+    if (!/[!@#$%^&*(),.?":{}|<>_\-+=[\]/\\~`]/.test(password)) {
+      setError('Password must include at least 1 special character.')
+      return
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match.')
       return
     }
 
     setIsSubmitting(true)
+    if (!isReady) {
+      setIsSubmitting(false)
+      setError('This password-reset link is invalid or has expired. Please request a new one.')
+      return
+    }
+
     const { error: updateError } = await supabase.auth.updateUser({ password })
-    setIsSubmitting(false)
 
     if (updateError) {
+      setIsSubmitting(false)
       setError(updateError.message)
       return
     }
 
-    setSuccess('Your password has been updated. Redirecting to your dashboard...')
-    setTimeout(() => navigate('/portal', { replace: true }), 1500)
+    setIsReady(false)
+    setPassword('')
+    setConfirmPassword('')
+    await supabase.auth.signOut({ scope: 'local' })
+    setIsSubmitting(false)
+    setSuccess('Your password has been updated. Please sign in with your new password.')
   }
 
   return (
@@ -76,7 +93,12 @@ export default function ResetPassword() {
             Enter and confirm your new password.
           </p>
 
-          {isCheckingLink ? (
+          {success ? (
+            <>
+              <p className="form-success" role="status">{success}</p>
+              <p className="signin-footer"><Link to="/signin">Go to Sign In</Link></p>
+            </>
+          ) : isCheckingLink ? (
             <p className="auth-status">Checking your reset link...</p>
           ) : !isReady ? (
             <>
@@ -87,6 +109,7 @@ export default function ResetPassword() {
             </>
           ) : (
             <form className="signin-form" onSubmit={handleSubmit}>
+              <p>Use at least 8 characters and 1 special character.</p>
               <div className="form-group">
                 <label htmlFor="new-password">New Password</label>
                 <input
@@ -112,7 +135,6 @@ export default function ResetPassword() {
               </div>
 
               {error && <p className="form-error" role="alert">{error}</p>}
-              {success && <p className="form-success" role="status">{success}</p>}
 
               <button type="submit" className="button button-main button-big signin-btn" disabled={isSubmitting}>
                 {isSubmitting ? 'Updating...' : 'Update Password'}
