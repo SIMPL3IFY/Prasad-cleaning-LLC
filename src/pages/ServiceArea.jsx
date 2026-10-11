@@ -40,15 +40,7 @@ export default function ServiceArea() {
         aria-pressed={selectedCity === city}
         onClick={() => handleCityClick(city)}
       >
-      {/* SCRUM-203: Each city is a button that focuses the map on it */}
-      <button
-        type="button"
-        className={`city-button${selectedCity === city ? ' is-selected' : ''}`}
-        aria-pressed={selectedCity === city}
-        onClick={() => handleCityClick(city)}
-      >
-          {city}
-      </button>
+        {city}
       </button>
     </li>
   )
@@ -65,10 +57,6 @@ export default function ServiceArea() {
     return (
       <div className="city-section">
         <h2 className="section-title">Cities We Serve</h2>
-        {/* SCRUM-203: Hint that the cities are clickable */}
-        <p className="section-subtitle" style={{ marginBottom: 0 }}>
-          Click a city to see it on the map.
-        </p>
         {/* SCRUM-203: Hint that the cities are clickable */}
         <p className="section-subtitle" style={{ marginBottom: 0 }}>
           Click a city to see it on the map.
