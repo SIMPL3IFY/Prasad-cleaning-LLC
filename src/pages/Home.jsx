@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
-import { SERVICES_LIST } from '../data/ServicesData';
+import { useServices } from '../hooks/useServices';
 import { supabase } from '../lib/supabaseClient'
 import QuoteForm from '../components/QuoteForm'
 
@@ -25,11 +25,10 @@ const formatReviewDate = (createdAt) => {
 
 export default function Home() {
 
-  const featuredServices = SERVICES_LIST.filter(service =>
-    service.name === "Residential Cleaning" ||
-    service.name === "Commercial Cleaning" ||
-    service.name === "Special Offers"
-  );
+   // SCRUM-204: Featured cards come from the services table's is_featured flag
+   const { services } = useServices()
+   const featuredServices = services.filter(service => service.isFeatured)
+ 
 
   const [featuredReviews, setFeaturedReviews] = useState([])
   const [loadingFeaturedReviews, setLoadingFeaturedReviews] = useState(true) // SCRUM-202: Added loading state for featured reviews
@@ -94,8 +93,8 @@ export default function Home() {
           <h2 className="section-title">Our Services</h2>
           <p className="section-subtitle">We offer a range of cleaning solutions tailored to your needs.</p>
           <ul className="services-grid">
-            {featuredServices.map((service, index) => (
-              <li key={index} className="service-card-wrapper">
+            {featuredServices.map((service) => (
+              <li key={service.id} className="service-card-wrapper">
                 <button
                   type="button"
                   className={`service-card ${flippedServices[service.name] ? 'is-flipped' : ''}`}
