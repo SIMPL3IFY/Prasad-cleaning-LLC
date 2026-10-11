@@ -17,6 +17,7 @@ export default function Header() {
   const { user, loading } = useAuth()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [isOpeningDashboard, setIsOpeningDashboard] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   // SCRUM 172: Check the account role before opening the correct dashboard.
   const handleDashboard = async () => {
@@ -59,18 +60,51 @@ export default function Header() {
           />
         </Link>
 
-        <nav className="nav" aria-label="Main">
+        <nav className={`nav${menuOpen ? ' nav-open' : ''}`} aria-label="Main">
           <ul className="nav-list">
             {navLinks.map(({ to, label }) => (
               <li key={to}>
                 <Link
                   to={to}
                   aria-current={pathname === to ? 'page' : undefined}
+                  onClick={() => setMenuOpen(false)}
                 >
                   {label}
                 </Link>
               </li>
             ))}
+            {!loading && menuOpen && (
+              <li className="nav-mobile-auth">
+                {user ? (
+                  <>
+                    <button
+                      type="button"
+                      className="button button-alt"
+                      onClick={() => { handleDashboard(); setMenuOpen(false) }}
+                      disabled={isOpeningDashboard}
+                    >
+                      {isOpeningDashboard ? 'Opening...' : 'Dashboard'}
+                    </button>
+                    <button
+                      type="button"
+                      className="button button-alt"
+                      onClick={() => { handleSignOut(); setMenuOpen(false) }}
+                      disabled={isSigningOut}
+                    >
+                      {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="button button-alt"
+                    onClick={() => { navigate('/signin'); setMenuOpen(false) }}
+                  >
+                    Sign In
+                  </button>
+                )}
+              </li>
+            )}
           </ul>
         </nav>
 
@@ -103,6 +137,15 @@ export default function Header() {
             )
           )}
         </div>
+
+        <button
+          className="hamburger"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(prev => !prev)}
+        >
+          <span className={`hamburger-icon${menuOpen ? ' open' : ''}`} />
+        </button>
       </div>
     </header>
   )

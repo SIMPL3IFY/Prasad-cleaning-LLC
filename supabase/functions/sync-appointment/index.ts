@@ -1,96 +1,153 @@
-// SCRUM-184: Shared Resend helpers used by notify-quote-accepted and sync-appointment.
+// SCRUM-184: Called by the Admin Dashboard after an appointment time is saved or cancelled.
+// Emails the client and Nigel. (Calendly booking was removed.)
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
+import { createClient } from "@supabase/supabase-js"
+import {
+  escapeHtml,
+  formatPacific,
+  jobDetailsHtml,
+  sendEmail,
+  type EmailResult,
+} from "../_shared/email.ts"
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
-const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") ||
-  "Prasad's Cleaning Services <notifications@prasadscleaning.com>" // swap once domain is verified
 
-export const BUSINESS_TIMEZONE = "America/Los_Angeles"
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+const ADMIN_NOTIFY_EMAIL = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("NIGEL_EMAIL") || ""
 
-export type EmailResult = { sent: boolean; skipped?: boolean; error?: string }
 
-// SCRUM-184: Never throws, so an email failure can't undo a saved appointment.
-export async function sendEmail(
-  { to, subject, html, replyTo }: { to: string; subject: string; html: string; replyTo?: string },
-): Promise<EmailResult> {
-  if (!to) return { sent: false, skipped: true, error: "no recipient" }
-  if (!RESEND_API_KEY) {
-    console.warn("SCRUM-184: RESEND_API_KEY not set, skipping email to", to)
-    return { sent: false, skipped: true, error: "RESEND_API_KEY not set" }
-  }
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to,
-        subject,
-        html,
-        ...(replyTo ? { reply_to: replyTo } : {}),
-      }),
-    })
-
-    if (!res.ok) {
-      const text = await res.text()
-      console.error("SCRUM-184: Resend send failed", res.status, text)
-      return { sent: false, error: `Resend ${res.status}: ${text}` }
-    }
-    return { sent: true }
-  } catch (err) {
-    console.error("SCRUM-184: Resend request crashed", err)
-    return { sent: false, error: String(err) }
-  }
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
-// SCRUM-184: Customer-entered text goes into HTML emails, so escape it first.
-export function escapeHtml(value: unknown): string {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-}
 
-// SCRUM-184: "2026-10-14" + "09:30" -> "Wednesday, October 14, 2026 at 9:30 AM (Pacific)".
-// Falls back to the raw values for old free-text rows.
-export function formatPacific(date?: string | null, time?: string | null): string {
-  const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date ?? "")
-  const t = /^(\d{1,2}):(\d{2})/.exec(time ?? "")
-  if (!d || !t) return [date, time].filter(Boolean).join(" ") || "TBD"
-
-  // Noon UTC keeps the calendar date stable when formatting the weekday.
-  const day = new Date(Date.UTC(+d[1], +d[2] - 1, +d[3], 12))
-  const datePart = day.toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   })
-  const hour = +t[1]
-  const timePart = `${hour % 12 || 12}:${t[2]} ${hour < 12 ? "AM" : "PM"}`
-  return `${datePart} at ${timePart} (Pacific)`
-}
 
-// SCRUM-184: Job summary block for Nigel's emails.
-export function jobDetailsHtml(record: Record<string, unknown>): string {
-  const rows: [string, unknown][] = [
-    ["Customer", record.customer_name],
-    ["Email", record.email],
-    ["Phone", record.phone],
-    ["Service", record.service],
-    ["Property", record.property],
-    ["Address", record.address],
-    ["Appointment", record.appointment_date
-      ? formatPacific(record.appointment_date as string, record.appointment_time as string)
-      : "Not scheduled yet"],
-    ["Message", record.message],
-  ]
-  return `<table cellpadding="4" style="border-collapse:collapse">${
-    rows
-      .filter(([, value]) => value)
-      .map(([label, value]) => `<tr><td><strong>${label}</strong></td><td>${escapeHtml(value)}</td></tr>`)
-      .join("")
-  }</table>`
-}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405)
+
+
+  // SCRUM-184: Only signed-in admins may trigger appointment emails.
+  const authHeader = req.headers.get("Authorization") ?? ""
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+  })
+  const { data: { user }, error: userError } = await userClient.auth.getUser()
+  if (userError || !user) return json({ error: "Not signed in" }, 401)
+
+
+  const { data: profile } = await userClient
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle()
+  if (!profile?.is_admin) return json({ error: "Admins only" }, 403)
+
+
+  let body: { quoteId?: string; mode?: string; previous?: { date?: string; time?: string }; reason?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400)
+  }
+  const { quoteId, mode, previous, reason } = body
+  if (!quoteId || (mode !== "schedule" && mode !== "cancel")) {
+    return json({ error: "quoteId and mode ('schedule' | 'cancel') are required" }, 400)
+  }
+
+
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  const { data: record, error: loadError } = await admin
+    .from("accepted_quotes")
+    .select("*")
+    .eq("id", quoteId)
+    .maybeSingle()
+  if (loadError) return json({ error: loadError.message }, 500)
+  if (!record) return json({ error: "Appointment not found" }, 404)
+
+
+  // SCRUM-199: Can also be "skipped" when the webhook sends the customer email instead
+  let clientEmail: EmailResult | { sent: false; skipped: string }
+  let adminEmail: EmailResult
+  const when = formatPacific(record.appointment_date, record.appointment_time)
+  const name = escapeHtml(record.customer_name || "there")
+  const service = escapeHtml(record.service)
+
+
+  if (mode === "schedule") {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(record.appointment_date ?? "") || !/^\d{1,2}:\d{2}/.test(record.appointment_time ?? "")) {
+      return json({ error: "Appointment date/time must be YYYY-MM-DD and HH:MM" }, 400)
+    }
+
+
+    // SCRUM-199: A reschedule = the appointment already had a date AND time before this save.
+    // Same rule as notify-appointment-updated, so exactly one of the two functions emails the customer.
+    const wasRescheduled = Boolean(previous?.date && previous?.time)
+    const previousWhen = wasRescheduled ? formatPacific(previous?.date, previous?.time) : ""
+
+
+    // SCRUM-199: Reschedules are emailed by notify-appointment-updated (webhook), so only the first confirmation is sent here
+    if (wasRescheduled) {
+      clientEmail = { sent: false, skipped: "handled by notify-appointment-updated" }
+    } else {
+      clientEmail = await sendEmail({
+        to: record.email,
+        replyTo: ADMIN_NOTIFY_EMAIL || undefined,
+        subject: "Your cleaning appointment is confirmed",
+        html: `
+          <h2>Your appointment is confirmed</h2>
+          <p>Hi ${name},</p>
+          <p>Your <strong>${service}</strong> service is scheduled for <strong>${escapeHtml(when)}</strong>.</p>
+          <p><strong>Address:</strong> ${escapeHtml(record.address || record.property)}</p>
+          <p>If you need to change anything, just reply to this email.</p>
+          <p>— Prasad's Cleaning Services</p>
+        `,
+      })
+    }
+    adminEmail = await sendEmail({
+      to: ADMIN_NOTIFY_EMAIL,
+      replyTo: record.email,
+      subject: `${wasRescheduled ? "Rescheduled" : "Scheduled"}: ${record.customer_name} — ${when}`,
+      html: `
+        <h2>Appointment ${wasRescheduled ? "rescheduled" : "scheduled"}</h2>
+        ${wasRescheduled ? `<p>Previously: ${escapeHtml(previousWhen)}</p>` : ""}
+        ${jobDetailsHtml(record)}
+      `,
+    })
+  } else {
+    clientEmail = await sendEmail({
+      to: record.email,
+      replyTo: ADMIN_NOTIFY_EMAIL || undefined,
+      subject: "Your cleaning appointment has been cancelled",
+      html: `
+        <h2>Your appointment has been cancelled</h2>
+        <p>Hi ${name},</p>
+        <p>Your <strong>${service}</strong> appointment${record.appointment_date ? ` on <strong>${escapeHtml(when)}</strong>` : ""} has been cancelled.</p>
+        <p>If you have questions or want to book again, just reply to this email.</p>
+        <p>— Prasad's Cleaning Services</p>
+      `,
+    })
+    adminEmail = await sendEmail({
+      to: ADMIN_NOTIFY_EMAIL,
+      replyTo: record.email,
+      subject: `Cancelled: ${record.customer_name}${record.appointment_date ? ` — ${when}` : ""}`,
+      html: `
+        <h2>Appointment cancelled</h2>
+        <p><strong>Reason:</strong> ${escapeHtml(reason || "No reason given")}</p>
+        ${jobDetailsHtml(record)}
+      `,
+    })
+  }
+
+
+  return json({ clientEmail, adminEmail })
+})
