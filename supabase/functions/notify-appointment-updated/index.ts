@@ -1,7 +1,9 @@
 // SCRUM-199: Emails the customer when an admin changes an accepted appointment's date, time, or address.
 // Triggered by a Supabase Database Webhook on accepted_quotes UPDATE (separate from the INSERT webhook).
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
-import { escapeHtml, formatPacific, sendEmail } from "../_shared/email.ts"
+// SCRUM-137: Attaches an updated .ics for the same event, so the customer's calendar moves to the new time
+// (and new address) and the old time is removed.
+import { buildIcsAttachment, clientEventTitle, escapeHtml, formatPacific, sendEmail } from "../_shared/email.ts"
 
 const ADMIN_NOTIFY_EMAIL = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("NIGEL_EMAIL") || ""
 
@@ -88,9 +90,11 @@ serve(async (req) => {
           ${changeRow("Date & time", oldWhen, newWhen)}
           ${changeRow("Address", oldAddress, newAddress)}
         </table>
+        <p>Open the attached invite to update your calendar. It replaces the old time.</p>
         <p>If anything looks off, just reply to this email.</p>
         <p>— Prasad's Cleaning Services</p>
       `,
+      attachments: [buildIcsAttachment(record, { attendee: record.email, title: clientEventTitle(record) })],
     })
 
     // SCRUM-199: Log the send result; a failed send is logged, never rolled back (AC #4)
