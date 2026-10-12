@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 //import { Link } from 'react-router-dom'
-import { SERVICES_LIST } from '../data/ServicesData';
+import { useServices } from '../hooks/useServices';
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
@@ -32,6 +32,8 @@ export default function CustomerPortal() {
 
     //Scrum 41: State for services modal
     const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
+    // SCRUM-204: Services and photos for the modal come from Supabase
+     const { services } = useServices()
     //Scrum 41: Toggle services modal
     const toggleServicesModal = () => {
         setIsServicesModalOpen(prev => !prev);
@@ -551,8 +553,8 @@ export default function CustomerPortal() {
                     <p className="section-subtitle">Here is a list of the cleaning services we provide.</p>
 
                     <div className="services-grid" style={{ marginTop: 'var(--space-xl)' }}>
-                        {SERVICES_LIST.map((service, index) => (
-                            <div key={index} className="service-card" style={{ padding: 'var(--space-md)' }}>
+                        {services.map((service) => (
+                            <div key={service.id} className="service-card" style={{ padding: 'var(--space-md)' }}>
                                 <img 
                                     src={service.img} 
                                     alt={service.name} 

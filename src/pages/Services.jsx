@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
 
-import { SERVICES_LIST } from '../data/ServicesData';
+import { useServices } from '../hooks/useServices';
 
 export default function Services() {
+  const { services, loading } = useServices()
+
   // SCRUM-201: Tracks which service cards are flipped
   const [flippedServices, setFlippedServices] = useState({})
 
@@ -29,10 +31,12 @@ export default function Services() {
       <div className="container">
         <p className="services-hint">Tap any card to learn more.</p>
 
+        {loading && <p role="status" style={{ textAlign: 'center' }}>Loading services...</p>}
+
         {/* SCRUM-201: Service cards flip to reveal a brief description on click (mirrors the landing page, SCRUM 141) */}
         <ul className="services-grid">
-          {SERVICES_LIST.map((service, index) => (
-            <li key={index} className="service-card-wrapper">
+          {services.map((service) => (
+            <li key={service.id} className="service-card-wrapper">
               <button
                 type="button"
                 className={`service-card ${flippedServices[service.name] ? 'is-flipped' : ''}`}
