@@ -609,6 +609,8 @@ ul {
   text-align: center;
   color: var(--color-text-muted);
   margin-top: var(--space-xl);
+}
+
 /* ========== SERVICES PAGE ========== */
 /* SCRUM-201: Scoped to .services-page; the flip cards keep their shared styles so the
    landing page is unaffected. */
