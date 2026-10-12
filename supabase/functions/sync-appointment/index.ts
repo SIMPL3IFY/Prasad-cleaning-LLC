@@ -1,10 +1,20 @@
 // SCRUM-184: Called by the Admin Dashboard after an appointment time is saved or cancelled.
-// Emails the client and Nigel. (Calendly booking was removed.)
+// Emails the client and Nigel.
+// SCRUM-137: When Nigel first sets the time, the customer and Nigel each get one calendar invite
+// (.ics attachment + "Add to Google Calendar" button). A reschedule sends each of them an updated .ics
+// for the same event, so their calendar moves to the new time and the old time is gone (the customer's
+// copy comes from notify-appointment-updated). A cancel sends each a cancel .ics that removes the event.
+// { test: true } emails Nigel a sample invite without touching the database.
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 import { createClient } from "@supabase/supabase-js"
 import {
   escapeHtml,
   formatPacific,
+  adminCalendarButtonHtml,
+  adminEventTitle,
+  buildIcsAttachment,
+  clientCalendarButtonHtml,
+  clientEventTitle,
   jobDetailsHtml,
   sendEmail,
   type EmailResult,
@@ -31,6 +41,24 @@ const json = (body: unknown, status = 200) =>
   })
 
 
+// SCRUM-137: Sample appointment for test mode: tomorrow at 10:00 Pacific
+function sampleRecord(): Record<string, unknown> {
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+  return {
+    id: "test",
+    customer_name: "Test Customer",
+    email: "test.customer@example.com",
+    phone: "555-555-0100",
+    service: "Deep Cleaning",
+    property: "House",
+    address: "123 Example St, Sacramento, CA",
+    appointment_date: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(tomorrow),
+    appointment_time: "10:00",
+    message: "This is a test appointment.",
+  }
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405)
@@ -53,13 +81,31 @@ serve(async (req) => {
   if (!profile?.is_admin) return json({ error: "Admins only" }, 403)
 
 
-  let body: { quoteId?: string; mode?: string; previous?: { date?: string; time?: string }; reason?: string }
+  let body: { quoteId?: string; mode?: string; previous?: { date?: string; time?: string }; reason?: string; test?: boolean }
   try {
     body = await req.json()
   } catch {
     return json({ error: "Invalid JSON body" }, 400)
   }
-  const { quoteId, mode, previous, reason } = body
+  const { quoteId, mode, previous, reason, test } = body
+
+
+  // SCRUM-137: Test mode — sample invite to Nigel only
+  if (test) {
+    const sample = sampleRecord()
+    const adminEmail = await sendEmail({
+      to: ADMIN_NOTIFY_EMAIL,
+      subject: `[TEST] Scheduled: ${sample.customer_name} — ${formatPacific(sample.appointment_date as string, sample.appointment_time as string)}`,
+      html: `
+        <h2>Test appointment invite</h2>
+        <p>Use the button or open the attached invite, and check it lands in your calendar at the right time.</p>
+        ${adminCalendarButtonHtml(sample)}
+        ${jobDetailsHtml(sample)}
+      `,
+      attachments: [buildIcsAttachment(sample, { attendee: ADMIN_NOTIFY_EMAIL, title: `[TEST] ${adminEventTitle(sample)}` })],
+    })
+    return json({ adminEmail })
+  }
   if (!quoteId || (mode !== "schedule" && mode !== "cancel")) {
     return json({ error: "quoteId and mode ('schedule' | 'cancel') are required" }, 400)
   }
@@ -108,9 +154,12 @@ serve(async (req) => {
           <p>Hi ${name},</p>
           <p>Your <strong>${service}</strong> service is scheduled for <strong>${escapeHtml(when)}</strong>.</p>
           <p><strong>Address:</strong> ${escapeHtml(record.address || record.property)}</p>
+          <p>Add it to your calendar with the button, or open the attached invite.</p>
+          ${clientCalendarButtonHtml(record)}
           <p>If you need to change anything, just reply to this email.</p>
           <p>— Prasad's Cleaning Services</p>
         `,
+        attachments: [buildIcsAttachment(record, { attendee: record.email, title: clientEventTitle(record) })],
       })
     }
     adminEmail = await sendEmail({
@@ -120,8 +169,14 @@ serve(async (req) => {
       html: `
         <h2>Appointment ${wasRescheduled ? "rescheduled" : "scheduled"}</h2>
         ${wasRescheduled ? `<p>Previously: ${escapeHtml(previousWhen)}</p>` : ""}
+        ${wasRescheduled
+          ? `<p>Open the attached invite to move the event in your calendar to the new time. It replaces the old time.</p>`
+          : `<p>Add it to your calendar with the button, or open the attached invite.</p>
+        ${adminCalendarButtonHtml(record)}`}
         ${jobDetailsHtml(record)}
       `,
+      // SCRUM-137: Same event id every time, so a reschedule updates the event instead of adding a second one
+      attachments: [buildIcsAttachment(record, { attendee: ADMIN_NOTIFY_EMAIL, title: adminEventTitle(record) })],
     })
   } else {
     clientEmail = await sendEmail({
@@ -135,6 +190,8 @@ serve(async (req) => {
         <p>If you have questions or want to book again, just reply to this email.</p>
         <p>— Prasad's Cleaning Services</p>
       `,
+      // SCRUM-137: Removes the event from the customer's calendar (skipped if it never had a date/time)
+      attachments: [buildIcsAttachment(record, { attendee: record.email, title: clientEventTitle(record), cancel: true })],
     })
     adminEmail = await sendEmail({
       to: ADMIN_NOTIFY_EMAIL,
@@ -145,6 +202,8 @@ serve(async (req) => {
         <p><strong>Reason:</strong> ${escapeHtml(reason || "No reason given")}</p>
         ${jobDetailsHtml(record)}
       `,
+      // SCRUM-137: Removes the event from Nigel's calendar (skipped if it never had a date/time)
+      attachments: [buildIcsAttachment(record, { attendee: ADMIN_NOTIFY_EMAIL, title: adminEventTitle(record), cancel: true })],
     })
   }
 
