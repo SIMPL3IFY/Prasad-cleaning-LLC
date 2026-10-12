@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { SERVICES_LIST } from '../data/ServicesData'
 
+// SCRUM-201: Flip-card descriptions live in ServicesData; the services table has none
+const DESCRIPTIONS = Object.fromEntries(SERVICES_LIST.map((service) => [service.name, service.description]))
+
 // SCRUM-204: Bundled images shown if Supabase can't be reached
 const FALLBACK_FEATURED = ['Residential Cleaning', 'Commercial Cleaning', 'Special Offers']
 const FALLBACK_SERVICES = SERVICES_LIST.map((service) => ({
     id: service.name,
     name: service.name,
     img: service.img,
+    description: service.description,
     isFeatured: FALLBACK_FEATURED.includes(service.name),
 }))
 
@@ -38,6 +42,7 @@ export function useServices() {
                     id: service.id,
                     name: service.name,
                     img: supabase.storage.from('service-images').getPublicUrl(service.image_path).data.publicUrl,
+                    description: DESCRIPTIONS[service.name],
                     isFeatured: service.is_featured,
                 })))
             }

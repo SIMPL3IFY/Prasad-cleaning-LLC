@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useServices } from '../hooks/useServices';
 
 export default function Services() {
+  const { services, loading } = useServices()
+
   // SCRUM-201: Tracks which service cards are flipped
   const [flippedServices, setFlippedServices] = useState({})
 
@@ -29,11 +31,31 @@ export default function Services() {
       <div className="container">
         <p className="services-hint">Tap any card to learn more.</p>
 
+        {loading && <p role="status" style={{ textAlign: 'center' }}>Loading services...</p>}
+
+        {/* SCRUM-201: Service cards flip to reveal a brief description on click (mirrors the landing page, SCRUM 141) */}
         <ul className="services-grid">
-        {SERVICES_LIST.map((service, index) => (
-            <li key={index} className="service-card">
-              <img src={service.img} alt={service.name} className="service-card-img" />
-              <h3 className="service-card-title">{service.name}</h3>
+          {services.map((service) => (
+            <li key={service.id} className="service-card-wrapper">
+              <button
+                type="button"
+                className={`service-card ${flippedServices[service.name] ? 'is-flipped' : ''}`}
+                onClick={() => toggleServiceCard(service.name)}
+                aria-label={`Toggle details for ${service.name}`}
+                aria-pressed={!!flippedServices[service.name]}
+              >
+                <div className="service-card-inner">
+                  <div className="service-card-face service-card-front">
+                    <img src={service.img} alt={service.name} className="service-card-img" />
+                    <h3 className="service-card-title">{service.name}</h3>
+                    <span className="service-card-cue" aria-hidden="true">Learn more &rarr;</span>
+                  </div>
+                  <div className="service-card-face service-card-back">
+                    <h3>{service.name}</h3>
+                    <p>{service.description || 'Customized cleaning solutions designed around your needs.'}</p>
+                  </div>
+                </div>
+              </button>
             </li>
           ))}
         </ul>
