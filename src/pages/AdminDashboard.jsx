@@ -64,6 +64,12 @@ export default function AdminDashboard() {
     const [showAdminConfirmPassword, setShowAdminConfirmPassword] = useState(false) // SCRUM-212
     const [isSubmittingAdminPassword, setIsSubmittingAdminPassword] = useState(false)
 
+    // Scrum 218: State variables for search query, search visibility toggle, category, and dropdown state
+    const [showSearchBar, setShowSearchBar] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [searchCategory, setSearchCategory] = useState('name') // 'name', 'city', 'service', 'property'
+    const [showCategoryMenu, setShowCategoryMenu] = useState(false)
+
     // SCRUM-85: Manage Quotes box and supporting methods
     // EDITED from CSC 190-191:
     // Scrum 88: fetches quotes from the quotes table on Supabase
@@ -206,24 +212,56 @@ export default function AdminDashboard() {
         setAcceptedQuotes(data)
     }
 
+    // Scrum 218: Helper function for dynamic filtering based on selected category
+    const matchesSearch = (item) => {
+        if (!showSearchBar) return true
+        const query = searchQuery.trim().toLowerCase()
+        if (!query) return true
+        switch (searchCategory) {
+            case 'city':
+                return (item.address || '').toLowerCase().includes(query)
+            case 'service':
+                return (item.service || '').toLowerCase().includes(query)
+            case 'property':
+                return (item.property || '').toLowerCase().includes(query)
+            case 'date':
+                return (item.appointmentDate || '').toLowerCase().includes(query)
+            case 'name':
+            default:
+                return (item.customerName || '').toLowerCase().includes(query)
+        }
+    }
+
+    // Scrum 218: Filtered collections across all 3 tables
+    const filteredQuotes = quotes.filter(matchesSearch)
+    const filteredAcceptedQuotes = acceptedQuotes.filter(matchesSearch)
+    const filteredDeclinedQuotes = declinedQuotes.filter(matchesSearch)
+
+    // Scrum 218: Reset pagination pages when search term, visibility, or category changes
+    useEffect(() => {
+        setCurrentQuotePage(1)
+        setCurrentAppointmentPage(1)
+        setCurrentDeclinedPage(1)
+    }, [searchQuery, searchCategory, showSearchBar])
+
     // Scrum 128 method: Returns the quotes for current page
     const paginateQuotes = () => {
         const start = (currentQuotePage - 1) * QUOTES_PER_PAGE
-        return quotes.slice(start, start + QUOTES_PER_PAGE)
+        return filteredQuotes.slice(start, start + QUOTES_PER_PAGE)
     }
     // Scrum 84 method: Returns the appointments for current page
     const paginateAppointments = () => {
         const start = (currentAppointmentPage - 1) * APPOINTMENTS_PER_PAGE
-        return acceptedQuotes.slice(start, start + APPOINTMENTS_PER_PAGE)
+        return filteredAcceptedQuotes.slice(start, start + APPOINTMENTS_PER_PAGE)
     }
     // Scrum 149 method: Returns declined quotes for the current page
     const paginateDeclinedQuotes = () => {
         const start = (currentDeclinedPage - 1) * DECLINED_QUOTES_PER_PAGE
-        return declinedQuotes.slice(start, start + DECLINED_QUOTES_PER_PAGE)
+        return filteredDeclinedQuotes.slice(start, start + DECLINED_QUOTES_PER_PAGE)
     }
     // Scrum 128 method: Navigates between quote pages
     const handleNextPage = (direction) => {
-        const totalPages = Math.ceil(quotes.length / QUOTES_PER_PAGE)
+        const totalPages = Math.ceil(filteredQuotes.length / QUOTES_PER_PAGE)
         setCurrentQuotePage(prev => {
             if(direction === 'next') return Math.min(prev + 1, totalPages)
             if(direction === 'prev') return Math.max(prev - 1, 1)
@@ -231,7 +269,7 @@ export default function AdminDashboard() {
     }
     // Scrum 84 method: Navigates between appointment pages
     const handleAppointmentPage = (direction) => {
-        const totalPages = Math.ceil(acceptedQuotes.length / APPOINTMENTS_PER_PAGE)
+        const totalPages = Math.ceil(filteredAcceptedQuotes.length / APPOINTMENTS_PER_PAGE)
         setCurrentAppointmentPage(prev => {
             if(direction === 'next') return Math.min(prev + 1, totalPages)
             if(direction === 'prev') return Math.max(prev - 1, 1)
@@ -244,7 +282,7 @@ export default function AdminDashboard() {
     }
     // Scrum 149 method: Navigates between declined quote pages
     const handleDeclinedPage = (direction) => {
-        const totalPages = Math.ceil(declinedQuotes.length / DECLINED_QUOTES_PER_PAGE)
+        const totalPages = Math.ceil(filteredDeclinedQuotes.length / DECLINED_QUOTES_PER_PAGE)
         setCurrentDeclinedPage(prev => {
             if(direction === 'next') return Math.min(prev + 1, totalPages)
             if(direction === 'prev') return Math.max(prev - 1, 1)
@@ -1083,6 +1121,7 @@ export default function AdminDashboard() {
     // Scrum 128 method: Shows the arrows to navigate
     const renderPagination = (currentPage, totalItems, itemsPerPage, onPageChange) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage)
+        if (totalPages <= 1) return null // Hide pagination if 1 or 0 pages
         return (
             <div className="admin-pagination">
                 <button onClick={() => onPageChange('prev')} disabled={currentPage === 1}>
@@ -1109,14 +1148,25 @@ export default function AdminDashboard() {
 
     const visibleQuotes = paginateQuotes()
     const visibleAppointments = paginateAppointments()
+    const visibleDeclinedQuotes = paginateDeclinedQuotes()
+
     const allReviews = [...reviews].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     const pendingReviews = allReviews.filter(review => !review.approved)
     const approvedReviews = allReviews.filter(review => review.approved)
 
+    // Scrum 218: Labels mapping for display in the category selector button
+    const categoryLabels = {
+        name: 'Customer Name',
+        city: 'City / Address',
+        service: 'Service',
+        property: 'Property Type',
+        date: 'Appointment Date'
+    }
+
     if (!isAdmin) {
         return <div className="admin-loading">Checking admin access...</div>
     }
-    const visibleDeclinedQuotes = paginateDeclinedQuotes()
+
     // Main return
     return (
         <div className="admin-page">
@@ -1180,6 +1230,131 @@ export default function AdminDashboard() {
 
             {/* Dashboard Cards */}
             <div className="admin-grid">
+                {/* Scrum 218: Toggleable Search Bar - Box only renders when search is toggled ON */}
+                {!showSearchBar ? (
+                <div style={{ gridColumn: '1 / -1', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+                    <button
+                        type="button"
+                        onClick={() => setShowSearchBar(true)}
+                        className="admin-btn admin-btn--primary"
+                    >
+                        Search Quotes By
+                    </button>
+                </div>
+                ) : (
+                    <div className="admin-panel" style={{ gridColumn: '1 / -1', padding: '1.25rem' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            {/* Category Dropdown Toggle */}
+                            <div style={{ position: 'relative' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCategoryMenu(prev => !prev)}
+                                    className="admin-btn admin-btn--ghost"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}
+                                >
+                                    Search By: <strong>{categoryLabels[searchCategory]}</strong> ▾
+                                </button>
+
+                                {/* Category Dropdown Menu */}
+                                {showCategoryMenu && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        left: 0,
+                                        marginTop: '0.25rem',
+                                        backgroundColor: '#ffffff',
+                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '0.375rem',
+                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                        zIndex: 50,
+                                        minWidth: '170px'
+                                    }}>
+                                        {Object.entries(categoryLabels).map(([key, label]) => (
+                                            <button
+                                                key={key}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSearchCategory(key)
+                                                    setShowCategoryMenu(false)
+                                                }}
+                                                style={{
+                                                    display: 'block',
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    padding: '0.5rem 0.75rem',
+                                                    background: searchCategory === key ? '#f1f5f9' : 'transparent',
+                                                    border: 'none',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Scrum 218: Dynamic Search Field (Date Picker or Text Input) */}
+                            <div style={{ position: 'relative', flex: 1 }}>
+                                {searchCategory === 'date' ? (
+                                    <input
+                                        type="date"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="admin-input"
+                                        style={{ width: '100%', marginBottom: 0 }}
+                                    />
+                                ) : (
+                                    <input
+                                        type="text"
+                                        placeholder={`Search by ${categoryLabels[searchCategory].toLowerCase()}...`}
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="admin-input"
+                                        style={{ width: '100%', marginBottom: 0, paddingRight: searchQuery ? '2.25rem' : '0.75rem' }}
+                                    />
+                                )}
+
+                                {/* Clear ("X") input button */}
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery('')}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '0.5rem',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '1rem',
+                                            color: '#64748b',
+                                            padding: '0.25rem 0.5rem'
+                                        }}
+                                        title="Clear text"
+                                        aria-label="Clear text"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Hide Search Button */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowSearchBar(false)
+                                    setSearchQuery('')
+                                }}
+                                className="admin-btn admin-btn--ghost"
+                            >
+                                Hide Search
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Manage Appointments Section */}
                 {/* Manage Appointments Card */}
                 {/* Scrum 87: is-editing swaps the panel to the blue editing border */}
@@ -1188,12 +1363,14 @@ export default function AdminDashboard() {
                         Manage Appointments
                     </h2>
 
-                    {acceptedQuotes.length === 0 ? (
-                        <p className="admin-empty">No appointments available.</p>
+                    {filteredAcceptedQuotes.length === 0 ? (
+                        <p className="admin-empty">
+                            {showSearchBar && searchQuery ? `No appointments found matching '${searchQuery}'.` : 'No appointments available.'}
+                        </p>
                     ) : (
                         <>
                             {visibleAppointments.map(quote => renderAppointmentCard(quote))}
-                            {renderPagination(currentAppointmentPage, acceptedQuotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
+                            {renderPagination(currentAppointmentPage, filteredAcceptedQuotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
                         </>
                     )}
 
@@ -1213,12 +1390,14 @@ export default function AdminDashboard() {
                         Manage Quotes
                     </h2>
 
-                    {quotes.length === 0 ? (
-                        <p className="admin-empty">No quotes available.</p>
+                    {filteredQuotes.length === 0 ? (
+                        <p className="admin-empty">
+                            {showSearchBar && searchQuery ? `No appointments found matching '${searchQuery}'.` : 'No quotes available.'}
+                        </p>
                     ) : (
                         <>
                             {visibleQuotes.map(quote => renderQuoteCard(quote))}
-                            {renderPagination(currentQuotePage, quotes.length, QUOTES_PER_PAGE, handleNextPage)}
+                            {renderPagination(currentQuotePage, filteredQuotes.length, QUOTES_PER_PAGE, handleNextPage)}
                         </>
                     )}
                 </div>
@@ -1229,12 +1408,14 @@ export default function AdminDashboard() {
                         Declined Quotes
                     </h2>
 
-                    {declinedQuotes.length === 0 ? (
-                        <p className="admin-empty">No declined quotes.</p>
+                    {filteredDeclinedQuotes.length === 0 ? (
+                        <p className="admin-empty">
+                            {showSearchBar && searchQuery ? `No appointments found matching '${searchQuery}'.` : 'No declined quotes.'}
+                        </p>
                     ) : (
                         <>
                             {visibleDeclinedQuotes.map(quote => renderDeclinedQuoteCard(quote))}
-                            {renderPagination(currentDeclinedPage, declinedQuotes.length, DECLINED_QUOTES_PER_PAGE, handleDeclinedPage)}
+                            {renderPagination(currentDeclinedPage, filteredDeclinedQuotes.length, DECLINED_QUOTES_PER_PAGE, handleDeclinedPage)}
                         </>
                     )}
                 </div>
