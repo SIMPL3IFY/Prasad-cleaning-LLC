@@ -1420,40 +1420,43 @@ export default function AdminDashboard() {
                     )}
                 </div>
 
-                {/* Customer Reviews Trigger */}
-                <div className="admin-panel admin-panel--reviews admin-panel--compact">
-                    <h2 className="admin-panel-title">
-                        Customer Reviews
-                    </h2>
+                {/* SCRUM-220: Customer Reviews + Service Photos share one grid column */}
+                <div className="admin-panel-stack">
+                    {/* Customer Reviews Trigger */}
+                    <div className="admin-panel admin-panel--reviews admin-panel--compact">
+                        <h2 className="admin-panel-title">
+                            Customer Reviews
+                        </h2>
 
-                    {reviewMessage && (
-                        <p className="admin-note admin-note--success">
-                            {reviewMessage}
-                        </p>
-                    )}
+                        {reviewMessage && (
+                            <p className="admin-note admin-note--success">
+                                {reviewMessage}
+                            </p>
+                        )}
 
-                    <button
-                        onClick={() => setShowReviewsModal(true)}
-                        className="admin-btn admin-btn--primary"
-                    >
-                        View Review Table
-                    </button>
+                        <button
+                            onClick={() => setShowReviewsModal(true)}
+                            className="admin-btn admin-btn--primary"
+                        >
+                            View Review Table
+                        </button>
+                    </div>
+
+                    {/* SCRUM-204: Service photos trigger */}
+                    <div className="admin-panel admin-panel--photos admin-panel--compact">
+                        <h2 className="admin-panel-title">
+                            Service Photos
+                        </h2>
+
+                        <button
+                            onClick={() => setShowServicePhotosModal(true)}
+                            className="admin-btn admin-btn--primary"
+                        >
+                            Manage Service Photos
+                        </button>
+                    </div>
                 </div>
-
-                {/* SCRUM-204: Service photos trigger */}
-                <div className="admin-panel admin-panel--compact">
-                    <h2 className="admin-panel-title">
-                        Service Photos
-                    </h2>
-
-                    <button
-                        onClick={() => setShowServicePhotosModal(true)}
-                        className="admin-btn admin-btn--primary"
-                    >
-                        Manage Service Photos
-                    </button>
                 </div>
-            </div>
 
             {/* Scrum 150: Confirmation Modal before accepting quote */}
             {acceptingQuoteId && (
