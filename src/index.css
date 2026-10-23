@@ -1794,7 +1794,23 @@ ul {
 .admin-panel--quotes { border-top-color: var(--color-primary); }
 .admin-panel--appointments { border-top-color: var(--color-accent); }
 .admin-panel--declined { border-top-color: var(--color-danger); }
-.admin-panel--reviews { border-top-color: var(--color-primary-dark); }
+/* SCRUM-220: Service Photos shares Customer Reviews' accent so the pair reads as one group */
+.admin-panel--reviews,
+.admin-panel--photos { border-top-color: var(--color-primary-dark); }
+
+/* SCRUM-220: Customer Reviews + Service Photos share one grid column.
+   Uses the grid's own gap token so the spacing always matches. */
+.admin-panel-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* SCRUM-220: Scrum 200's inline style forces every panel to height: 100%.
+  Stacked panels size to their content instead, so they don't overflow. */
+.admin-panel-stack > .admin-panel {
+  height: auto !important;
+}
 
 /* Scrum 87: active edit state on the appointments panel. */
 .admin-panel.is-editing {
@@ -2171,6 +2187,62 @@ ul {
   padding: var(--space-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+}
+
+/* SCRUM-220: Service Photos modal - thumbnail beside a styled file picker */
+.admin-photo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.admin-photo-thumb {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.admin-file-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1 1 200px;
+}
+
+/* position: relative keeps the sr-only input anchored inside the label */
+.admin-file-btn {
+  position: relative;
+}
+
+/* The real input is visually hidden, so show its keyboard focus on the label */
+.admin-file-btn:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
+/* A <label> can't be :disabled, so mirror .admin-btn:disabled from the input inside it.
+   The :hover variant out-specifies the ghost button's hover rule. */
+.admin-file-btn:has(input:disabled),
+.admin-file-btn:has(input:disabled):hover {
+  background-color: var(--color-bg-alt);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.admin-file-name {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* SCRUM-220: Separates the Add a Service card from the list above it */
+.admin-add-service {
+  margin-top: var(--space-xl);
 }
 
 .admin-review-text {
