@@ -55,7 +55,7 @@ serve(async (req) => {
       to: record.email,
       replyTo: ADMIN_NOTIFY_EMAIL || undefined,
       subject: 'Your cleaning service quote has been accepted',
-      // SCRUM-227: Same body as before, now inside the branded header/footer layout
+      // SCRUM-217: Same body as before, now inside the branded header/footer layout
       html: renderEmailLayout({
         title: 'Your quote has been accepted',
         preheader: `We're confirming your ${record.service || 'cleaning'} service.`,

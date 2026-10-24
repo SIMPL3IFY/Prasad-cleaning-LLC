@@ -68,8 +68,8 @@ export function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#39;")
 }
 
-// SCRUM-227: Branded email layout 
-// SCRUM-227: Brand tokens copied from index.css :root.
+// SCRUM-217: Branded email layout 
+// SCRUM-217: Brand tokens copied from index.css :root.
 // Email clients can't read CSS variables, so the hex values live here.
 const BRAND = {
   primary: "#80bbe2",     // --color-primary
@@ -85,7 +85,7 @@ const BRAND = {
   font: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
 }
 
-// SCRUM-227: Footer contact info (AC #3) and the hosted logo (AC #1).
+// SCRUM-217: Footer contact info (AC #3) and the hosted logo (AC #1).
 const BUSINESS = {
   name: "Prasad's Cleaning Services",
   phone: "(916) 665-8474",                     
@@ -97,7 +97,7 @@ const BUSINESS = {
 const DEFAULT_REASON =
   "You're receiving this email because you requested a quote or booked a service with Prasad's Cleaning Services."
 
-// SCRUM-227: Wraps an email's body in the branded header + footer (AC #4).
+// SCRUM-217: Wraps an email's body in the branded header + footer (AC #4).
 // bodyHtml is trusted HTML: callers must escapeHtml() any customer-entered values first.
 export function renderEmailLayout(
   { title, bodyHtml, preheader = "", reason = DEFAULT_REASON }: {
@@ -131,7 +131,7 @@ export function renderEmailLayout(
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
           style="width:100%;max-width:600px;background:${BRAND.bg};border:1px solid ${BRAND.border};border-top:4px solid ${BRAND.primary};border-radius:12px;">
 
-          <!-- SCRUM-227: Header  -->
+          <!-- SCRUM-217: Header  -->
           <tr>
             <td align="center" style="padding:28px 24px 20px;border-bottom:1px solid ${BRAND.border};">
               <a href="${BUSINESS.website}" target="_blank" style="text-decoration:none;">
@@ -141,14 +141,14 @@ export function renderEmailLayout(
             </td>
           </tr>
 
-          <!-- SCRUM-227: Body -->
+          <!-- SCRUM-217: Body -->
           <tr>
             <td style="padding:28px 32px;font-family:${BRAND.font};font-size:16px;line-height:1.6;color:${BRAND.text};">
               ${bodyHtml}
             </td>
           </tr>
 
-          <!-- SCRUM-227: Footer -->
+          <!-- SCRUM-217: Footer -->
           <tr>
             <td style="padding:20px 32px 28px;background:${BRAND.bg};border-top:3px solid ${BRAND.accent};border-radius:0 0 12px 12px;font-family:${BRAND.font};font-size:13px;line-height:1.6;color:${BRAND.textMuted};text-align:center;">              <p style="margin:0 0 6px;font-weight:600;color:${BRAND.text};">${BUSINESS.name}</p>
               <p style="margin:0 0 6px;">
@@ -170,11 +170,11 @@ export function renderEmailLayout(
 </html>`
 }
 
-// SCRUM-227: Branded heading for email bodies, so every function styles it the same
+// SCRUM-217: Branded heading for email bodies, so every function styles it the same
 export const emailHeading = (text: string) =>
   `<h2 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:${BRAND.text};">${escapeHtml(text)}</h2>`
 
-// SCRUM-227: Branded call-to-action button, same look as the site's .button-main
+// SCRUM-217: Branded call-to-action button, same look as the site's .button-main
 export const emailButton = (url: string, label: string) =>
   `<p style="margin:24px 0;"><a href="${escapeHtml(url)}" target="_blank" style="display:inline-block;padding:12px 24px;background:${BRAND.primaryDark};color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;font-family:${BRAND.font};">${escapeHtml(label)}</a></p>`
 

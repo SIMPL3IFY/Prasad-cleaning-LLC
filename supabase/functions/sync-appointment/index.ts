@@ -150,7 +150,7 @@ serve(async (req) => {
         to: record.email,
         replyTo: ADMIN_NOTIFY_EMAIL || undefined,
         subject: "Your cleaning appointment is confirmed",
-      // SCRUM-227: Same body as before, now inside the branded layout
+      // SCRUM-217: Same body as before, now inside the branded layout
         html: renderEmailLayout({
           title: "Your appointment is confirmed",
           preheader: `Your ${record.service || "cleaning"} service is scheduled for ${when}.`,
@@ -189,7 +189,7 @@ serve(async (req) => {
       to: record.email,
       replyTo: ADMIN_NOTIFY_EMAIL || undefined,
       subject: "Your cleaning appointment has been cancelled",
-      // SCRUM-227: Same body as before, now inside the branded layout
+      // SCRUM-217: Same body as before, now inside the branded layout
       html: renderEmailLayout({
         title: "Your appointment has been cancelled",
         preheader: `Your ${record.service || "cleaning"} appointment has been cancelled.`,

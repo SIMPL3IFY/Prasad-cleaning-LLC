@@ -77,7 +77,7 @@ serve(async (req) => {
       to: record.email,
       replyTo: ADMIN_NOTIFY_EMAIL || undefined,
       subject: "Your cleaning appointment details have changed",
-      // SCRUM-227: Same body as before, now inside the branded layout
+      // SCRUM-217: Same body as before, now inside the branded layout
       html: renderEmailLayout({
         title: "Your appointment has been updated",
         preheader: `Your ${record.service || "cleaning"} appointment details have changed.`,
