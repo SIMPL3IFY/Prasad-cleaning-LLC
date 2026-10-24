@@ -2374,3 +2374,64 @@ ul {
     gap: var(--space-xs);
   }
 }
+
+/* SCRUM-216: Account deletion controls */
+.delete-account-section {
+  width: min(100%, 500px);
+  margin: var(--space-xl) auto 0;
+  padding: var(--space-lg);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-subtle);
+}
+
+.delete-account-section h3 {
+  margin-bottom: var(--space-xs);
+  color: var(--color-danger-text);
+}
+
+.delete-account-section p {
+  margin-bottom: var(--space-md);
+}
+
+.delete-account-button {
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 1rem;
+  background: var(--color-danger);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete-account-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 86%, #000);
+}
+
+.delete-account-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.delete-account-dialog {
+  text-align: left;
+}
+
+.delete-account-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+@media (max-width: 480px) {
+  .delete-account-actions {
+    flex-direction: column-reverse;
+  }
+
+  .delete-account-actions button {
+    width: 100%;
+  }
+}
