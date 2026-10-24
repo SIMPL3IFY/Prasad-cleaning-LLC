@@ -12,11 +12,50 @@ Supabase is fully mocked so these tests never touch the real database.
 
 ## How to run
 
-```
-npm run test:run
+Follow these steps exactly to run the tests locally.
+
+### Step 1 — Make sure you are in the project root
+
+Open a terminal and navigate to the project folder:
+
+```bash
+cd path/to/Prasad-cleaning-LLC
 ```
 
-Look for `testScrum237.jsx` in the output to confirm your tests ran.
+### Step 2 — Install dependencies (first time only)
+
+```bash
+npm install
+```
+
+### Step 3 — Run just the SCRUM-237 tests
+
+```bash
+npx vitest run Testing/settingsTest/testScrum237.jsx
+```
+
+You should see output like this:
+
+```
+✓ Testing/settingsTest/testScrum237.jsx (6 tests)
+
+Test Files  1 passed (1)
+     Tests  6 passed (6)
+```
+
+### Step 4 — Run all tests together (optional)
+
+```bash
+npx vitest run
+```
+
+### Step 5 — View coverage report (optional)
+
+```bash
+npx vitest run --coverage
+```
+
+After it finishes, open `coverage/index.html` in your browser to see the full report.
 
 ---
 
