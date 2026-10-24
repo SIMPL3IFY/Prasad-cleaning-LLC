@@ -68,6 +68,116 @@ export function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#39;")
 }
 
+// SCRUM-217: Branded email layout 
+// SCRUM-217: Brand tokens copied from index.css :root.
+// Email clients can't read CSS variables, so the hex values live here.
+const BRAND = {
+  primary: "#80bbe2",     // --color-primary
+  primaryDark: "#5f9fc9", // --color-primary-dark
+  accent: "#c2d882",      // --color-accent
+  text: "#1f2937",        // --color-text
+  textMuted: "#6b7280",   // --color-text-muted
+  bg: "#ffffff",          // --color-bg
+  bgAlt: "#f3f4f6",       // --color-bg-alt
+  border: "#d1d5db",      // --color-border
+  // --font-body, plus Helvetica/Arial so every client has a font it knows.
+  // Single quotes on purpose: this goes inside style="..." attributes.
+  font: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+}
+
+// SCRUM-217: Footer contact info (AC #3) and the hosted logo (AC #1).
+const BUSINESS = {
+  name: "Prasad's Cleaning Services",
+  phone: "(916) 665-8474",                     
+  email: "prasadscleaning@gmail.com",       
+  website: "https://prasadscleaning.com",  // TODO: confirm this is the live site URL
+  logoUrl: "https://xdflqihrhhtjqaowrfkq.supabase.co/storage/v1/object/public/email-assets/Prasads%20Cleaning%20Logo.png",
+}
+
+const DEFAULT_REASON =
+  "You're receiving this email because you requested a quote or booked a service with Prasad's Cleaning Services."
+
+// SCRUM-217: Wraps an email's body in the branded header + footer (AC #4).
+// bodyHtml is trusted HTML: callers must escapeHtml() any customer-entered values first.
+export function renderEmailLayout(
+  { title, bodyHtml, preheader = "", reason = DEFAULT_REASON }: {
+    title: string        // <title> tag; some clients show it
+    bodyHtml: string     // the email-specific content
+    preheader?: string   // preview text shown next to the subject in the inbox
+    reason?: string      // "why you got this email" line (AC #3)
+  },
+): string {
+  const phoneHref = BUSINESS.phone.replace(/[^\d+]/g, "")
+  const websiteLabel = BUSINESS.website.replace(/^https?:\/\//, "")
+  const link = `color:${BRAND.primaryDark};text-decoration:none;`
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>${escapeHtml(title)}</title>
+  <!--[if mso]><style>table,td,p,h1,h2,h3,a{font-family:Arial,sans-serif !important;}</style><![endif]-->
+</head>
+<body style="margin:0;padding:0;background:${BRAND.bgAlt};">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${BRAND.bgAlt};">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+          style="width:100%;max-width:600px;background:${BRAND.bg};border:1px solid ${BRAND.border};border-top:4px solid ${BRAND.primary};border-radius:12px;">
+
+          <!-- SCRUM-217: Header  -->
+          <tr>
+            <td align="center" style="padding:28px 24px 20px;border-bottom:1px solid ${BRAND.border};">
+              <a href="${BUSINESS.website}" target="_blank" style="text-decoration:none;">
+                <img src="${BUSINESS.logoUrl}" width="180" alt="${BUSINESS.name}"
+                  style="display:block;width:180px;max-width:100%;height:auto;border:0;font-family:${BRAND.font};font-size:20px;font-weight:700;color:${BRAND.text};">
+              </a>
+            </td>
+          </tr>
+
+          <!-- SCRUM-217: Body -->
+          <tr>
+            <td style="padding:28px 32px;font-family:${BRAND.font};font-size:16px;line-height:1.6;color:${BRAND.text};">
+              ${bodyHtml}
+            </td>
+          </tr>
+
+          <!-- SCRUM-217: Footer -->
+          <tr>
+            <td style="padding:20px 32px 28px;background:${BRAND.bg};border-top:3px solid ${BRAND.accent};border-radius:0 0 12px 12px;font-family:${BRAND.font};font-size:13px;line-height:1.6;color:${BRAND.textMuted};text-align:center;">              <p style="margin:0 0 6px;font-weight:600;color:${BRAND.text};">${BUSINESS.name}</p>
+              <p style="margin:0 0 6px;">
+                <a href="tel:${phoneHref}" style="${link}">${BUSINESS.phone}</a>
+                &nbsp;&middot;&nbsp;
+                <a href="mailto:${BUSINESS.email}" style="${link}">${BUSINESS.email}</a>
+              </p>
+              <p style="margin:0 0 12px;"><a href="${BUSINESS.website}" target="_blank" style="${link}">${websiteLabel}</a></p>
+              <p style="margin:0;font-size:12px;">${escapeHtml(reason)}</p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+// SCRUM-217: Branded heading for email bodies, so every function styles it the same
+export const emailHeading = (text: string) =>
+  `<h2 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:${BRAND.text};">${escapeHtml(text)}</h2>`
+
+// SCRUM-217: Branded call-to-action button, same look as the site's .button-main
+export const emailButton = (url: string, label: string) =>
+  `<p style="margin:24px 0;"><a href="${escapeHtml(url)}" target="_blank" style="display:inline-block;padding:12px 24px;background:${BRAND.primaryDark};color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;font-family:${BRAND.font};">${escapeHtml(label)}</a></p>`
+
 // SCRUM-184: "2026-10-14" + "09:30" -> "Wednesday, October 14, 2026 at 9:30 AM (Pacific)".
 // Falls back to the raw values for old free-text rows.
 export function formatPacific(date?: string | null, time?: string | null): string {
