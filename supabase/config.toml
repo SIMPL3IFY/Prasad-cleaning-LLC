@@ -445,3 +445,10 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/submit-appointment-review/deno.json"
 entrypoint = "./functions/submit-appointment-review/index.ts"
+
+# SCRUM-216; Requires a signed-in user's JWT; the function also verifies it before deletion.
+[functions.delete-acount]
+enable = true
+verify_jwt = true
+import_map = "./functions/delete-account/deno.json"
+entrypoint = "./functions/delete-account/index.ts"
