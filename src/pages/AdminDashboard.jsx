@@ -67,7 +67,7 @@ export default function AdminDashboard() {
     // Scrum 218: State variables for search query, search visibility toggle, category, and dropdown state
     const [showSearchBar, setShowSearchBar] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
-    const [searchCategory, setSearchCategory] = useState('name') // 'name', 'city', 'service', 'property'
+    const [searchCategory, setSearchCategory] = useState('name') // 'name', 'city', 'service', 'property', 'date', 'time'
     const [showCategoryMenu, setShowCategoryMenu] = useState(false)
 
     // SCRUM-85: Manage Quotes box and supporting methods
@@ -213,6 +213,7 @@ export default function AdminDashboard() {
     }
 
     // Scrum 218: Helper function for dynamic filtering based on selected category
+    // Scrum 219: Adds the time, in Supabase the time is as a 24 hour clock but this converts it to 12 hours with AM/PM
     const matchesSearch = (item) => {
         if (!showSearchBar) return true
         const query = searchQuery.trim().toLowerCase()
@@ -226,6 +227,42 @@ export default function AdminDashboard() {
                 return (item.property || '').toLowerCase().includes(query)
             case 'date':
                 return (item.appointmentDate || '').toLowerCase().includes(query)
+            case 'time': { 
+                // Scrum 219: Flexible time search matching by hour (supports AM/PM and 24-hour format)
+                if (!item.appointmentTime) return false
+                const dbTimeStr = item.appointmentTime.trim().toLowerCase()
+                
+                // Extract database hours (e.g., '23:52:00' -> hour 23)
+                const dbParts = dbTimeStr.split(':')
+                const dbHour = parseInt(dbParts[0], 10)
+
+                let queryStr = query
+                let targetHour = null
+                let hasAmPm = queryStr.includes('pm') || queryStr.includes('am')
+
+                if (hasAmPm) {
+                    const isPm = queryStr.includes('pm')
+                    const timeOnly = queryStr.replace(/(am|pm)/g, '').trim()
+                    const parts = timeOnly.split(':')
+                    targetHour = parseInt(parts[0], 10)
+
+                    if (!isNaN(targetHour)) {
+                        if (isPm && targetHour < 12) targetHour += 12
+                        if (!isPm && targetHour === 12) targetHour = 0
+                    }
+                } else {
+                    // 24-hour format or partial input (e.g., '23:00' or '23')
+                    const parts = queryStr.split(':')
+                    targetHour = parseInt(parts[0], 10)
+                }
+
+                if (isNaN(targetHour)) {
+                    return dbTimeStr.includes(queryStr)
+                }
+
+                // Scrum 219: Matches appointments within the same hour (e.g., '11:00 PM' / hour 23 matches '23:52:00')
+                return dbHour === targetHour
+            }
             case 'name':
             default:
                 return (item.customerName || '').toLowerCase().includes(query)
@@ -1155,12 +1192,14 @@ export default function AdminDashboard() {
     const approvedReviews = allReviews.filter(review => review.approved)
 
     // Scrum 218: Labels mapping for display in the category selector button
+    // Scrum 219: Added appointment time label for time filtering search
     const categoryLabels = {
         name: 'Customer Name',
         city: 'City / Address',
         service: 'Service',
         property: 'Property Type',
-        date: 'Appointment Date'
+        date: 'Appointment Date',
+        time: 'Appointment Time' 
     }
 
     if (!isAdmin) {
@@ -1294,11 +1333,19 @@ export default function AdminDashboard() {
                                 )}
                             </div>
 
-                            {/* Scrum 218: Dynamic Search Field (Date Picker or Text Input) */}
+                            {/* Scrum 218 / Scrum 219: Dynamic Search Field (Date Picker, Time Picker, or Text Input) */}
                             <div style={{ position: 'relative', flex: 1 }}>
                                 {searchCategory === 'date' ? (
                                     <input
                                         type="date"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="admin-input"
+                                        style={{ width: '100%', marginBottom: 0 }}
+                                    />
+                                ) : searchCategory === 'time' ? ( /* Scrum 219: Time picker input for time filtering */
+                                    <input
+                                        type="time"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         className="admin-input"
