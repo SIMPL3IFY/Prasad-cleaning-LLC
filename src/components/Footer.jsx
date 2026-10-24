@@ -12,7 +12,9 @@ export default function Footer() {
           <Link to="/service-area">Service Areas</Link> ·{' '}
           <Link to="/contact">Contact</Link>
         </div>
-        <div className="footer-contact" style={{ marginLeft: 'auto' }}>Phone · Email</div>
+        <div className="footer-contact" style={{ marginLeft: 'auto' }}>
+          Phone: <a href="tel:+19166658474">(916) 665-8474</a> · Email
+        </div>
       </div>
       <div className="footer-bottom">@ Prasad's Cleaning LLC. All rights reserved.</div>
     </footer>

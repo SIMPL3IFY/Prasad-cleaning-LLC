@@ -296,38 +296,45 @@ export default function ServicePhotosManager({ onClose }) {
                 ) : services.length === 0 ? (
                     <p className="admin-empty">No services found.</p>
                 ) : (
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '1rem' }}>
+                    // SCRUM-220: One card per service, matching the Customer Reviews modal
+                    <ul className="admin-review-list">
                         {services.map((service) => {
                             const selected = selectedFiles[service.id]
 
                             return (
-                                <li
-                                    key={service.id}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '1rem',
-                                        flexWrap: 'wrap',
-                                        opacity: service.is_active ? 1 : 0.6,
-                                    }}
-                                >
-                                    <img
-                                        src={selected?.previewUrl || getImageUrl(service.image_path)}
-                                        alt={service.name}
-                                        style={{ width: '120px', height: '80px', objectFit: 'cover', borderRadius: '8px' }}
-                                    />
-                                    <div style={{ flex: '1 1 200px' }}>
-                                        <strong>{service.name}</strong>
-                                        {!service.is_active && <span> (hidden)</span>}
-                                        <input
-                                            key={service.image_path}
-                                            type="file"
-                                            accept={ALLOWED_TYPES.join(',')}
-                                            onChange={(e) => handleFileChange(service.id, e.target.files[0])}
-                                            disabled={busy !== null}
-                                            aria-label={`New photo for ${service.name}`}
-                                            style={{ display: 'block', marginTop: '0.5rem' }}
+                                <li key={service.id} className="admin-review-card">
+                                    {/* SCRUM-220: Name left, visibility badge right (like Pending/Approved) */}
+                                    <div className="admin-row">
+                                        <strong className="admin-value admin-value--base">{service.name}</strong>
+                                        <span className={`admin-badge admin-badge--pill ${service.is_active ? 'admin-badge--success' : 'admin-badge--warning'}`}>
+                                            {service.is_active ? 'Visible' : 'Hidden'}
+                                        </span>
+                                    </div>
+
+                                    {/* SCRUM-220: Thumbnail + styled file picker */}
+                                    <div className="admin-photo-row">
+                                        <img
+                                            src={selected?.previewUrl || getImageUrl(service.image_path)}
+                                            alt={service.name}
+                                            className="admin-photo-thumb"
                                         />
+                                        <div className="admin-file-picker">
+                                            <label className="admin-btn admin-btn--ghost admin-file-btn">
+                                                Choose photo
+                                                <input
+                                                    key={service.image_path}
+                                                    type="file"
+                                                    accept={ALLOWED_TYPES.join(',')}
+                                                    onChange={(e) => handleFileChange(service.id, e.target.files[0])}
+                                                    disabled={busy !== null}
+                                                    aria-label={`New photo for ${service.name}`}
+                                                    className="sr-only"
+                                                />
+                                            </label>
+                                            <span className="admin-file-name">
+                                                {selected ? selected.file.name : 'No file chosen'}
+                                            </span>
+                                        </div>
                                     </div>
 
                                     {confirmingDeleteId === service.id ? (
@@ -383,7 +390,8 @@ export default function ServicePhotosManager({ onClose }) {
                 )}
 
                 {/* SCRUM-204: Add a new service card with its photo */}
-                <form onSubmit={addService} style={{ marginTop: '2rem' }}>
+                {/* SCRUM-220: Same card + file picker styling as the service list above */}
+                <form onSubmit={addService} className="admin-review-card admin-add-service">
                     <h4 className="admin-modal-title">Add a Service</h4>
 
                     <div className="admin-field">
@@ -400,31 +408,43 @@ export default function ServicePhotosManager({ onClose }) {
 
                     <div className="admin-field">
                         <label htmlFor="new-service-photo" className="admin-label">Photo</label>
-                        <input
-                            id="new-service-photo"
-                            key={newServiceInputKey}
-                            type="file"
-                            accept={ALLOWED_TYPES.join(',')}
-                            onChange={(e) => handleNewServiceFileChange(e.target.files[0])}
-                            disabled={busy !== null}
-                            style={{ display: 'block' }}
-                        />
-                        {newServiceFile && (
-                            <img
-                                src={newServiceFile.previewUrl}
-                                alt="New service preview"
-                                style={{ width: '120px', height: '80px', objectFit: 'cover', borderRadius: '8px', marginTop: '0.5rem' }}
-                            />
-                        )}
+                        <div className="admin-photo-row">
+                            {newServiceFile && (
+                                <img
+                                    src={newServiceFile.previewUrl}
+                                    alt="New service preview"
+                                    className="admin-photo-thumb"
+                                />
+                            )}
+                            <div className="admin-file-picker">
+                                <label className="admin-btn admin-btn--ghost admin-file-btn">
+                                    Choose photo
+                                    <input
+                                        id="new-service-photo"
+                                        key={newServiceInputKey}
+                                        type="file"
+                                        accept={ALLOWED_TYPES.join(',')}
+                                        onChange={(e) => handleNewServiceFileChange(e.target.files[0])}
+                                        disabled={busy !== null}
+                                        className="sr-only"
+                                    />
+                                </label>
+                                <span className="admin-file-name">
+                                    {newServiceFile ? newServiceFile.file.name : 'No file chosen'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={busy !== null}
-                        className="admin-btn admin-btn--success"
-                    >
-                        {isBusy('new', 'add') ? 'Adding...' : 'Add service'}
-                    </button>
+                    <div className="admin-btn-row">
+                        <button
+                            type="submit"
+                            disabled={busy !== null}
+                            className="admin-btn admin-btn--success"
+                        >
+                            {isBusy('new', 'add') ? 'Adding...' : 'Add service'}
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

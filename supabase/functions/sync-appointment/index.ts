@@ -9,6 +9,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 import { createClient } from "@supabase/supabase-js"
 import {
   escapeHtml,
+  emailHeading,
   formatPacific,
   adminCalendarButtonHtml,
   adminEventTitle,
@@ -16,10 +17,10 @@ import {
   clientCalendarButtonHtml,
   clientEventTitle,
   jobDetailsHtml,
+  renderEmailLayout,
   sendEmail,
   type EmailResult,
 } from "../_shared/email.ts"
-
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!
@@ -149,16 +150,21 @@ serve(async (req) => {
         to: record.email,
         replyTo: ADMIN_NOTIFY_EMAIL || undefined,
         subject: "Your cleaning appointment is confirmed",
-        html: `
-          <h2>Your appointment is confirmed</h2>
-          <p>Hi ${name},</p>
-          <p>Your <strong>${service}</strong> service is scheduled for <strong>${escapeHtml(when)}</strong>.</p>
-          <p><strong>Address:</strong> ${escapeHtml(record.address || record.property)}</p>
-          <p>Add it to your calendar with the button, or open the attached invite.</p>
-          ${clientCalendarButtonHtml(record)}
-          <p>If you need to change anything, just reply to this email.</p>
-          <p>— Prasad's Cleaning Services</p>
-        `,
+      // SCRUM-217: Same body as before, now inside the branded layout
+        html: renderEmailLayout({
+          title: "Your appointment is confirmed",
+          preheader: `Your ${record.service || "cleaning"} service is scheduled for ${when}.`,
+          bodyHtml: `
+            ${emailHeading("Your appointment is confirmed")}
+            <p>Hi ${name},</p>
+            <p>Your <strong>${service}</strong> service is scheduled for <strong>${escapeHtml(when)}</strong>.</p>
+            <p><strong>Address:</strong> ${escapeHtml(record.address || record.property)}</p>
+            <p>Add it to your calendar with the button, or open the attached invite.</p>
+            ${clientCalendarButtonHtml(record)}
+            <p>If you need to change anything, just reply to this email.</p>
+            <p>— Prasad's Cleaning Services</p>
+          `,
+        }),
         attachments: [buildIcsAttachment(record, { attendee: record.email, title: clientEventTitle(record) })],
       })
     }
@@ -183,13 +189,18 @@ serve(async (req) => {
       to: record.email,
       replyTo: ADMIN_NOTIFY_EMAIL || undefined,
       subject: "Your cleaning appointment has been cancelled",
-      html: `
-        <h2>Your appointment has been cancelled</h2>
-        <p>Hi ${name},</p>
-        <p>Your <strong>${service}</strong> appointment${record.appointment_date ? ` on <strong>${escapeHtml(when)}</strong>` : ""} has been cancelled.</p>
-        <p>If you have questions or want to book again, just reply to this email.</p>
-        <p>— Prasad's Cleaning Services</p>
-      `,
+      // SCRUM-217: Same body as before, now inside the branded layout
+      html: renderEmailLayout({
+        title: "Your appointment has been cancelled",
+        preheader: `Your ${record.service || "cleaning"} appointment has been cancelled.`,
+        bodyHtml: `
+          ${emailHeading("Your appointment has been cancelled")}
+          <p>Hi ${name},</p>
+          <p>Your <strong>${service}</strong> appointment${record.appointment_date ? ` on <strong>${escapeHtml(when)}</strong>` : ""} has been cancelled.</p>
+          <p>If you have questions or want to book again, just reply to this email.</p>
+          <p>— Prasad's Cleaning Services</p>
+        `,
+      }),
       // SCRUM-137: Removes the event from the customer's calendar (skipped if it never had a date/time)
       attachments: [buildIcsAttachment(record, { attendee: record.email, title: clientEventTitle(record), cancel: true })],
     })
