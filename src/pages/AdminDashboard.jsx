@@ -1444,15 +1444,16 @@ export default function AdminDashboard() {
 
                     {/* SCRUM-204: Service photos trigger */}
                     <div className="admin-panel admin-panel--photos admin-panel--compact">
+                        {/* SCRUM-224: Renamed now that the popup edits descriptions too */}
                         <h2 className="admin-panel-title">
-                            Service Photos
+                            Edit Services
                         </h2>
 
                         <button
                             onClick={() => setShowServicePhotosModal(true)}
                             className="admin-btn admin-btn--primary"
                         >
-                            Manage Service Photos
+                            Manage Services
                         </button>
                     </div>
                 </div>
