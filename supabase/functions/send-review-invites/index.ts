@@ -99,7 +99,7 @@ serve(async (req) => {
           from: env("RESEND_FROM_EMAIL") || "Prasad's Cleaning Services <notifications@prasadscleaning.com>",
           to: record.email,
           subject: "How was your cleaning appointment?",
-          // SCRUM-227: Same message, now inside the branded layout with a button instead of a text link
+          // SCRUM-217: Same message, now inside the branded layout with a button instead of a text link
           html: renderEmailLayout({
             title: "How was your cleaning appointment?",
             preheader: "We'd love to hear about your experience.",
