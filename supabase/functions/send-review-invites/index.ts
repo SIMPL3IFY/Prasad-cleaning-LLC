@@ -2,7 +2,7 @@
 // row determines eligibility, so a deleted/cancelled appointment is skipped.
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 import { createClient } from "@supabase/supabase-js"
-import { escapeHtml } from "../_shared/email.ts"
+import { emailButton, emailHeading, escapeHtml, renderEmailLayout } from "../_shared/email.ts"
 import { appointmentStart, makeReviewToken, type ReviewAppointment } from "../_shared/review-link.ts"
 
 const env = (name: string) => Deno.env.get(name) || ""
@@ -99,10 +99,19 @@ serve(async (req) => {
           from: env("RESEND_FROM_EMAIL") || "Prasad's Cleaning Services <notifications@prasadscleaning.com>",
           to: record.email,
           subject: "How was your cleaning appointment?",
-          html: `<p>Hi ${escapeHtml(record.customer_name || "there")},</p>` +
-            `<p>Thank you for choosing Prasad's Cleaning Services. We'd love to hear about your experience.</p>` +
-            `<p><a href="${escapeHtml(url)}">Leave a review</a></p>` +
-            `<p>This link works for 30 days after your appointment and can be used for one review.</p>`,
+          // SCRUM-227: Same message, now inside the branded layout with a button instead of a text link
+          html: renderEmailLayout({
+            title: "How was your cleaning appointment?",
+            preheader: "We'd love to hear about your experience.",
+            reason: "You're receiving this email because you recently had a cleaning appointment with Prasad's Cleaning Services.",
+            bodyHtml: `
+              ${emailHeading("How was your cleaning?")}
+              <p>Hi ${escapeHtml(record.customer_name || "there")},</p>
+              <p>Thank you for choosing Prasad's Cleaning Services. We'd love to hear about your experience.</p>
+              ${emailButton(url, "Leave a review")}
+              <p style="font-size:14px;color:#6b7280;">This link works for 30 days after your appointment and can be used for one review.</p>
+           `,
+          }),
         }),
       })
       if (!response.ok) throw new Error(`Resend returned ${response.status}`)
