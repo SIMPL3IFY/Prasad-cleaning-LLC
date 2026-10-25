@@ -2,7 +2,7 @@
 // row determines eligibility, so a deleted/cancelled appointment is skipped.
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 import { createClient } from "@supabase/supabase-js"
-import { emailButton, emailHeading, escapeHtml, renderEmailLayout } from "../_shared/email.ts"
+import { ADMIN_REPLY_TO, emailButton, emailHeading, escapeHtml, renderEmailLayout } from "../_shared/email.ts"
 import { appointmentStart, makeReviewToken, type ReviewAppointment } from "../_shared/review-link.ts"
 
 const env = (name: string) => Deno.env.get(name) || ""
@@ -98,6 +98,7 @@ serve(async (req) => {
         body: JSON.stringify({
           from: env("RESEND_FROM_EMAIL") || "Prasad's Cleaning Services <notifications@prasadscleaning.com>",
           to: record.email,
+          reply_to: ADMIN_REPLY_TO, // SCRUM-205: A reply reaches the admin, not the no-reply sender
           subject: "How was your cleaning appointment?",
           // SCRUM-217: Same message, now inside the branded layout with a button instead of a text link
           html: renderEmailLayout({
