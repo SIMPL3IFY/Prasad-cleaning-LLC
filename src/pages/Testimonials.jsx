@@ -30,10 +30,13 @@ const formatReviewDate = (createdAt) => {
   }).format(date)
 }
 
+const REVIEW_CHAR_LIMIT = 150 // SCRUM-226: Truncate long reviews at 150 characters
+
 export default function Testimonials() {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setError] = useState('') // SCRUM-202: Added error state
+  const [expanded, setExpanded] = useState({}) // SCRUM-226: Track which reviews are expanded
 
   //SCRUM 90: Fetch reviews from Supabase database
   useEffect(() => {
@@ -91,7 +94,20 @@ return (
           {reviews.map((review) => (
             <li key={review.id} className="testimonial-card">
               <h2>{review.customer_name || 'Verified Customer'}</h2>
-              <p>{review.review}</p>
+              {/* SCRUM-226: Truncate long reviews with a Read More toggle */}
+              <p>
+                {review.review.length > REVIEW_CHAR_LIMIT && !expanded[review.id]
+                  ? `${review.review.slice(0, REVIEW_CHAR_LIMIT)}...`
+                  : review.review}
+              </p>
+              {review.review.length > REVIEW_CHAR_LIMIT && (
+                <button
+                  className="review-read-more"
+                  onClick={() => setExpanded(prev => ({ ...prev, [review.id]: !prev[review.id] }))}
+                >
+                  {expanded[review.id] ? 'Show Less' : 'Read More'}
+                </button>
+              )}
               
               {review.rating ? (
                 <p className="review-rating" aria-label={`${review.rating} out of 5 stars`}>

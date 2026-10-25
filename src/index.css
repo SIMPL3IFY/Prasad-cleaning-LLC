@@ -340,6 +340,7 @@ ul {
     align-items: center;
     justify-content: center;
     -webkit-appearance: none;
+    appearance: none;
     border-radius: 0.8rem;
     min-height: 42px;
     padding: 0.65rem 1.1rem;
@@ -1068,6 +1069,17 @@ ul {
   color: var(--color-text-muted);
   font-size: 0.875rem;
   margin-top: auto;
+}
+
+/* SCRUM-226: Read More / Show Less inline text button */
+.review-read-more {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .review-status {
