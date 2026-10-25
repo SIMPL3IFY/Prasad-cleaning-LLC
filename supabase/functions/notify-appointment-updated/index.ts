@@ -3,9 +3,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 // SCRUM-137: Attaches an updated .ics for the same event, so the customer's calendar moves to the new time
 // (and new address) and the old time is removed.
-import { buildIcsAttachment, clientEventTitle, emailHeading, escapeHtml, formatPacific, renderEmailLayout, sendEmail } from "../_shared/email.ts"
-
-const ADMIN_NOTIFY_EMAIL = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("NIGEL_EMAIL") || ""
+import { buildIcsAttachment, clientEventTitle, customerSubject, emailHeading, escapeHtml, formatPacific, renderEmailLayout, sendEmail } from "../_shared/email.ts"
 
 // SCRUM-199: Only these columns count as a customer-facing change (AC #2)
 const WATCHED_FIELDS = ["appointment_date", "appointment_time", "address"] as const
@@ -75,8 +73,9 @@ serve(async (req) => {
 
     const clientEmail = await sendEmail({
       to: record.email,
-      replyTo: ADMIN_NOTIFY_EMAIL || undefined,
-      subject: "Your cleaning appointment details have changed",
+      // SCRUM-205: Shared subject + thread id; replies go to the admin by default
+      subject: customerSubject(record),
+      threadId: record.id,
       // SCRUM-217: Same body as before, now inside the branded layout
       html: renderEmailLayout({
         title: "Your appointment has been updated",

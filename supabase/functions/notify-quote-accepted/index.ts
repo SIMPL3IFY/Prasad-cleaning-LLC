@@ -4,7 +4,7 @@
 // and Nigel now gets a "New job accepted" email too.
 // SCRUM-144: If the quote already has a date/time, show it plus an "Add to Google Calendar" button.
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
-import { BUSINESS_TIMEZONE, escapeHtml, formatPacific, jobDetailsHtml, renderEmailLayout, sendEmail, emailHeading } from "../_shared/email.ts"
+import { BUSINESS_TIMEZONE, customerSubject, escapeHtml, formatPacific, jobDetailsHtml, renderEmailLayout, sendEmail, emailHeading } from "../_shared/email.ts"
 const ADMIN_NOTIFY_EMAIL = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("NIGEL_EMAIL") || ""
 
 // SCRUM-144: No end time is stored, so assume a 2-hour appointment
@@ -53,8 +53,9 @@ serve(async (req) => {
 
     const clientEmail = await sendEmail({
       to: record.email,
-      replyTo: ADMIN_NOTIFY_EMAIL || undefined,
-      subject: 'Your cleaning service quote has been accepted',
+      // SCRUM-205: Shared subject + thread id, so this and later appointment emails stay in one conversation
+      subject: customerSubject(record),
+      threadId: record.id,
       // SCRUM-217: Same body as before, now inside the branded header/footer layout
       html: renderEmailLayout({
         title: 'Your quote has been accepted',

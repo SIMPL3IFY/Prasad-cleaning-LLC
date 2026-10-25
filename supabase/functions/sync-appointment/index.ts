@@ -16,6 +16,7 @@ import {
   buildIcsAttachment,
   clientCalendarButtonHtml,
   clientEventTitle,
+  customerSubject,
   jobDetailsHtml,
   renderEmailLayout,
   sendEmail,
@@ -148,8 +149,9 @@ serve(async (req) => {
     } else {
       clientEmail = await sendEmail({
         to: record.email,
-        replyTo: ADMIN_NOTIFY_EMAIL || undefined,
-        subject: "Your cleaning appointment is confirmed",
+        // SCRUM-205: Shared subject + thread id; replies go to the admin by default
+        subject: customerSubject(record),
+        threadId: record.id,
       // SCRUM-217: Same body as before, now inside the branded layout
         html: renderEmailLayout({
           title: "Your appointment is confirmed",
@@ -187,8 +189,9 @@ serve(async (req) => {
   } else {
     clientEmail = await sendEmail({
       to: record.email,
-      replyTo: ADMIN_NOTIFY_EMAIL || undefined,
-      subject: "Your cleaning appointment has been cancelled",
+      // SCRUM-205: Shared subject + thread id; replies go to the admin by default
+      subject: customerSubject(record),
+      threadId: record.id,
       // SCRUM-217: Same body as before, now inside the branded layout
       html: renderEmailLayout({
         title: "Your appointment has been cancelled",
