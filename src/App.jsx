@@ -59,9 +59,11 @@ function AppContent() {
           <Route path="/reset-password/continue" element={<ResetConfirmation />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/service-area" element={<ServiceArea />} />
-          <Route path="/portal" element={<CustomerPortal />} />
+          <Route element={<ProtectedCustomerRoute />}>
+            <Route path="/portal" element={<CustomerPortal />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
           <Route path="/review/:token" element={<AppointmentReview />} />
-          <Route path="/settings" element={<Settings />} />
           <Route element={<ProtectedAdminRoute />}>
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
