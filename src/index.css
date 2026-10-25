@@ -340,6 +340,7 @@ ul {
     align-items: center;
     justify-content: center;
     -webkit-appearance: none;
+    appearance: none;
     border-radius: 0.8rem;
     min-height: 42px;
     padding: 0.65rem 1.1rem;
