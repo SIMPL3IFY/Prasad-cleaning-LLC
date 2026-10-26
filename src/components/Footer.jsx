@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 // SCRUM-225: Footer grouped into labeled columns.
 const PHONE = '(916) 665-8474'
 const EMAIL = 'prasadscleaning@gmail.com'
+// SCRUM-223: pre-filled subject; the user can still edit it in their email app
+const EMAIL_SUBJECT = "Inquiry from Prasad's Cleaning website"
 
 const footerColumns = [
   {
@@ -58,7 +60,8 @@ export default function Footer() {
           <ul className="footer-list">
             {/* SCRUM-222: tel: opens the dialer on mobile */}
             <li><a href="tel:+19166658474">{PHONE}</a></li>
-            <li>{EMAIL}</li>
+            {/* SCRUM-223: mailto: opens the email app with a pre-filled subject */}
+            <li><a href={`mailto:${EMAIL}?subject=${encodeURIComponent(EMAIL_SUBJECT)}`}>{EMAIL}</a></li>
           </ul>
         </div>
       </div>
