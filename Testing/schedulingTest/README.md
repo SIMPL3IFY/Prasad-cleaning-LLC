@@ -30,23 +30,50 @@ The Customer Portal (which contains the scheduling button) is wrapped in a `Prot
 
 ## How to run
 
-From the project root:
+Follow these steps exactly to run the tests locally.
+
+### Step 1 — Make sure you are in the project root
+
+Open a terminal and navigate to the project folder:
+
+```bash
+cd path/to/Prasad-cleaning-LLC
+```
+
+### Step 2 — Install dependencies (first time only)
+
+```bash
+npm install
+```
+
+### Step 3 — Run just the SCRUM-238 tests
 
 ```bash
 npx vitest run Testing/schedulingTest/testScrum238.jsx
 ```
 
-To run all tests at once:
+You should see output like this:
+
+```
+✓ Testing/schedulingTest/testScrum238.jsx (6 tests)
+
+Test Files  1 passed (1)
+     Tests  6 passed (6)
+```
+
+### Step 4 — Run all tests together (optional)
 
 ```bash
 npx vitest run
 ```
 
-To see coverage:
+### Step 5 — View coverage report (optional)
 
 ```bash
 npx vitest run --coverage
 ```
+
+After it finishes, open `coverage/index.html` in your browser to see the full report.
 
 ## Mocks used
 
