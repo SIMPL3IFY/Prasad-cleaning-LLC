@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import ServicePhotosManager from '../components/ServicePhotosManager'
 
@@ -31,6 +31,17 @@ export default function AdminDashboard() {
      // SCRUM-85: Constants
     const [quotes, setQuotes] = useState([]) //Scrum 88
     const [acceptedQuotes, setAcceptedQuotes] = useState([]) //Scrum 88
+    // SCRUM-215: Private completion metadata keeps accepted rows and review links intact.
+    const [completedAppointments, setCompletedAppointments] = useState([])
+    const [currentCompletedPage, setCurrentCompletedPage] = useState(1)
+    const [completionNotes, setCompletionNotes] = useState({})
+    const [completingAppointmentId, setCompletingAppointmentId] = useState(null)
+    const [completionBusy, setCompletionBusy] = useState(false)
+    const [completionError, setCompletionError] = useState('')
+    const [completionMessage, setCompletionMessage] = useState('')
+    const [appointmentsLoadError, setAppointmentsLoadError] = useState('')
+    const appointmentRequest = useRef(0)
+    const completionInFlight = useRef(false)
     const [currentQuotePage, setCurrentQuotePage] = useState(1)
     const [currentAppointmentPage, setCurrentAppointmentPage] = useState(1) // Scrum 84: Appointment page state
     const [editingAppointmentId, setEditingAppointmentId] = useState(null) // Scrum 84: Editing appointment state
@@ -181,35 +192,116 @@ export default function AdminDashboard() {
         checkAdminAccess()
         fetchQuotes()
         fetchReviews()
-        fetchAcceptedQuotes()
         fetchDeclinedQuotes()
     }, [navigate])
 
-    // Scrum 88: Method to fetch accepted quotes from accepted_quotes table on Supabase
-    const fetchAcceptedQuotes = async () => {
-        const { data, error } = await supabase
-            .from('accepted_quotes')
-            .select(`
-                id,
-                originalQuoteId:original_quote_id,
-                customerName:customer_name,
-                email,
-                phone,
-                service,
-                property,
-                appointmentDate:appointment_date,
-                appointmentTime:appointment_time,
-                address,
-                message,
-                status
-            `)
-            .order('accepted_at', { ascending: true })
-
-        if (error) {
-            console.error('Error fetching accepted quotes:', error.message)
-            return
+    // SCRUM-215: Refresh after authorization, every 30 seconds, and on return to the tab.
+    // Cron also completes jobs independently while this page is closed.
+    useEffect(() => {
+        if (!isAdmin) return
+        const refresh = () => {
+            if (!completionInFlight.current) fetchAcceptedQuotes()
         }
-        setAcceptedQuotes(data)
+        const onVisible = () => {
+            if (document.visibilityState === 'visible') refresh()
+        }
+        refresh()
+        const timer = window.setInterval(refresh, 30000)
+        window.addEventListener('focus', refresh)
+        document.addEventListener('visibilitychange', onVisible)
+        return () => {
+            window.clearInterval(timer)
+            window.removeEventListener('focus', refresh)
+            document.removeEventListener('visibilitychange', onVisible)
+            appointmentRequest.current += 1
+        }
+    }, [isAdmin])
+
+    // Scrum 88 / 215: Read the original appointments with their admin-only completion data.
+    const fetchAcceptedQuotes = async () => {
+        const request = ++appointmentRequest.current
+        try {
+            const { data, error } = await supabase
+                .from('accepted_quotes')
+                .select(`
+                    id,
+                    originalQuoteId:original_quote_id,
+                    customerName:customer_name,
+                    email,
+                    phone,
+                    service,
+                    property,
+                    appointmentDate:appointment_date,
+                    appointmentTime:appointment_time,
+                    address,
+                    message,
+                    status,
+                    completion:appointment_completions (
+                        completedAt:completed_at,
+                        completionNote:completion_note,
+                        autoCompletionPaused:auto_completion_paused
+                    )
+                `)
+                .eq('status', 'accepted')
+                .order('accepted_at', { ascending: true })
+
+            if (request !== appointmentRequest.current) return false
+            if (error) {
+                console.error('Error fetching accepted quotes:', error.message)
+                setAppointmentsLoadError('Unable to load appointments. Please refresh and try again.')
+                return false
+            }
+            setAppointmentsLoadError('')
+            const appointments = (data || []).map(({ completion, ...quote }) => ({
+                ...quote,
+                completedAt: completion?.completedAt ?? null,
+                completionNote: completion?.completionNote ?? '',
+                autoCompletionPaused: completion?.autoCompletionPaused ?? false
+            }))
+            setAcceptedQuotes(appointments.filter(q => !q.completedAt))
+            setCompletedAppointments(appointments.filter(q => q.completedAt)
+                .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt)))
+            return true
+        } catch (error) {
+            if (request === appointmentRequest.current) {
+                setAppointmentsLoadError('Unable to load appointments. Please check your connection and try again.')
+            }
+            return false
+        }
+    }
+
+    // SCRUM-215: The server validates admin access and locks the row before changes.
+    const updateCompletion = async (quote, action) => {
+        if (completionInFlight.current) return
+        completionInFlight.current = true
+        appointmentRequest.current += 1
+        setCompletionBusy(true)
+        setCompletionError('')
+        setCompletionMessage('')
+        try {
+            const { error } = await supabase.rpc('scrum215_update_completion', {
+                p_action: action,
+                p_appointment_id: quote.id,
+                p_note: action === 'restore' ? null : (completionNotes[quote.id] ?? quote.completionNote ?? '').trim()
+            })
+            if (error) throw error
+            setCompletionNotes(prev => {
+                const next = { ...prev }
+                delete next[quote.id]
+                return next
+            })
+            setCompletingAppointmentId(null)
+            const refreshed = await fetchAcceptedQuotes()
+            setCompletionMessage(action === 'restore'
+                ? 'Appointment returned to Manage Appointments.'
+                : action === 'note' ? 'Completion note saved.' : 'Appointment moved to Completed Appointments.')
+            if (!refreshed) setCompletionError('The change was saved, but the lists could not reload. Please refresh before making another change.')
+        } catch (error) {
+            setCompletionError(error.message || 'Unable to save the appointment. Please try again.')
+        } finally {
+            completionInFlight.current = false
+            setCompletionBusy(false)
+        }
     }
 
     // Scrum 218: Helper function for dynamic filtering based on selected category
@@ -273,13 +365,31 @@ export default function AdminDashboard() {
     const filteredQuotes = quotes.filter(matchesSearch)
     const filteredAcceptedQuotes = acceptedQuotes.filter(matchesSearch)
     const filteredDeclinedQuotes = declinedQuotes.filter(matchesSearch)
+    const filteredCompletedAppointments = completedAppointments.filter(matchesSearch)
 
     // Scrum 218: Reset pagination pages when search term, visibility, or category changes
     useEffect(() => {
         setCurrentQuotePage(1)
         setCurrentAppointmentPage(1)
         setCurrentDeclinedPage(1)
+        setCurrentCompletedPage(1)
     }, [searchQuery, searchCategory, showSearchBar])
+
+    // SCRUM-215: A move or automatic refresh can remove the last item on a page.
+    useEffect(() => {
+        setCurrentAppointmentPage(page => Math.max(1, Math.min(page, Math.ceil(filteredAcceptedQuotes.length / APPOINTMENTS_PER_PAGE))))
+        setCurrentCompletedPage(page => Math.max(1, Math.min(page, Math.ceil(filteredCompletedAppointments.length / APPOINTMENTS_PER_PAGE))))
+    }, [filteredAcceptedQuotes.length, filteredCompletedAppointments.length])
+
+    useEffect(() => {
+        if (editingAppointmentId && !acceptedQuotes.some(q => q.id === editingAppointmentId)) {
+            setEditingAppointmentId(null)
+            setEditedAppointment({})
+        }
+        if (completingAppointmentId && !acceptedQuotes.some(q => q.id === completingAppointmentId)) {
+            setCompletingAppointmentId(null)
+        }
+    }, [acceptedQuotes, editingAppointmentId, completingAppointmentId])
 
     // Scrum 128 method: Returns the quotes for current page
     const paginateQuotes = () => {
@@ -733,7 +843,9 @@ export default function AdminDashboard() {
                 appointmentDate: saved.appointment_date,
                 appointmentTime: saved.appointment_time,
                 address: saved.address,
-                message: saved.message
+                message: saved.message,
+                completedAt: timeChanged ? null : q.completedAt,
+                autoCompletionPaused: timeChanged ? false : q.autoCompletionPaused
             } : q))
             setAppointmentMessage(`Appointment updated for ${quote.customerName}.`)
             setEditingAppointmentId(null)
@@ -942,6 +1054,42 @@ export default function AdminDashboard() {
                     <p className="admin-value">{quote.message}</p>
                 )}
             </div>
+
+            {/* SCRUM-215: Manual completion also supports correcting a restored job. */}
+            {editingAppointmentId !== quote.id && (
+                <div className="admin-btn-row">
+                    <button
+                        type="button"
+                        className="admin-btn admin-btn--primary"
+                        disabled={completionBusy}
+                        onClick={() => setCompletingAppointmentId(completingAppointmentId === quote.id ? null : quote.id)}
+                    >
+                        {completingAppointmentId === quote.id ? 'Cancel Completion' : 'Mark Completed'}
+                    </button>
+                </div>
+            )}
+            {completingAppointmentId === quote.id && editingAppointmentId !== quote.id && (
+                <div className="admin-callout admin-callout--below">
+                    <label className="admin-label" htmlFor={`complete-note-${quote.id}`}>Completion note (optional)</label>
+                    <textarea
+                        id={`complete-note-${quote.id}`}
+                        className="admin-textarea"
+                        rows={3}
+                        maxLength={4000}
+                        disabled={completionBusy}
+                        value={completionNotes[quote.id] ?? quote.completionNote ?? ''}
+                        onChange={e => setCompletionNotes(prev => ({ ...prev, [quote.id]: e.target.value }))}
+                    />
+                    <button
+                        type="button"
+                        className="admin-btn admin-btn--primary"
+                        disabled={completionBusy}
+                        onClick={() => updateCompletion(quote, 'complete')}
+                    >
+                        Confirm Completion
+                    </button>
+                </div>
+            )}
 
             {/* Scrum 150: Centered Cancel Appointment button below Message */}
             <div className="admin-btn-row">
@@ -1155,6 +1303,48 @@ export default function AdminDashboard() {
         </div>
     )
 
+    // SCRUM-215: Separate saved job notes from the customer's original message.
+    const renderCompletedAppointmentCard = (quote) => (
+        <div key={quote.id} className="admin-card-body">
+            <span className="admin-badge admin-badge--success">Completed</span>
+            {renderQuoteDetails(quote)}
+            <div className="admin-field">
+                <p className="admin-label">Marked completed (Pacific time)</p>
+                <p className="admin-value">{new Date(quote.completedAt).toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}</p>
+            </div>
+            <div className="admin-field">
+                <label className="admin-label" htmlFor={`completed-note-${quote.id}`}>Completion note</label>
+                <textarea
+                    id={`completed-note-${quote.id}`}
+                    className="admin-textarea"
+                    rows={3}
+                    maxLength={4000}
+                    disabled={completionBusy}
+                    value={completionNotes[quote.id] ?? quote.completionNote ?? ''}
+                    onChange={e => setCompletionNotes(prev => ({ ...prev, [quote.id]: e.target.value }))}
+                />
+            </div>
+            <div className="admin-btn-row">
+                <button
+                    type="button"
+                    className="admin-btn admin-btn--primary"
+                    disabled={completionBusy || (completionNotes[quote.id] ?? quote.completionNote ?? '').trim() === (quote.completionNote ?? '')}
+                    onClick={() => updateCompletion(quote, 'note')}
+                >
+                    Save Note
+                </button>
+                <button
+                    type="button"
+                    className="admin-btn admin-btn--ghost"
+                    disabled={completionBusy}
+                    onClick={() => updateCompletion(quote, 'restore')}
+                >
+                    Remove from Completed
+                </button>
+            </div>
+        </div>
+    )
+
     // Scrum 128 method: Shows the arrows to navigate
     const renderPagination = (currentPage, totalItems, itemsPerPage, onPageChange) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage)
@@ -1269,6 +1459,14 @@ export default function AdminDashboard() {
 
             {/* Dashboard Cards */}
             <div className="admin-grid">
+                {/* SCRUM-215: Feedback stays visible even after its card changes boxes. */}
+                {(completionError || completionMessage || appointmentsLoadError) && (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        {completionError && <p role="alert" className="admin-note admin-note--danger">{completionError}</p>}
+                        {appointmentsLoadError && <p role="alert" className="admin-note admin-note--danger">{appointmentsLoadError}</p>}
+                        {completionMessage && <p role="status" className="admin-note admin-note--success">{completionMessage}</p>}
+                    </div>
+                )}
                 {/* Scrum 218: Toggleable Search Bar - Box only renders when search is toggled ON */}
                 {!showSearchBar ? (
                 <div style={{ gridColumn: '1 / -1', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
@@ -1401,6 +1599,24 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 )}
+
+                {/* SCRUM-215: Completed jobs precede active appointments and share the same card pagination. */}
+                <div className="admin-panel admin-panel--appointments">
+                    <h2 className="admin-panel-title">Completed Appointments</h2>
+                    {filteredCompletedAppointments.length === 0 ? (
+                        <p className="admin-empty">
+                            {showSearchBar && searchQuery ? `No completed appointments found matching '${searchQuery}'.` : 'No completed appointments.'}
+                        </p>
+                    ) : (
+                        <>
+                            {filteredCompletedAppointments.slice((currentCompletedPage - 1) * APPOINTMENTS_PER_PAGE, currentCompletedPage * APPOINTMENTS_PER_PAGE).map(renderCompletedAppointmentCard)}
+                            {renderPagination(currentCompletedPage, filteredCompletedAppointments.length, APPOINTMENTS_PER_PAGE, direction => {
+                                const totalPages = Math.max(1, Math.ceil(filteredCompletedAppointments.length / APPOINTMENTS_PER_PAGE))
+                                setCurrentCompletedPage(page => direction === 'next' ? Math.min(page + 1, totalPages) : Math.max(page - 1, 1))
+                            })}
+                        </>
+                    )}
+                </div>
 
                 {/* Manage Appointments Section */}
                 {/* Manage Appointments Card */}
