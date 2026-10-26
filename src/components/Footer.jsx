@@ -56,7 +56,8 @@ export default function Footer() {
         <div className="footer-col">
           <h3 className="footer-heading">Get in Touch</h3>
           <ul className="footer-list">
-            <li>{PHONE}</li>
+            {/* SCRUM-222: tel: opens the dialer on mobile */}
+            <li><a href="tel:+19166658474">{PHONE}</a></li>
             <li>{EMAIL}</li>
           </ul>
         </div>
