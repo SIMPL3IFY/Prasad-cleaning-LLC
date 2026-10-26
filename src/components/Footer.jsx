@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 
 // SCRUM-225: Footer grouped into labeled columns.
 const PHONE = '(916) 665-8474'
-const PHONE_DIGITS = PHONE.replace(/\D/g, '') // SCRUM-223: tel: links need bare digits
 const EMAIL = 'prasadscleaning@gmail.com'
 // SCRUM-223: pre-filled subject; the user can still edit it in their email app
 const EMAIL_SUBJECT = "Inquiry from Prasad's Cleaning website"
@@ -59,8 +58,9 @@ export default function Footer() {
         <div className="footer-col">
           <h3 className="footer-heading">Get in Touch</h3>
           <ul className="footer-list">
-            {/* SCRUM-223: tel: opens the dialer on mobile, mailto: opens the email app */}
-            <li><a href={`tel:+1${PHONE_DIGITS}`}>{PHONE}</a></li>
+            {/* SCRUM-222: tel: opens the dialer on mobile */}
+            <li><a href="tel:+19166658474">{PHONE}</a></li>
+            {/* SCRUM-223: mailto: opens the email app with a pre-filled subject */}
             <li><a href={`mailto:${EMAIL}?subject=${encodeURIComponent(EMAIL_SUBJECT)}`}>{EMAIL}</a></li>
           </ul>
         </div>

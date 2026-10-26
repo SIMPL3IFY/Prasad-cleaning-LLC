@@ -3,9 +3,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 // SCRUM-137: Attaches an updated .ics for the same event, so the customer's calendar moves to the new time
 // (and new address) and the old time is removed.
-import { buildIcsAttachment, clientEventTitle, escapeHtml, formatPacific, sendEmail } from "../_shared/email.ts"
-
-const ADMIN_NOTIFY_EMAIL = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("NIGEL_EMAIL") || ""
+import { buildIcsAttachment, clientEventTitle, customerSubject, emailHeading, escapeHtml, formatPacific, renderEmailLayout, sendEmail } from "../_shared/email.ts"
 
 // SCRUM-199: Only these columns count as a customer-facing change (AC #2)
 const WATCHED_FIELDS = ["appointment_date", "appointment_time", "address"] as const
@@ -75,25 +73,31 @@ serve(async (req) => {
 
     const clientEmail = await sendEmail({
       to: record.email,
-      replyTo: ADMIN_NOTIFY_EMAIL || undefined,
-      subject: "Your cleaning appointment details have changed",
-      html: `
-        <h2>Your appointment has been updated</h2>
-        <p>Hi ${escapeHtml(record.customer_name || "there")},</p>
-        <p>We've made changes to your <strong>${escapeHtml(record.service)}</strong> appointment. What changed is highlighted below.</p>
-        <table style="border-collapse:collapse;margin:16px 0;">
-          <tr>
-            <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;"></th>
-            <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;">Before</th>
-            <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;">Now</th>
-          </tr>
-          ${changeRow("Date & time", oldWhen, newWhen)}
-          ${changeRow("Address", oldAddress, newAddress)}
-        </table>
-        <p>Open the attached invite to update your calendar. It replaces the old time.</p>
-        <p>If anything looks off, just reply to this email.</p>
-        <p>— Prasad's Cleaning Services</p>
-      `,
+      // SCRUM-205: Shared subject + thread id; replies go to the admin by default
+      subject: customerSubject(record),
+      threadId: record.id,
+      // SCRUM-217: Same body as before, now inside the branded layout
+      html: renderEmailLayout({
+        title: "Your appointment has been updated",
+        preheader: `Your ${record.service || "cleaning"} appointment details have changed.`,
+        bodyHtml: `
+          ${emailHeading("Your appointment has been updated")}
+          <p>Hi ${escapeHtml(record.customer_name || "there")},</p>
+          <p>We've made changes to your <strong>${escapeHtml(record.service)}</strong> appointment. What changed is highlighted below.</p>
+          <table role="presentation" width="100%" style="border-collapse:collapse;margin:16px 0;">
+            <tr>
+              <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;"></th>
+              <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;">Before</th>
+              <th style="padding:8px 12px;border:1px solid #ddd;text-align:left;">Now</th>
+            </tr>
+            ${changeRow("Date & time", oldWhen, newWhen)}
+            ${changeRow("Address", oldAddress, newAddress)}
+          </table>
+          <p>Open the attached invite to update your calendar. It replaces the old time.</p>
+          <p>If anything looks off, just reply to this email.</p>
+          <p>— Prasad's Cleaning Services</p>
+        `,
+      }),
       attachments: [buildIcsAttachment(record, { attendee: record.email, title: clientEventTitle(record) })],
     })
 
