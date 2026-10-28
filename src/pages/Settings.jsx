@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import DeleteAccount from '../components/DeleteAccount'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -428,6 +429,7 @@ export default function Settings() {
                         </Link>
                     </div>
                 </form>
+                <DeleteAccount onDeleted={() => navigate('/', { replace: true})} />
             </div>
         </main>
     )

@@ -12,13 +12,26 @@ export type EmailResult = { sent: boolean; skipped?: boolean; error?: string }
 // SCRUM-137: Resend attachment; content is base64
 export type EmailAttachment = { filename: string; content: string; content_type?: string }
 
+// SCRUM-205: One subject per appointment, so every customer email for a job lands in one Gmail conversation.
+// The status (confirmed, updated, cancelled) goes in the heading and preheader instead.
+export const customerSubject = (r: Record<string, unknown>) =>
+  `Your ${r.service || "cleaning"} appointment with Prasad's Cleaning Services`
+
+// SCRUM-205: Same References id for every email about a job, so mail clients thread them together.
+export const threadHeaders = (id: unknown): Record<string, string> => {
+  const ref = `<appointment-${id}@prasadscleaning.com>`
+  return { "In-Reply-To": ref, "References": ref }
+}
+
 // SCRUM-184: Never throws, so an email failure can't undo a saved appointment.
+// SCRUM-205: replyTo defaults to the admin, so a customer can always reply to reach Nigel.
 export async function sendEmail(
-  { to, subject, html, replyTo, attachments }: {
+  { to, subject, html, replyTo = ADMIN_REPLY_TO, threadId, attachments }: {
     to: string
     subject: string
     html: string
     replyTo?: string
+    threadId?: unknown // SCRUM-205: appointment id; adds the thread headers
     attachments?: (EmailAttachment | null)[] // SCRUM-137: e.g. the .ics invite; nulls are dropped
   },
 ): Promise<EmailResult> {
@@ -42,6 +55,7 @@ export async function sendEmail(
         subject,
         html,
         ...(replyTo ? { reply_to: replyTo } : {}),
+        ...(threadId ? { headers: threadHeaders(threadId) } : {}),
         ...(files.length ? { attachments: files } : {}),
       }),
     })
@@ -93,6 +107,9 @@ const BUSINESS = {
   website: "https://prasadscleaning.com",  // TODO: confirm this is the live site URL
   logoUrl: "https://xdflqihrhhtjqaowrfkq.supabase.co/storage/v1/object/public/email-assets/Prasads%20Cleaning%20Logo.png",
 }
+
+// SCRUM-205: Where customer replies go. Falls back to the business inbox so a reply never lands on the no-reply sender.
+export const ADMIN_REPLY_TO = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("NIGEL_EMAIL") || BUSINESS.email
 
 const DEFAULT_REASON =
   "You're receiving this email because you requested a quote or booked a service with Prasad's Cleaning Services."
@@ -156,8 +173,7 @@ export function renderEmailLayout(
                 &nbsp;&middot;&nbsp;
                 <a href="mailto:${BUSINESS.email}" style="${link}">${BUSINESS.email}</a>
               </p>
-              <p style="margin:0 0 12px;"><a href="${BUSINESS.website}" target="_blank" style="${link}">${websiteLabel}</a></p>
-              <p style="margin:0;font-size:12px;">${escapeHtml(reason)}</p>
+              <p style="margin:0 0 12px;"><a href="${BUSINESS.website}" target="_blank" style="${link}">${websiteLabel}</a></p>              <p style="margin:0;font-size:12px;">${escapeHtml(reason)}</p>
             </td>
           </tr>
 
