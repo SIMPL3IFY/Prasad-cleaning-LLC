@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 const BUCKET = 'service-images'
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_FILE_SIZE = 5 * 1024 * 1024
+const MAX_DESCRIPTION_LENGTH = 300 // SCRUM-224: Keeps the text fitting on the back of a flip card
 const ADMIN_ERROR = 'Please make sure you are signed in as an admin.'
 
 const getImageUrl = (path) => supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl
@@ -32,6 +33,8 @@ export default function ServicePhotosManager({ onClose }) {
     const [newServiceName, setNewServiceName] = useState('')
     const [newServiceFile, setNewServiceFile] = useState(null) // { file, previewUrl }
     const [newServiceInputKey, setNewServiceInputKey] = useState(0) // bumped to clear the file input
+    const [newServiceDescription, setNewServiceDescription] = useState('') // SCRUM-224
+    const [descriptionDrafts, setDescriptionDrafts] = useState({}) // SCRUM-224: service id -> unsaved description text
     const [message, setMessage] = useState('')
     const [error, setError] = useState('')
 
@@ -40,7 +43,7 @@ export default function ServicePhotosManager({ onClose }) {
         setLoading(true)
         const { data, error: fetchError } = await supabase
             .from('services')
-            .select('id, name, image_path, sort_order, is_active')
+            .select('id, name, image_path, sort_order, is_active, description')
             .order('sort_order', { ascending: true })
 
         if (fetchError) {
@@ -163,6 +166,37 @@ export default function ServicePhotosManager({ onClose }) {
         setBusy(null)
     }
 
+    // SCRUM-224: Saves the text shown on the back of the service's flip card
+    const saveDescription = async (service) => {
+        const draft = descriptionDrafts[service.id]
+        if (draft === undefined) return
+
+        const description = draft.trim() || null
+
+        startAction(service.id, 'description')
+
+        const { data: updatedRows, error: updateError } = await supabase
+            .from('services')
+            .update({ description })
+            .eq('id', service.id)
+            .select('id')
+
+        if (updateError || !updatedRows?.length) {
+            console.error('Error updating service description:', updateError?.message)
+            failAction(`Could not save the description for ${service.name}. ${ADMIN_ERROR}`)
+            return
+        }
+
+        setServices((prev) => prev.map((s) => (s.id === service.id ? { ...s, description } : s)))
+        setDescriptionDrafts((prev) => {
+            const next = { ...prev }
+            delete next[service.id]
+            return next
+        })
+        setMessage(`${service.name} description updated.`)
+        setBusy(null)
+    }
+
     // SCRUM-204: Delete the row first so the site never points at a missing photo
     const deleteService = async (service) => {
         startAction(service.id, 'delete')
@@ -252,8 +286,13 @@ export default function ServicePhotosManager({ onClose }) {
 
         const { data: insertedRows, error: insertError } = await supabase
             .from('services')
-            .insert({ name, image_path: newPath, sort_order: nextSortOrder })
-            .select('id, name, image_path, sort_order, is_active')
+            .insert({
+                name,
+                image_path: newPath,
+                sort_order: nextSortOrder,
+                description: newServiceDescription.trim() || null,
+            })
+            .select('id, name, image_path, sort_order, is_active, description')
 
         if (insertError || !insertedRows?.length) {
             console.error('Error adding service:', insertError?.message)
@@ -267,6 +306,7 @@ export default function ServicePhotosManager({ onClose }) {
 
         setServices((prev) => [...prev, insertedRows[0]])
         setNewServiceName('')
+        setNewServiceDescription('')
         clearNewServiceFile()
         setNewServiceInputKey((key) => key + 1)
         setMessage(`${name} was added.`)
@@ -277,12 +317,13 @@ export default function ServicePhotosManager({ onClose }) {
         <div className="admin-modal">
             <div className="admin-modal-box admin-modal-box--wide admin-modal-box--scroll">
                 <div className="admin-row">
-                    <h3 className="admin-modal-title">Service Photos</h3>
+                    {/* SCRUM-224: Popup covers photos and descriptions */}
+                    <h3 className="admin-modal-title">Edit Services</h3>
                     <button
                         type="button"
                         onClick={onClose}
                         className="admin-btn admin-btn--close"
-                        aria-label="Close service photos"
+                        aria-label="Close edit services"
                     >
                         ×
                     </button>
@@ -300,6 +341,9 @@ export default function ServicePhotosManager({ onClose }) {
                     <ul className="admin-review-list">
                         {services.map((service) => {
                             const selected = selectedFiles[service.id]
+                            const savedDescription = service.description || ''
+                            const descriptionDraft = descriptionDrafts[service.id] ?? savedDescription
+                            const descriptionChanged = descriptionDraft.trim() !== savedDescription.trim()
 
                             return (
                                 <li key={service.id} className="admin-review-card">
@@ -335,6 +379,31 @@ export default function ServicePhotosManager({ onClose }) {
                                                 {selected ? selected.file.name : 'No file chosen'}
                                             </span>
                                         </div>
+                                    </div>
+
+                                    {/* SCRUM-224: Description shown on the back of the service's flip card */}
+                                    <div className="admin-field">
+                                        <label htmlFor={`description-${service.id}`} className="admin-label">
+                                            Description
+                                        </label>
+                                        <textarea
+                                            id={`description-${service.id}`}
+                                            value={descriptionDraft}
+                                            onChange={(e) => setDescriptionDrafts((prev) => ({ ...prev, [service.id]: e.target.value }))}
+                                            disabled={busy !== null}
+                                            maxLength={MAX_DESCRIPTION_LENGTH}
+                                            rows={3}
+                                            className="admin-textarea"
+                                            placeholder="Shown when customers flip this service's card"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => saveDescription(service)}
+                                            disabled={!descriptionChanged || busy !== null}
+                                            className="admin-btn admin-btn--primary"
+                                        >
+                                            {isBusy(service.id, 'description') ? 'Saving...' : 'Save description'}
+                                        </button>
                                     </div>
 
                                     {confirmingDeleteId === service.id ? (
@@ -403,6 +472,21 @@ export default function ServicePhotosManager({ onClose }) {
                             disabled={busy !== null}
                             className="admin-input"
                             placeholder="e.g. Window Cleaning"
+                        />
+                    </div>
+
+                    {/* SCRUM-224: Optional description for the new service's flip card */}
+                    <div className="admin-field">
+                        <label htmlFor="new-service-description" className="admin-label">Description (optional)</label>
+                        <textarea
+                            id="new-service-description"
+                            value={newServiceDescription}
+                            onChange={(e) => setNewServiceDescription(e.target.value)}
+                            disabled={busy !== null}
+                            maxLength={MAX_DESCRIPTION_LENGTH}
+                            rows={3}
+                            className="admin-textarea"
+                            placeholder="Shown when customers flip this service's card"
                         />
                     </div>
 

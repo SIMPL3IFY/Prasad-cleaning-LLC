@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { SERVICES_LIST } from '../data/ServicesData'
 
+// SCRUM-201 / SCRUM-224: Bundled descriptions, used when a service has none saved in the table
+const DESCRIPTIONS = Object.fromEntries(SERVICES_LIST.map((service) => [service.name, service.description]))
+
 // SCRUM-204: Bundled images shown if Supabase can't be reached
 const FALLBACK_FEATURED = ['Residential Cleaning', 'Commercial Cleaning', 'Special Offers']
 const FALLBACK_SERVICES = SERVICES_LIST.map((service) => ({
     id: service.name,
     name: service.name,
     img: service.img,
+    description: service.description,
     isFeatured: FALLBACK_FEATURED.includes(service.name),
 }))
 
@@ -23,7 +27,7 @@ export function useServices() {
         const fetchServices = async () => {
             const { data, error: fetchError } = await supabase
                 .from('services')
-                .select('id, name, image_path, is_featured')
+                .select('id, name, image_path, is_featured, description')
                 .eq('is_active', true)
                 .order('sort_order', { ascending: true })
 
@@ -38,6 +42,8 @@ export function useServices() {
                     id: service.id,
                     name: service.name,
                     img: supabase.storage.from('service-images').getPublicUrl(service.image_path).data.publicUrl,
+                    // SCRUM-224: Admin-written description first, then the bundled one
+                    description: service.description || DESCRIPTIONS[service.name],
                     isFeatured: service.is_featured,
                 })))
             }
