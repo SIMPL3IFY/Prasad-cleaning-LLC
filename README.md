@@ -44,6 +44,30 @@ Open [http://localhost:5173](http://localhost:5173) in the browser.
 - `src/ServicesImages/` — imagery for service offerings
 - `assets/` — brand assets (logo, etc.)
 
+### Quote Address Check (SCRUM-239)
+
+When a customer clicks **Get My Free Quote**, the address (street, apt/unit, city, state, ZIP) is checked before the quote is saved. The check runs in the `validate-address` Supabase Edge Function using [Geocodio](https://www.geocod.io). The function never touches the database, and the Geocodio key never reaches the browser.
+
+- **Real address:** the quote is saved in the standardized format.
+- **Spelled differently:** "Did you mean: …?" with **Use this address** (saves the suggestion) or **Edit my address**.
+- **Not found, or only found roughly** (street, city or ZIP level): the quote is blocked with "We couldn't verify this address. Please check it and try again."
+- **Check unavailable** (Geocodio down or slow, daily limit used up, key missing, function not deployed): the quote is saved anyway, so a customer is never blocked by an outage.
+
+Setup (one time):
+
+1. Create a free Geocodio account and API key. The free tier is 2,500 lookups a day with no credit card. Without a card, lookups over the limit fail and quotes are simply saved unchecked for the rest of the day.
+2. Store the key as a Supabase secret. It is server-only, so never put it in `.env` or any `VITE_` variable:
+
+   ```bash
+   npx supabase secrets set GEOCODIO_API_KEY=your-key --project-ref xdflqihrhhtjqaowrfkq
+   ```
+
+3. Deploy the function (no database changes needed):
+
+   ```bash
+   npx supabase functions deploy validate-address --use-api --project-ref xdflqihrhhtjqaowrfkq
+   ```
+
 ## Contributing
 
 - *main* — stable branch

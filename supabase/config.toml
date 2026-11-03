@@ -452,3 +452,11 @@ enable = true
 verify_jwt = true
 import_map = "./functions/delete-account/deno.json"
 entrypoint = "./functions/delete-account/index.ts"
+
+# SCRUM-239: Public (customers are not signed in). Only checks an address for the quote form;
+# it never touches the database. Rate-limited per IP inside the function.
+[functions.validate-address]
+enabled = true
+verify_jwt = false
+import_map = "./functions/validate-address/deno.json"
+entrypoint = "./functions/validate-address/index.ts"
