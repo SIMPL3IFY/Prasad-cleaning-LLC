@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import ServicePhotosManager from '../components/ServicePhotosManager'
+import AdminQuoteForm from '../components/AdminQuoteForm'
 
 const QUOTES_PER_PAGE = 1
 const APPOINTMENTS_PER_PAGE = 1 // Scrum 84: Appointments pagination
@@ -55,6 +56,8 @@ export default function AdminDashboard() {
     const [declineReason, setDeclineReason] = useState('')  // Scrum 149: In-progress text for the decline reason field
     const [declineReasonError, setDeclineReasonError] = useState(false) // Scrum 149: Drives the required-field highlight
     const [reviews, setReviews] = useState([])
+    const [showCreateQuote, setShowCreateQuote] = useState(false)
+    const [quoteCreatedMessage, setQuoteCreatedMessage] = useState('')
     const [showServicePhotosModal, setShowServicePhotosModal] = useState(false) // SCRUM-204
     const [loadingReviews, setLoadingReviews] = useState(true)
     const [reviewMessage, setReviewMessage] = useState('')
@@ -1647,11 +1650,18 @@ export default function AdminDashboard() {
                     </button>
                 </div>
 
+                {/* SCRUM-241: Admin entry bypasses the public customer form. */}
                 {/* Manage Quotes Card */}
                 <div className="admin-panel admin-panel--quotes">
                     <h2 className="admin-panel-title">
                         Manage Quotes
                     </h2>
+                    <button type="button" className="admin-btn admin-btn--primary" style={{ marginBottom: '1rem' }}
+                        onClick={() => { setQuoteCreatedMessage(''); setShowCreateQuote(true) }}>
+                        Create Quote
+                    </button>
+                    {quoteCreatedMessage && <p role="status" className="admin-note admin-note--success">{quoteCreatedMessage}</p>}
+
 
                     {filteredQuotes.length === 0 ? (
                         <p className="admin-empty">
@@ -1721,6 +1731,18 @@ export default function AdminDashboard() {
                     </div>
                 </div>
                 </div>
+
+            {showCreateQuote && <AdminQuoteForm
+                onClose={() => setShowCreateQuote(false)}
+                onCreated={() => {
+                    setShowCreateQuote(false)
+                    setShowSearchBar(false)
+                    setSearchQuery('')
+                    setCurrentQuotePage(1)
+                    setQuoteCreatedMessage('Quote created. It is ready in Manage Quotes.')
+                    fetchQuotes()
+                }}
+            />}
 
             {/* Scrum 150: Confirmation Modal before accepting quote */}
             {acceptingQuoteId && (
