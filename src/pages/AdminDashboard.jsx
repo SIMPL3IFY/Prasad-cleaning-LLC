@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import ServicePhotosManager from '../components/ServicePhotosManager'
+import AdminQuoteForm from '../components/AdminQuoteForm'
 
 const QUOTES_PER_PAGE = 1
 const APPOINTMENTS_PER_PAGE = 1 // Scrum 84: Appointments pagination
@@ -55,6 +56,8 @@ export default function AdminDashboard() {
     const [declineReason, setDeclineReason] = useState('')  // Scrum 149: In-progress text for the decline reason field
     const [declineReasonError, setDeclineReasonError] = useState(false) // Scrum 149: Drives the required-field highlight
     const [reviews, setReviews] = useState([])
+    const [showCreateQuote, setShowCreateQuote] = useState(false)
+    const [quoteCreatedMessage, setQuoteCreatedMessage] = useState('')
     const [showServicePhotosModal, setShowServicePhotosModal] = useState(false) // SCRUM-204
     const [loadingReviews, setLoadingReviews] = useState(true)
     const [reviewMessage, setReviewMessage] = useState('')
@@ -64,6 +67,14 @@ export default function AdminDashboard() {
     const [acceptingQuoteId, setAcceptingQuoteId] = useState(null)
     // Scrum 183: State to track which declined quote is awaiting confirmation to move to pending
     const [reopenModalQuote, setReopenModalQuote] = useState(null)
+    // SCRUM-242: A destructive action always names the source table and asks for confirmation.
+    const [deleteTarget, setDeleteTarget] = useState(null)
+    const [deleteBusy, setDeleteBusy] = useState(false)
+    const [deleteError, setDeleteError] = useState('')
+    const [deleteMessage, setDeleteMessage] = useState('')
+    const deleteInFlight = useRef(false)
+    const quoteRequest = useRef(0)
+    const declinedRequest = useRef(0)
 
     // Scrum 179: State variables for Admin Settings modal and password reset
     const [showAdminSettingsModal, setShowAdminSettingsModal] = useState(false)
@@ -86,6 +97,7 @@ export default function AdminDashboard() {
     // Scrum 88: fetches quotes from the quotes table on Supabase
     // Scrum 149: connects quotes box to Supabase database.
     const fetchQuotes = async () => {
+        const request = ++quoteRequest.current
         const { data, error } = await supabase
             .from('quotes')
             .select(`
@@ -103,6 +115,7 @@ export default function AdminDashboard() {
             `)
             .order('created_at', { ascending: true })
 
+        if (request !== quoteRequest.current) return
         if (error) {
             console.error('Error fetching quotes:', error.message)
             return
@@ -112,6 +125,7 @@ export default function AdminDashboard() {
 
     // Scrum 149 method: fetches every declined quote from the archive table.
     const fetchDeclinedQuotes = async () => {
+        const request = ++declinedRequest.current
         const { data, error } = await supabase
             .from('declined_quotes')
             .select(`
@@ -130,6 +144,7 @@ export default function AdminDashboard() {
             `)
             .order('declined_at', { ascending: false })
 
+        if (request !== declinedRequest.current) return
         if (error) {
             console.error('Error fetching declined quotes:', error.message)
             return
@@ -200,7 +215,10 @@ export default function AdminDashboard() {
     useEffect(() => {
         if (!isAdmin) return
         const refresh = () => {
-            if (!completionInFlight.current) fetchAcceptedQuotes()
+            if (!completionInFlight.current && !deleteInFlight.current) {
+                fetchAcceptedQuotes()
+                fetchDeclinedQuotes()
+            }
         }
         const onVisible = () => {
             if (document.visibilityState === 'visible') refresh()
@@ -304,6 +322,60 @@ export default function AdminDashboard() {
         }
     }
 
+    // SCRUM-242: The database verifies admin access and deletes atomically.
+    const permanentlyDeleteQuote = async () => {
+        if (!deleteTarget || deleteInFlight.current || completionInFlight.current) return
+        deleteInFlight.current = true
+        appointmentRequest.current += 1
+        setDeleteBusy(true)
+        setDeleteError('')
+        const { table, quote } = deleteTarget
+        try {
+            const { error } = await supabase.rpc('scrum242_delete_quote', {
+                p_table: table, p_quote_id: quote.id
+            })
+            if (error) throw error
+            // Discard reads started before deletion so stale results cannot restore a card.
+            appointmentRequest.current += 1
+            quoteRequest.current += 1
+            declinedRequest.current += 1
+            if (table === 'quotes') setQuotes(previous => previous.filter(row => row.id !== quote.id))
+            if (table === 'declined_quotes') setDeclinedQuotes(previous => previous.filter(row => row.id !== quote.id))
+            if (table === 'accepted_quotes') {
+                setAcceptedQuotes(previous => previous.filter(row => row.id !== quote.id))
+                setCompletedAppointments(previous => previous.filter(row => row.id !== quote.id))
+                setCompletionNotes(previous => {
+                    const next = { ...previous }; delete next[quote.id]; return next
+                })
+                setPendingSync(null)
+            }
+            setDecliningQuoteId(null)
+            setAcceptingQuoteId(null)
+            setReopenModalQuote(null)
+            setDeleteTarget(null)
+            setDeleteMessage(`Quote for ${quote.customerName} permanently deleted.`)
+        } catch (error) {
+            setDeleteError(error.message || 'Unable to delete this quote. Please try again.')
+        } finally {
+            deleteInFlight.current = false
+            setDeleteBusy(false)
+        }
+    }
+
+    const renderDeleteButton = (quote, table) => (
+        <div className="admin-btn-row" style={{ marginBottom: '1rem' }}>
+            <button type="button" className="admin-btn admin-btn--danger"
+                disabled={deleteBusy || completionBusy}
+                onClick={() => {
+                    setDeleteError('')
+                    setDeleteMessage('')
+                    setDeleteTarget({ quote, table })
+                }}>
+                Delete Quote
+            </button>
+        </div>
+    )
+
     // Scrum 218: Helper function for dynamic filtering based on selected category
     // Scrum 219: Adds the time, in Supabase the time is as a 24 hour clock but this converts it to 12 hours with AM/PM
     const matchesSearch = (item) => {
@@ -374,6 +446,12 @@ export default function AdminDashboard() {
         setCurrentDeclinedPage(1)
         setCurrentCompletedPage(1)
     }, [searchQuery, searchCategory, showSearchBar])
+
+    // SCRUM-242: Deletion or background expiry can remove the last card on any page.
+    useEffect(() => {
+        setCurrentQuotePage(page => Math.max(1, Math.min(page, Math.ceil(filteredQuotes.length / QUOTES_PER_PAGE))))
+        setCurrentDeclinedPage(page => Math.max(1, Math.min(page, Math.ceil(filteredDeclinedQuotes.length / DECLINED_QUOTES_PER_PAGE))))
+    }, [filteredQuotes.length, filteredDeclinedQuotes.length])
 
     // SCRUM-215: A move or automatic refresh can remove the last item on a page.
     useEffect(() => {
@@ -959,6 +1037,7 @@ export default function AdminDashboard() {
     // Scrum 200: Added admin-card-body wrapper class to separate card content from pagination
     const renderAppointmentCard = (quote) => (
         <div key={quote.id} className="admin-card-body">{/* Scrum 200 */}
+            {renderDeleteButton(quote, 'accepted_quotes')}
             <div className="admin-row">
                 <div>
                     <p className="admin-label">Customer Name</p>
@@ -1212,6 +1291,7 @@ export default function AdminDashboard() {
     // Scrum 200: Added admin-card-body wrapper class to separate card content from pagination
     const renderQuoteCard = (quote) => (
         <div key={quote.id} className="admin-card-body">{/* Scrum 200 */}
+            {renderDeleteButton(quote, 'quotes')}
             {/* Accept / Decline buttons */}
             <div className="admin-btn-row">
                 {quote.status === 'pending' ? (
@@ -1281,6 +1361,7 @@ export default function AdminDashboard() {
     // Scrum 200: Added admin-card-body wrapper class to separate card content from pagination
     const renderDeclinedQuoteCard = (quote) => (
         <div key={quote.id} className="admin-card-body">{/* Scrum 200 */}
+            {renderDeleteButton(quote, 'declined_quotes')}
             <div className="admin-btn-row">
                 <span className="admin-badge admin-badge--danger">
                     Declined
@@ -1306,7 +1387,8 @@ export default function AdminDashboard() {
     // SCRUM-215: Separate saved job notes from the customer's original message.
     const renderCompletedAppointmentCard = (quote) => (
         <div key={quote.id} className="admin-card-body">
-            <span className="admin-badge admin-badge--success">Completed</span>
+            {renderDeleteButton(quote, 'accepted_quotes')}
+            <div className="admin-btn-row"><span className="admin-badge admin-badge--success">Completed</span></div>
             {renderQuoteDetails(quote)}
             <div className="admin-field">
                 <p className="admin-label">Marked completed (Pacific time)</p>
@@ -1458,6 +1540,8 @@ export default function AdminDashboard() {
             </section>
 
             {/* Dashboard Cards */}
+            {deleteMessage && <p role="status" className="admin-note admin-note--success">{deleteMessage}</p>}
+
             <div className="admin-grid">
                 {/* SCRUM-215: Feedback stays visible even after its card changes boxes. */}
                 {(completionError || completionMessage || appointmentsLoadError) && (
@@ -1647,11 +1731,18 @@ export default function AdminDashboard() {
                     </button>
                 </div>
 
+                {/* SCRUM-241: Admin entry bypasses the public customer form. */}
                 {/* Manage Quotes Card */}
                 <div className="admin-panel admin-panel--quotes">
                     <h2 className="admin-panel-title">
                         Manage Quotes
                     </h2>
+                    <button type="button" className="admin-btn admin-btn--primary" style={{ marginBottom: '1rem' }}
+                        onClick={() => { setQuoteCreatedMessage(''); setShowCreateQuote(true) }}>
+                        Create Quote
+                    </button>
+                    {quoteCreatedMessage && <p role="status" className="admin-note admin-note--success">{quoteCreatedMessage}</p>}
+
 
                     {filteredQuotes.length === 0 ? (
                         <p className="admin-empty">
@@ -1722,6 +1813,18 @@ export default function AdminDashboard() {
                 </div>
                 </div>
 
+            {showCreateQuote && <AdminQuoteForm
+                onClose={() => setShowCreateQuote(false)}
+                onCreated={() => {
+                    setShowCreateQuote(false)
+                    setShowSearchBar(false)
+                    setSearchQuery('')
+                    setCurrentQuotePage(1)
+                    setQuoteCreatedMessage('Quote created. It is ready in Manage Quotes.')
+                    fetchQuotes()
+                }}
+            />}
+
             {/* Scrum 150: Confirmation Modal before accepting quote */}
             {acceptingQuoteId && (
                 <div className="admin-modal">
@@ -1746,6 +1849,25 @@ export default function AdminDashboard() {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {deleteTarget && (
+                <div className="admin-modal">
+                    <section role="dialog" aria-modal="true" aria-labelledby="delete-quote-title" className="admin-modal-box">
+                        <h3 id="delete-quote-title" className="admin-modal-title">Permanently delete quote?</h3>
+                        <p className="admin-modal-text">
+                            Delete the quote for <strong>{deleteTarget.quote.customerName}</strong> ({deleteTarget.quote.email})?
+                            This cannot be undone. Accepted appointments also lose their saved completion notes.
+                        </p>
+                        {deleteError && <p role="alert" className="admin-note admin-note--danger">{deleteError}</p>}
+                        <div className="admin-btn-row">
+                            <button type="button" className="admin-btn admin-btn--danger" disabled={deleteBusy}
+                                onClick={permanentlyDeleteQuote}>{deleteBusy ? 'Deleting…' : 'Yes, Permanently Delete'}</button>
+                            <button type="button" className="admin-btn admin-btn--ghost" disabled={deleteBusy}
+                                onClick={() => setDeleteTarget(null)}>Cancel</button>
+                        </div>
+                    </section>
                 </div>
             )}
 
