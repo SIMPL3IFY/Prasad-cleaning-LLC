@@ -25,6 +25,7 @@ These tests are skipped unless you set the variables:
 |---|---|
 | `TEST_CUSTOMER_EMAIL`, `TEST_CUSTOMER_PASSWORD` | A real customer account. Checks that signing in reaches `/portal`. |
 | `BASE_URL` | Site address (default `http://localhost:5173`). |
+| `RUN_QUOTE_SAVE_TESTS=1` | Saves real quotes to check the address verification flow. Delete the `Selenium Test 239` rows from `quotes` afterwards. |
 
 PowerShell example:
 
