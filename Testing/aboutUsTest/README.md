@@ -53,14 +53,16 @@ After it finishes, open `coverage/index.html` in your browser to see the full re
 
 ---
 
+
 ## Tests included
 
 | # | Test | What it checks |
 |---|---|---|
-| 1 | Company logo | Verifies the logo renders with the correct alt text (Prasad's Cleaning Services LLC logo) |
-| 2 | Main heading & background | Checks that the "About Us" heading and company background details (owner Nigel Prasad, Northern California, Bay Area) are displayed |
-| 3 | What We Offer section | Verifies the section heading and all 6 cleaning services (Commercial Cleaning, Residential Window Cleaning, Carpet Cleaning, Janitorial Services, Floor Cleaning, and Stripping and Wax Services) render |
-| 4 | Why Clients Choose Us | Verifies the section heading and all three core value cards ("Reliable", "Detail-Oriented", "Professional") are rendered with their descriptive text |
+| 1 | Main Title | Verifies the main level-1 heading (`<h1>`) renders on the page |
+| 2 | Company Background | Verifies the "Who We Are" section heading is displayed |
+| 3 | What We Offer | Verifies the section heading and structural rendering of service list items (`<li>`) |
+| 4 | Why Clients Choose Us | Verifies the section heading and structural rendering of value proposition cards (`<article>`) |
+| 5 | Request a Quote CTA | Verifies clicking the "Request a quote" call-to-action button navigates to `/contact` |
 
 --- 
 

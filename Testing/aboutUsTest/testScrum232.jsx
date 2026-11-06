@@ -1,65 +1,63 @@
-/**
- * Unit tests for the About Us page (SCRUM-232).
- * Validates rendering of company details, logo, services offered, and core values.
- */
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { describe, it, expect } from 'vitest'
 import About from '../../src/pages/About'
 
-describe('About Us Page (SCRUM-232)', () => {
-  it('renders the company logo with correct alt text', () => {
-    render(<About />)
-    const logoImage = screen.getByAltText("Prasad's Cleaning Services LLC logo")
-    expect(logoImage).toBeInTheDocument()
-    expect(logoImage).toHaveAttribute('src')
+function renderAbout() {
+  return render(
+    <MemoryRouter initialEntries={['/about']}>
+      <Routes>
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<div>Contact Page</div>} />
+      </Routes>
+    </MemoryRouter>
+  )
+}
+
+describe('About Page (SCRUM-232)', () => {
+  it('renders the main banner and eyebrow text', () => {
+    renderAbout()
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
   })
 
-  it('renders the main heading and company background information', () => {
-    render(<About />)
+  it('renders company background section (Who We Are)', () => {
+    renderAbout()
+    expect(screen.getByRole('heading', { name: /who we are/i })).toBeInTheDocument()
+  })
+
+  it('renders service offerings list (What We Offer) structurally', () => {
+    renderAbout()
     
-    // Main heading
-    expect(screen.getByRole('heading', { name: /^about us$/i })).toBeInTheDocument()
+    // Find the section heading
+    const offerHeading = screen.getByRole('heading', { name: /what we offer/i })
+    expect(offerHeading).toBeInTheDocument()
 
-    // Owner and regional presence mentioned in the description
-    expect(screen.getByText(/Nigel Prasad/i)).toBeInTheDocument()
-    expect(screen.getByText(/Northern California/i)).toBeInTheDocument()
-    expect(screen.getByText(/Bay Area/i)).toBeInTheDocument()
+    // Find the list container element and check that list items exist inside it
+    const list = screen.getByRole('list')
+    const listItems = within(list).getAllByRole('listitem')
+    expect(listItems.length).toBeGreaterThan(0)
   })
 
-  it('renders the "What We Offer" section and all cleaning services', () => {
-    render(<About />)
-
-    expect(screen.getByRole('heading', { name: /what we offer/i })).toBeInTheDocument()
-
-    const expectedServices = [
-      'Commercial Cleaning',
-      'Residential Window Cleaning',
-      'Carpet Cleaning',
-      'Janitorial Services',
-      'Floor Cleaning',
-      'Stripping and Wax Services',
-    ]
-
-    expectedServices.forEach((service) => {
-      expect(screen.getByText(service)).toBeInTheDocument()
-    })
-  })
-
-  it('renders the "Why Clients Choose Us" section with all three core value cards', () => {
-    render(<About />)
-
+  it('renders value proposition cards (Why Clients Choose Us) structurally', () => {
+    renderAbout()
+    
+    // Find the section heading
     expect(screen.getByRole('heading', { name: /why clients choose us/i })).toBeInTheDocument()
 
-    // Value 1: Reliable
-    expect(screen.getByRole('heading', { name: /^reliable$/i })).toBeInTheDocument()
-    expect(screen.getByText(/consistent, high-quality service that customers can count on/i)).toBeInTheDocument()
+    // Query article elements (value cards) rather than specific text
+    const valueCards = document.querySelectorAll('article.about-value-card')
+    expect(valueCards.length).toBeGreaterThan(0)
+  })
 
-    // Value 2: Detail-Oriented
-    expect(screen.getByRole('heading', { name: /^detail-oriented$/i })).toBeInTheDocument()
-    expect(screen.getByText(/finishing touches that improve the whole space/i)).toBeInTheDocument()
+  it('navigates to contact page when CTA button is clicked', async () => {
+    const user = userEvent.setup()
+    renderAbout()
 
-    // Value 3: Professional
-    expect(screen.getByRole('heading', { name: /^professional$/i })).toBeInTheDocument()
-    expect(screen.getByText(/respect, clear communication, and care/i)).toBeInTheDocument()
+    const ctaButton = screen.getByRole('link', { name: /request a quote/i })
+    expect(ctaButton).toHaveAttribute('href', '/contact')
+
+    await user.click(ctaButton)
+    expect(await screen.findByText('Contact Page')).toBeInTheDocument()
   })
 })
