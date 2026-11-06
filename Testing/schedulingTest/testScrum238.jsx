@@ -13,6 +13,8 @@ const { supabase } = vi.hoisted(() => ({
       signOut: vi.fn(),
     },
     from: vi.fn(),
+    // SCRUM-239: the quote form checks the address with the validate-address Edge Function
+    functions: { invoke: vi.fn() },
   },
 }))
 
@@ -83,7 +85,11 @@ describe('Scheduling Flow', () => {
     expect(screen.getByPlaceholderText('Name')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Email')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Phone')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Address')).toBeInTheDocument()
+    // SCRUM-239: address is split into street / unit / city / state / ZIP
+    expect(screen.getByPlaceholderText('Street address')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('City')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('State')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('ZIP')).toBeInTheDocument()
     expect(screen.getByText('Select property type')).toBeInTheDocument()
     expect(screen.getByText('Select service type')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('How can we help?')).toBeInTheDocument()
@@ -102,12 +108,15 @@ describe('Scheduling Flow', () => {
   it('a valid form submission saves the request and shows a success message', async () => {
     const user = userEvent.setup()
     const { insert } = mockQuoteInsert({ error: null })
+    supabase.functions.invoke.mockResolvedValue({ data: { result: { status: 'verified', standardized: '123 Main St, Sacramento, CA 95814' } }, error: null }) // SCRUM-239: the address check confirms the address
     renderContact()
 
     await user.type(screen.getByPlaceholderText('Name'), 'Jane Doe')
     await user.type(screen.getByPlaceholderText('Email'), 'jane@example.com')
     await user.type(screen.getByPlaceholderText('Phone'), '9161234567')
-    await user.type(screen.getByPlaceholderText('Address'), '123 Main St')
+    await user.type(screen.getByPlaceholderText('Street address'), '123 Main St')
+    await user.type(screen.getByPlaceholderText('City'), 'Sacramento')
+    await user.type(screen.getByPlaceholderText('ZIP'), '95814')
     await user.selectOptions(screen.getByDisplayValue('Select property type'), 'Residential')
     await user.selectOptions(screen.getByDisplayValue('Select service type'), 'Standard Cleaning')
     await user.type(screen.getByPlaceholderText('How can we help?'), 'I need a deep clean.')

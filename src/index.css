@@ -431,17 +431,45 @@ ul {
   justify-content: center;
 }
 
-/* SCRUM-198 / SCRUM-201: Gradient banner shared by the Contact and Services pages */
+/* SCRUM-198 / SCRUM-201: Gradient banner shared by every public marketing page */
 .banner-glow {
   background:
     radial-gradient(circle at 15% 20%, rgba(194, 216, 130, 0.35), transparent 45%),
     radial-gradient(circle at 85% 10%, rgba(128, 187, 226, 0.4), transparent 50%),
     linear-gradient(180deg, #f8fbff 0%, #f3f5f7 100%);
-  padding-bottom: calc(var(--section-padding) + 2rem);
+  display: flex;
+  align-items: center;
+  min-height: 22rem;
+  padding: var(--space-2xl) 0;
+}
+
+/* Wide enough to keep titles on one line, so every banner can share a height */
+.banner-glow .banner-content {
+  max-width: 56rem;
+  padding-top: 0;
 }
 
 .banner-glow .page-subtitle {
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.banner-glow .page-subtitle:last-child {
   margin-bottom: 0;
+}
+
+/* Titles and buttons wrap on phones, so the shared height has to grow with them */
+@media (max-width: 640px) {
+  .banner-glow {
+    min-height: 24rem;
+    padding: var(--space-xl) 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .banner-glow {
+    min-height: 29rem;
+  }
 }
 
 .banner-eyebrow {
@@ -453,6 +481,22 @@ ul {
   color: #374151;
   font-weight: 700;
   font-size: 0.9rem;
+}
+
+/* ========== PAGE CONTENT ========== */
+/* The area under the banner on every public page */
+.page-main {
+  padding: var(--section-padding) 0;
+  background: var(--color-bg-alt);
+}
+
+/* Buttons don't inherit the page font by default and fall back to Arial */
+.service-card,
+.review-read-more,
+.map-reset,
+.contact-form .button,
+.signin-section .button {
+  font-family: inherit;
 }
 
 /* ========== SECTIONS ========== */
@@ -490,6 +534,12 @@ ul {
 
 .service-card-wrapper {
   perspective: 1200px;
+}
+
+.service-card-wrapper:only-child {
+  width: 100%;
+  max-width: 24rem;
+  margin-inline: auto;
 }
 
 .service-card {
@@ -578,48 +628,74 @@ ul {
 /*End edit for service pictures*/
 
 /* ========== SERVICE AREA (SCRUM-207) ========== */
-.city-section {
-  margin-top: var(--space-2xl);
+/* Map and city list share one row, then stack with the map first on small screens */
+.area-explorer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: var(--space-xl);
+  align-items: stretch;
+}
+
+.area-map,
+.city-panel {
+  background: var(--color-surface);
+  border: 1px solid rgba(31, 41, 55, 0.08);
+  border-top: 6px solid var(--color-primary);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-md);
+}
+
+.area-map {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  scroll-margin-top: calc(var(--header-height) + var(--space-xl));
+}
+
+.area-map-frame {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-height: 450px;
+  border: 0;
+}
+
+.city-panel {
+  border-top-color: var(--color-accent);
+  padding: var(--space-lg);
+}
+
+.city-panel-hint {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: var(--space-md);
 }
 
 .city-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: var(--space-md);
-  margin-top: var(--space-xl);
-}
-
-.city-card {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 72px;
-  padding: var(--space-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-left: 4px solid var(--color-primary);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--color-text);
-  text-align: center;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-sm);
 }
 
 .city-empty {
+  align-self: center;
   text-align: center;
   color: var(--color-text-muted);
-  margin-top: var(--space-xl);
+}
+
+@media (max-width: 900px) {
+  .area-explorer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .area-map-frame {
+    min-height: 360px;
+  }
 }
 
 /* ========== SERVICES PAGE ========== */
 /* SCRUM-201: Scoped to .services-page; the flip cards keep their shared styles so the
    landing page is unaffected. */
-.services-main {
-  padding: var(--space-xl) 0 var(--section-padding);
-  background: var(--color-bg-alt);
-}
-
 .services-hint {
   text-align: center;
   color: var(--color-text-muted);
@@ -705,7 +781,7 @@ ul {
   border-radius: 1.1rem;
 }
 
-.services-cta {
+.page-cta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -719,25 +795,31 @@ ul {
   box-shadow: var(--shadow-md);
 }
 
-.services-cta-title {
+.page-cta-title {
   font-size: 1.4rem;
   color: var(--color-text);
 }
 
-.services-cta-text {
+.page-cta-text {
   color: #4b5563;
 }
 
-.services-cta .button-main {
+.page-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.page-cta .button-main {
   background: var(--color-primary-dark);
 }
 
-.services-cta .button-main:hover {
+.page-cta .button-main:hover {
   background: color-mix(in srgb, var(--color-primary-dark) 86%, #000);
 }
 
 @media (max-width: 700px) {
-  .services-cta {
+  .page-cta {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -754,15 +836,11 @@ ul {
 }
 
 /* ========== ABOUT ========== */
-.about-page {
-  background: linear-gradient(to bottom, #f3f4f6 0%, #ffffff 20%, #f3f4f6 100%);
-}
-
 .about-card-box {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--color-surface);
   border: 1px solid rgba(31, 41, 55, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-md);
   padding: clamp(1.5rem, 3vw, 2.25rem);
 }
 
@@ -791,34 +869,6 @@ ul {
   color: var(--color-text);
 }
 
-.about-logo-section {
-  padding: 2.5rem 0 1rem;
-  background: transparent;
-}
-
-.about-logo-frame {
-  max-width: 520px;
-  margin: 0 auto;
-  padding: 1.5rem;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: none;
-}
-.about-page-logo {
-  width: min(100%, 420px);
-  height: auto;
-  display: block;
-  mix-blend-mode: multiply;
-}
-
-.about-main-section {
-  padding: 1.5rem 0 4rem;
-}
-
 .about-single-column {
   display: flex;
   flex-direction: column;
@@ -826,43 +876,12 @@ ul {
 }
 
 .about-card {
-  background: linear-gradient(
-    180deg,
-    rgba(194, 216, 130, 0.16),
-    rgba(255, 255, 255, 0.96)
-  );
-  border: 1px solid rgba(194, 216, 130, 0.35);
+  background: var(--color-surface);
+  border: 1px solid rgba(31, 41, 55, 0.08);
+  border-top: 6px solid var(--color-primary);
   border-radius: 1.25rem;
-  padding: 2rem;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.04);
-}
-
-.about-eyebrow {
-  display: inline-block;
-  margin-bottom: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  background: #c2d882;
-  color: #374151;
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.about-title {
-  font-size: clamp(2.2rem, 5vw, 3.25rem);
-  margin-bottom: 1.25rem;
-  color: #1f2937;
-  line-height: 1.1;
-}
-
-.about-section-heading {
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  margin-bottom: 1rem;
-  color: #1f2937;
-}
-
-.about-section-heading.centered {
-  text-align: center;
+  box-shadow: var(--shadow-md);
+  padding: clamp(1.5rem, 3vw, 2.25rem);
 }
 
 .about-text {
@@ -877,8 +896,7 @@ ul {
 }
 
 .about-offer-card {
-  background: linear-gradient(180deg, rgba(128, 187, 226, 0.18), rgba(255, 255, 255, 0.96));
-  border-color: rgba(128, 187, 226, 0.45);
+  border-top-color: var(--color-accent);
 }
 
 .about-service-list-clean {
@@ -923,12 +941,12 @@ ul {
 }
 
 .about-value-card {
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-top: 6px solid #80bbe2;
-  border-radius: 1rem;
+  background: var(--color-surface);
+  border: 1px solid rgba(31, 41, 55, 0.08);
+  border-top: 6px solid var(--color-primary);
+  border-radius: 1.25rem;
   padding: 1.5rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md);
 }
 
 .about-value-card h3 {
@@ -942,37 +960,33 @@ ul {
 }
 
 @media (max-width: 768px) {
-  .about-card {
-    padding: 1.5rem;
-  }
-
   .about-values-grid {
     grid-template-columns: 1fr;
   }
-
-  .about-logo-frame {
-    padding: 1rem;
-  }
 }
 /* ========== SERVICE AREA: CITY PICKER ========== */
-/* SCRUM-203: The city button fills its card and inherits the card's look, so the
-   grid looks as before - only the selected city is marked. */
+/* SCRUM-203: Each city is a button that focuses the map; the selected one is tinted. */
 .city-button {
   width: 100%;
-  height: 100%;
-  min-height: inherit;
+  min-height: 2.75rem;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: left;
+  background: var(--color-bg-alt);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
   cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
 }
 
 .city-button:hover {
-  color: var(--color-primary-dark);
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  border-color: var(--color-primary);
 }
 
 .city-button:focus-visible {
@@ -981,28 +995,15 @@ ul {
 }
 
 .city-button.is-selected {
-  color: var(--color-primary-dark);
-  font-weight: 700;
-}
-
-/* SCRUM-203 + SCRUM-207: Inside a .city-card the button takes over the card's
-   padding so the whole card is clickable, and the selected card is tinted. */
-.city-card:has(> .city-button) {
-  padding: 0;
-}
-
-.city-card > .city-button {
-  padding: var(--space-md);
-  border-radius: inherit;
-}
-
-.city-card:has(> .city-button:hover) {
-  border-color: var(--color-primary);
-}
-
-.city-card:has(> .city-button.is-selected) {
-  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
   border-color: var(--color-primary-dark);
+}
+
+.city-pin {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: var(--color-primary-dark);
 }
 
 .map-selection-bar {
@@ -1011,9 +1012,10 @@ ul {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
+  min-height: 3rem;
   padding: var(--space-sm) var(--space-md);
   background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   font-size: 0.95rem;
 }
 
@@ -1040,23 +1042,14 @@ ul {
 .testimonial-card {
   min-height: 160px;
   padding: var(--space-xl);
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 0.9rem;
+  background: var(--color-surface);
+  border-radius: 1.25rem;
   border: 1px solid rgba(31, 41, 55, 0.08);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   gap: var(--space-sm);
-}
-
-.testimonials-page-title,
-.testimonials-cta {
-  text-align: center;
-}
-
-.testimonials-list--spaced {
-  padding-top: var(--space-2xl);
 }
 
 .review-rating {
@@ -1076,7 +1069,8 @@ ul {
   background: none;
   border: none;
   padding: 0;
-  color: var(--color-primary);
+  align-self: flex-start;
+  color: var(--color-primary-dark);
   font-size: 0.875rem;
   cursor: pointer;
   text-decoration: underline;
@@ -1105,23 +1099,7 @@ ul {
   border: 0;
 }
 
-/* ========== ACTION-SECTION / CONTACT ========== */
-.action-section {
-  background: var(--color-primary);
-  color: white;
-}
-
-.action-section .section-title,
-.action-text {
-  color: inherit;
-}
-
-.action-text {
-  text-align: center;
-  margin-bottom: var(--space-xl);
-  opacity: 0.95;
-}
-
+/* ========== QUOTE FORM ========== */
 .contact-form {
   max-width: 28rem;
   margin-inline: auto;
@@ -1139,29 +1117,12 @@ ul {
   font: inherit;
 }
 
-.contact-form .button-main {
-  background: white;
-  color: var(--color-primary);
-}
-
-.contact-form .button-main:hover {
-  background: var(--color-bg-alt);
-}
-
 /* ========== CONTACT PAGE ========== */
-/* SCRUM-198: Scoped to .contact-page so the shared QuoteForm keeps its blue
-   action-section look on the Home page. */
-.contact-main {
-  padding: 0 0 var(--section-padding);
-  background: var(--color-bg-alt);
-}
-
 .contact-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
   gap: var(--space-xl);
   align-items: start;
-  margin-top: -3rem;
 }
 
 .contact-info {
@@ -1304,8 +1265,6 @@ ul {
   resize: vertical;
 }
 
-/* SCRUM-198: The base rule paints the button white for the blue Home section; on a
-   white card it needs the primary fill back. */
 .contact-page .contact-form .button-main {
   background: var(--color-primary-dark);
   color: white;
@@ -1787,7 +1746,7 @@ ul {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-md) var(--space-lg) 0;
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
   background-color: transparent;
 }
 
@@ -1804,11 +1763,22 @@ ul {
   outline-offset: 2px;
 }
 
-/* The dashboard leads with data, not a hero - keep the masthead compact
-   and let it share one white block with the logo above it. */
-.admin-section {
-  padding: var(--space-md) 0 var(--space-lg);
-  background: transparent;
+/* The dashboard leads with data, not a hero - keep the banner compact. It holds
+   the welcome text and the quote search, so it has no shared height to match. */
+.admin-banner {
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-lg) 0 var(--space-md);
+}
+
+.admin-banner .admin-intro {
+  margin-bottom: var(--space-md);
+}
+
+.admin-search-block {
+  width: 100%;
+  max-width: 1400px;
+  padding-inline: var(--space-lg);
 }
 
 .admin-eyebrow {
@@ -2432,7 +2402,11 @@ ul {
   }
 
   .admin-header {
-    padding: var(--space-sm) var(--space-md) 0;
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .admin-search-block {
+    padding-inline: var(--space-md);
   }
 
   .admin-modal {

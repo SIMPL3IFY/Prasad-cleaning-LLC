@@ -74,10 +74,17 @@ export default function Testimonials() {
   }, [])
 
 return (
-  <section className="section">
+  <div className="testimonials-page">
+  <section className="banner banner-glow">
+    <div className="container banner-content">
+      <span className="banner-eyebrow">Customer reviews</span>
+      <h1 className="page-title">Customer Testimonials</h1>
+      <p className="page-subtitle">Real feedback from customers we've helped</p>
+    </div>
+  </section>
+
+  <section className="page-main">
     <div className="container">
-      <h1 className="page-title testimonials-page-title">Customer Testimonials</h1>
-      <p className="section-subtitle">Real feedback from customers we've helped</p>
 
       {loading ? (
         <p className="review-status" role="status">Loading reviews...</p>
@@ -90,7 +97,7 @@ return (
           No customer reviews area available at this time. Please check back soon.
         </p>
       ) : (
-        <ul className="testimonials-list testimonials-list--spaced">
+        <ul className="testimonials-list">
           {reviews.map((review) => (
             <li key={review.id} className="testimonial-card">
               <h2>{review.customer_name || 'Verified Customer'}</h2>
@@ -124,10 +131,15 @@ return (
         </ul>
       )}
 
-      <div className="testimonials-cta">
-        <Link className="button button-main" to="/contact">Book a cleaning</Link>
+      <div className="page-cta">
+        <div>
+          <h2 className="page-cta-title">Ready for a cleaner space?</h2>
+          <p className="page-cta-text">Tell us about your space and we'll get back to you shortly.</p>
+        </div>
+        <Link className="button button-main button-big" to="/contact">Book a cleaning</Link>
       </div>
     </div>
   </section>
+  </div>
   )
 }

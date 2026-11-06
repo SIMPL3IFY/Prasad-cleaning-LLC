@@ -27,7 +27,7 @@ export default function Services() {
         </div>
       </section>
 
-      <section className="services-main">
+      <section className="page-main">
       <div className="container">
         <p className="services-hint">Tap any card to learn more.</p>
 
@@ -61,10 +61,10 @@ export default function Services() {
         </ul>
 
         {/* SCRUM-201: Quote call-to-action card */}
-        <div className="services-cta">
+        <div className="page-cta">
           <div>
-            <h2 className="services-cta-title">Not sure which service you need?</h2>
-            <p className="services-cta-text">Tell us about your space and we'll recommend the right fit.</p>
+            <h2 className="page-cta-title">Not sure which service you need?</h2>
+            <p className="page-cta-text">Tell us about your space and we'll recommend the right fit.</p>
           </div>
           <Link className="button button-main button-big" to="/contact">Request a quote</Link>
         </div>

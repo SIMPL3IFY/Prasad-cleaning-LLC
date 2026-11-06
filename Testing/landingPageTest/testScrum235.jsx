@@ -6,12 +6,15 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import Home from '../../src/pages/Home'
+import Contact from '../../src/pages/Contact'
 
 // Supabase is mocked so tests never hit the real database and stay deterministic.
 const { supabase } = vi.hoisted(() => ({
   supabase: {
     from: vi.fn(),
     storage: { from: vi.fn() },
+    // SCRUM-239: the quote form checks the address with the validate-address Edge Function
+    functions: { invoke: vi.fn() },
   },
 }))
 
@@ -54,6 +57,8 @@ function mockSupabase({
   supabase.storage.from.mockReturnValue({
     getPublicUrl: (path) => ({ data: { publicUrl: `https://example.com/${path}` } }),
   })
+  // SCRUM-239: the address check confirms the address
+  supabase.functions.invoke.mockResolvedValue({ data: { result: { status: 'verified', standardized: '123 Main St, Sacramento, CA 95814' } }, error: null })
 
   return { limit, insert }
 }
@@ -70,20 +75,36 @@ function renderHome() {
   )
 }
 
+// The quote form lives on the Contact page
+function renderContact() {
+  return render(
+    <MemoryRouter initialEntries={['/contact']}>
+      <Routes>
+        <Route path="/contact" element={<Contact />} />
+      </Routes>
+    </MemoryRouter>
+  )
+}
+
 // Helper: fill every quote field (the button stays disabled until all are filled)
 async function fillQuoteForm(overrides = {}) {
   const values = {
     name: 'Jane Doe',
     email: 'jane@example.com',
     phone: '9161234567',
-    address: '123 Main St',
+    street: '123 Main St',
+    city: 'Sacramento',
+    zip: '95814',
     message: 'Please clean my kitchen.',
     ...overrides,
   }
   await userEvent.type(screen.getByPlaceholderText('Name'), values.name)
   await userEvent.type(screen.getByPlaceholderText('Email'), values.email)
   await userEvent.type(screen.getByPlaceholderText('Phone'), values.phone)
-  await userEvent.type(screen.getByPlaceholderText('Address'), values.address)
+  // SCRUM-239: address is split into street / unit / city / state (defaults to CA) / ZIP
+  await userEvent.type(screen.getByPlaceholderText('Street address'), values.street)
+  await userEvent.type(screen.getByPlaceholderText('City'), values.city)
+  await userEvent.type(screen.getByPlaceholderText('ZIP'), values.zip)
   await userEvent.selectOptions(screen.getByDisplayValue('Select property type'), 'Residential')
   await userEvent.selectOptions(screen.getByDisplayValue('Select service type'), 'Deep Cleaning')
   await userEvent.type(screen.getByPlaceholderText('How can we help?'), values.message)
@@ -173,7 +194,7 @@ describe('Testimonials', () => {
 describe('Quote form', () => {
   it('rejects an invalid email', async () => {
     const { insert } = mockSupabase()
-    renderHome()
+    renderContact()
 
     await fillQuoteForm({ email: 'not-an-email' })
     submitQuoteForm()
@@ -184,7 +205,7 @@ describe('Quote form', () => {
 
   it('rejects an invalid phone number', async () => {
     const { insert } = mockSupabase()
-    renderHome()
+    renderContact()
 
     await fillQuoteForm({ phone: '123' })
     submitQuoteForm()
@@ -195,7 +216,7 @@ describe('Quote form', () => {
 
   it('saves a valid quote and shows a success message', async () => {
     const { insert } = mockSupabase()
-    renderHome()
+    renderContact()
 
     await fillQuoteForm()
     submitQuoteForm()
@@ -205,13 +226,15 @@ describe('Quote form', () => {
       customer_name: 'Jane Doe',
       email: 'jane@example.com',
       phone: '9161234567',
+      // SCRUM-239: saved in the standardized format
+      address: '123 Main St, Sacramento, CA 95814',
       status: 'pending',
     }))
   })
 
   it('shows an error and keeps the input if saving fails', async () => {
     mockSupabase({ insertResult: { error: { message: 'db down' } } })
-    renderHome()
+    renderContact()
 
     await fillQuoteForm()
     submitQuoteForm()
