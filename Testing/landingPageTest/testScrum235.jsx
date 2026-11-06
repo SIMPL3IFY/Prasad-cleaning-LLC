@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import Home from '../../src/pages/Home'
+import Contact from '../../src/pages/Contact'
 
 // Supabase is mocked so tests never hit the real database and stay deterministic.
 const { supabase } = vi.hoisted(() => ({
@@ -65,6 +66,17 @@ function renderHome() {
         <Route path="/" element={<Home />} />
         <Route path="/contact" element={<p>Contact Page</p>} />
         <Route path="/services" element={<p>Services Page</p>} />
+      </Routes>
+    </MemoryRouter>
+  )
+}
+
+// The quote form lives on the Contact page
+function renderContact() {
+  return render(
+    <MemoryRouter initialEntries={['/contact']}>
+      <Routes>
+        <Route path="/contact" element={<Contact />} />
       </Routes>
     </MemoryRouter>
   )
@@ -173,7 +185,7 @@ describe('Testimonials', () => {
 describe('Quote form', () => {
   it('rejects an invalid email', async () => {
     const { insert } = mockSupabase()
-    renderHome()
+    renderContact()
 
     await fillQuoteForm({ email: 'not-an-email' })
     submitQuoteForm()
@@ -184,7 +196,7 @@ describe('Quote form', () => {
 
   it('rejects an invalid phone number', async () => {
     const { insert } = mockSupabase()
-    renderHome()
+    renderContact()
 
     await fillQuoteForm({ phone: '123' })
     submitQuoteForm()
@@ -195,7 +207,7 @@ describe('Quote form', () => {
 
   it('saves a valid quote and shows a success message', async () => {
     const { insert } = mockSupabase()
-    renderHome()
+    renderContact()
 
     await fillQuoteForm()
     submitQuoteForm()
@@ -211,7 +223,7 @@ describe('Quote form', () => {
 
   it('shows an error and keeps the input if saving fails', async () => {
     mockSupabase({ insertResult: { error: { message: 'db down' } } })
-    renderHome()
+    renderContact()
 
     await fillQuoteForm()
     submitQuoteForm()

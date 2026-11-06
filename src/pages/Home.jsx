@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 
 import { useServices } from '../hooks/useServices';
 import { supabase } from '../lib/supabaseClient'
-import QuoteForm from '../components/QuoteForm'
 
 const formatReviewDate = (createdAt) => {
   if (!createdAt) {
@@ -76,8 +75,9 @@ export default function Home() {
 
   return (
     <>
-      <section className="banner">
+      <section className="banner banner-glow">
         <div className="container banner-content">
+          <span className="banner-eyebrow">Serving Northern California</span>
           <h1 className="page-title">Professional Cleaning Services</h1>
           <p className="page-subtitle">Trusted, reliable cleaning for your home or business. Get a free quote today.</p>
           <div className="banner-buttons">
@@ -172,15 +172,6 @@ export default function Home() {
               ))}
             </ul>
           )}
-        </div>
-      </section>
-
-      <section id="contact" className="section action-section">
-        <div className="container action-section-content">
-          <h2 className="section-title">Get Your Free Quote</h2>
-          <p className="action-text">Tell us what you need and we'll get back to you shortly.</p>
-          {/* SCRUM-175: Landing page uses the shared quote form */}
-          <QuoteForm />
         </div>
       </section>
     </>
