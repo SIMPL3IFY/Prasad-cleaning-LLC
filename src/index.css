@@ -1746,7 +1746,7 @@ ul {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--space-md) var(--space-lg) 0;
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
   background-color: transparent;
 }
 
@@ -1763,11 +1763,22 @@ ul {
   outline-offset: 2px;
 }
 
-/* The dashboard leads with data, not a hero - keep the masthead compact
-   and let it share one white block with the logo above it. */
-.admin-section {
-  padding: var(--space-md) 0 var(--space-lg);
-  background: transparent;
+/* The dashboard leads with data, not a hero - keep the banner compact. It holds
+   the welcome text and the quote search, so it has no shared height to match. */
+.admin-banner {
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-lg) 0 var(--space-md);
+}
+
+.admin-banner .admin-intro {
+  margin-bottom: var(--space-md);
+}
+
+.admin-search-block {
+  width: 100%;
+  max-width: 1400px;
+  padding-inline: var(--space-lg);
 }
 
 .admin-eyebrow {
@@ -2391,7 +2402,11 @@ ul {
   }
 
   .admin-header {
-    padding: var(--space-sm) var(--space-md) 0;
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .admin-search-block {
+    padding-inline: var(--space-md);
   }
 
   .admin-modal {
