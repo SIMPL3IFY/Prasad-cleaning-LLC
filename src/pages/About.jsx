@@ -1,4 +1,4 @@
-import logo from '/assets/logo.png'
+
 
 export default function About() {
   return (
@@ -7,7 +7,7 @@ export default function About() {
         <div className="container">
           <div className="about-logo-frame">
             <img
-              src={logo}
+              src="/assets/logo.png"
               alt="Prasad's Cleaning Services LLC logo"
               className="about-page-logo"
             />
