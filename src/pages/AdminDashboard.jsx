@@ -1527,7 +1527,7 @@ export default function AdminDashboard() {
                 </nav>
             </header>
 
-            <section className="section admin-section">
+            <section className="banner banner-glow admin-banner">
                 <div className="container admin-intro">
                     <p className="admin-eyebrow">
                         Admin Portal
@@ -1536,6 +1536,140 @@ export default function AdminDashboard() {
                     <p className="section-subtitle">
                         Admin Dashboard
                     </p>
+                </div>
+                <div className="admin-search-block">
+                    {/* Scrum 218: Toggleable Search Bar - Box only renders when search is toggled ON */}
+                    {!showSearchBar ? (
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <button
+                            type="button"
+                            onClick={() => setShowSearchBar(true)}
+                            className="admin-btn admin-btn--primary"
+                        >
+                            Search Quotes By
+                        </button>
+                    </div>
+                    ) : (
+                        <div className="admin-panel" style={{ padding: '1.25rem' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                                {/* Category Dropdown Toggle */}
+                                <div style={{ position: 'relative' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCategoryMenu(prev => !prev)}
+                                        className="admin-btn admin-btn--ghost"
+                                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}
+                                    >
+                                        Search By: <strong>{categoryLabels[searchCategory]}</strong> ▾
+                                    </button>
+
+                                    {/* Category Dropdown Menu */}
+                                    {showCategoryMenu && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            left: 0,
+                                            marginTop: '0.25rem',
+                                            backgroundColor: '#ffffff',
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '0.375rem',
+                                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                            zIndex: 50,
+                                            minWidth: '170px'
+                                        }}>
+                                            {Object.entries(categoryLabels).map(([key, label]) => (
+                                                <button
+                                                    key={key}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSearchCategory(key)
+                                                        setShowCategoryMenu(false)
+                                                    }}
+                                                    style={{
+                                                        display: 'block',
+                                                        width: '100%',
+                                                        textAlign: 'left',
+                                                        padding: '0.5rem 0.75rem',
+                                                        background: searchCategory === key ? '#f1f5f9' : 'transparent',
+                                                        border: 'none',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    {label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Scrum 218 / Scrum 219: Dynamic Search Field (Date Picker, Time Picker, or Text Input) */}
+                                <div style={{ position: 'relative', flex: '1 1 12rem' }}>
+                                    {searchCategory === 'date' ? (
+                                        <input
+                                            type="date"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="admin-input"
+                                            style={{ width: '100%', marginBottom: 0 }}
+                                        />
+                                    ) : searchCategory === 'time' ? ( /* Scrum 219: Time picker input for time filtering */
+                                        <input
+                                            type="time"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="admin-input"
+                                            style={{ width: '100%', marginBottom: 0 }}
+                                        />
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            placeholder={`Search by ${categoryLabels[searchCategory].toLowerCase()}...`}
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="admin-input"
+                                            style={{ width: '100%', marginBottom: 0, paddingRight: searchQuery ? '2.25rem' : '0.75rem' }}
+                                        />
+                                    )}
+
+                                    {/* Clear ("X") input button */}
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchQuery('')}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '0.5rem',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                fontSize: '1rem',
+                                                color: '#64748b',
+                                                padding: '0.25rem 0.5rem'
+                                            }}
+                                            title="Clear text"
+                                            aria-label="Clear text"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Hide Search Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowSearchBar(false)
+                                        setSearchQuery('')
+                                    }}
+                                    className="admin-btn admin-btn--ghost"
+                                >
+                                    Hide Search
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -1551,139 +1685,6 @@ export default function AdminDashboard() {
                         {completionMessage && <p role="status" className="admin-note admin-note--success">{completionMessage}</p>}
                     </div>
                 )}
-                {/* Scrum 218: Toggleable Search Bar - Box only renders when search is toggled ON */}
-                {!showSearchBar ? (
-                <div style={{ gridColumn: '1 / -1', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
-                    <button
-                        type="button"
-                        onClick={() => setShowSearchBar(true)}
-                        className="admin-btn admin-btn--primary"
-                    >
-                        Search Quotes By
-                    </button>
-                </div>
-                ) : (
-                    <div className="admin-panel" style={{ gridColumn: '1 / -1', padding: '1.25rem' }}>
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                            {/* Category Dropdown Toggle */}
-                            <div style={{ position: 'relative' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCategoryMenu(prev => !prev)}
-                                    className="admin-btn admin-btn--ghost"
-                                    style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}
-                                >
-                                    Search By: <strong>{categoryLabels[searchCategory]}</strong> ▾
-                                </button>
-
-                                {/* Category Dropdown Menu */}
-                                {showCategoryMenu && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '100%',
-                                        left: 0,
-                                        marginTop: '0.25rem',
-                                        backgroundColor: '#ffffff',
-                                        border: '1px solid #e2e8f0',
-                                        borderRadius: '0.375rem',
-                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                        zIndex: 50,
-                                        minWidth: '170px'
-                                    }}>
-                                        {Object.entries(categoryLabels).map(([key, label]) => (
-                                            <button
-                                                key={key}
-                                                type="button"
-                                                onClick={() => {
-                                                    setSearchCategory(key)
-                                                    setShowCategoryMenu(false)
-                                                }}
-                                                style={{
-                                                    display: 'block',
-                                                    width: '100%',
-                                                    textAlign: 'left',
-                                                    padding: '0.5rem 0.75rem',
-                                                    background: searchCategory === key ? '#f1f5f9' : 'transparent',
-                                                    border: 'none',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                {label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Scrum 218 / Scrum 219: Dynamic Search Field (Date Picker, Time Picker, or Text Input) */}
-                            <div style={{ position: 'relative', flex: 1 }}>
-                                {searchCategory === 'date' ? (
-                                    <input
-                                        type="date"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="admin-input"
-                                        style={{ width: '100%', marginBottom: 0 }}
-                                    />
-                                ) : searchCategory === 'time' ? ( /* Scrum 219: Time picker input for time filtering */
-                                    <input
-                                        type="time"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="admin-input"
-                                        style={{ width: '100%', marginBottom: 0 }}
-                                    />
-                                ) : (
-                                    <input
-                                        type="text"
-                                        placeholder={`Search by ${categoryLabels[searchCategory].toLowerCase()}...`}
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="admin-input"
-                                        style={{ width: '100%', marginBottom: 0, paddingRight: searchQuery ? '2.25rem' : '0.75rem' }}
-                                    />
-                                )}
-
-                                {/* Clear ("X") input button */}
-                                {searchQuery && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearchQuery('')}
-                                        style={{
-                                            position: 'absolute',
-                                            right: '0.5rem',
-                                            top: '50%',
-                                            transform: 'translateY(-50%)',
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            fontSize: '1rem',
-                                            color: '#64748b',
-                                            padding: '0.25rem 0.5rem'
-                                        }}
-                                        title="Clear text"
-                                        aria-label="Clear text"
-                                    >
-                                        ✕
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Hide Search Button */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setShowSearchBar(false)
-                                    setSearchQuery('')
-                                }}
-                                className="admin-btn admin-btn--ghost"
-                            >
-                                Hide Search
-                            </button>
-                        </div>
-                    </div>
-                )}
-
                 {/* SCRUM-215: Completed jobs precede active appointments and share the same card pagination. */}
                 <div className="admin-panel admin-panel--appointments">
                     <h2 className="admin-panel-title">Completed Appointments</h2>

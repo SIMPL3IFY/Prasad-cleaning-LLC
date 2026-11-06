@@ -1,24 +1,20 @@
-
+import { Link } from 'react-router-dom'
 
 export default function About() {
   return (
-    <main className="about-page">
-      <section className="about-logo-section">
-        <div className="container">
-          <div className="about-logo-frame">
-            <img
-              src="/assets/logo.png"
-              alt="Prasad's Cleaning Services LLC logo"
-              className="about-page-logo"
-            />
-          </div>
+    <div className="about-page">
+      <section className="banner banner-glow">
+        <div className="container banner-content">
+          <span className="banner-eyebrow">Locally owned &amp; operated</span>
+          <h1 className="page-title">About Us</h1>
+          <p className="page-subtitle">Reliable, high-quality cleaning for homes and businesses across Northern California.</p>
         </div>
       </section>
 
-      <section className="about-main-section">
+      <section className="page-main">
         <div className="container about-single-column">
           <div className="about-card">
-            <h1 className="about-title">About Us</h1>
+            <h2 className="contact-info-title">Who We Are</h2>
 
             <p className="about-text">
               Prasad&apos;s Cleaning Services LLC is a locally owned cleaning company dedicated
@@ -35,7 +31,7 @@ export default function About() {
           </div>
 
           <div className="about-card about-offer-card">
-            <h2 className="about-section-heading">What We Offer</h2>
+            <h2 className="contact-info-title">What We Offer</h2>
 
             <p className="about-text">
               We provide a wide range of cleaning services tailored to the needs of each
@@ -55,7 +51,7 @@ export default function About() {
           </div>
 
           <div className="about-values-section">
-            <h2 className="about-section-heading centered">Why Clients Choose Us</h2>
+            <h2 className="section-title">Why Clients Choose Us</h2>
 
             <div className="about-values-grid">
               <article className="about-value-card">
@@ -80,8 +76,16 @@ export default function About() {
               </article>
             </div>
           </div>
+
+          <div className="page-cta">
+            <div>
+              <h2 className="page-cta-title">Ready to get started?</h2>
+              <p className="page-cta-text">Tell us about your space and we'll get back to you shortly.</p>
+            </div>
+            <Link className="button button-main button-big" to="/contact">Request a quote</Link>
+          </div>
         </div>
       </section>
-    </main>
+    </div>
   )
 }

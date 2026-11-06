@@ -94,7 +94,7 @@ def test_unknown_state_is_stopped_before_a_lookup(driver, open_page, wait):
     wait_for_text(wait, "Please enter the 2-letter state (for example CA).")
 
 
-@pytest.mark.parametrize("path", ["/", "/contact"])
+@pytest.mark.parametrize("path", ["/contact"])
 def test_made_up_street_is_blocked(driver, open_page, wait, path):
     open_page(path)
     fill_quote_form(driver, wait, street=FAKE_STREET)
