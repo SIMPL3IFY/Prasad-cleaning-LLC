@@ -114,5 +114,5 @@ The Edge Function handler (`supabase/functions/validate-address/index.ts`) runs 
 | 4 | Submit a PO box | "We couldn't verify this address" and no quote | Passed |
 | 5 | Send 11 checks within 60 seconds | The 11th gets the "Too many requests" message | Passed |
 | 6 | Unset `GEOCODIO_API_KEY` and submit | Quote still saves what was typed | Passed |
-| 7 | Repeat on the Home and Contact pages | Both behave the same | Passed |
+| 7 | Repeat on the Contact page | Behaves the same | Passed |
 | 8 | Look at `quotes.address` in the database | It holds the standardized address | Passed |
