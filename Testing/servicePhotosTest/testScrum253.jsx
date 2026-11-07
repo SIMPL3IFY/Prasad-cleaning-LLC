@@ -174,6 +174,16 @@ describe('Replacing a photo', () => {
     expect(card.getByRole('button', { name: 'Save photo' })).toBeDisabled()
   })
 
+  it('clears a rejected file so the same file can be picked again', async () => {
+    mockSupabase()
+    const user = setupUser()
+    renderManager()
+
+    const card = await chooseFile(user, imageFile('notes.pdf', 'application/pdf'))
+
+    expect(card.getByLabelText('New photo for Deep Cleaning').files).toHaveLength(0)
+  })
+
   it('previews the chosen file before anything is saved', async () => {
     const { upload } = mockSupabase()
     const user = setupUser()
@@ -540,6 +550,23 @@ describe('Adding a service', () => {
     expect(screen.getByLabelText('Description (optional)')).toHaveValue('')
     expect(screen.queryByAltText('New service preview')).not.toBeInTheDocument()
     expect(photoField().files).toHaveLength(0)
+  })
+
+  it('replaces the previous success message when the next attempt is invalid', async () => {
+    mockSupabase()
+    const user = setupUser()
+    renderManager()
+    await findCard('Deep Cleaning')
+
+    await user.type(nameField(), 'Floor Waxing')
+    await user.upload(photoField(), imageFile())
+    await user.click(addButton())
+    await screen.findByText('Floor Waxing was added.')
+
+    await user.click(addButton())
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Please enter a service name.')
+    expect(screen.queryByText('Floor Waxing was added.')).not.toBeInTheDocument()
   })
 
   it('saves a blank description as null', async () => {

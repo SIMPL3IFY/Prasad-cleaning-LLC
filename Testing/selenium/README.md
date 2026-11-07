@@ -24,8 +24,10 @@ These tests are skipped unless you set the variables:
 | Variable | Used for |
 |---|---|
 | `TEST_CUSTOMER_EMAIL`, `TEST_CUSTOMER_PASSWORD` | A real customer account. Checks that signing in reaches `/portal`. |
+| `TEST_ADMIN_EMAIL`, `TEST_ADMIN_PASSWORD` | A real admin account. Needed for the admin sign in and Edit Services tests. |
 | `BASE_URL` | Site address (default `http://localhost:5173`). |
 | `RUN_QUOTE_SAVE_TESTS=1` | Saves real quotes to check the address verification flow. Delete the `Selenium Test 239` rows from `quotes` afterwards. |
+| `RUN_SERVICE_WRITE_TESTS=1` | Adds, edits and deletes a real service, which is briefly visible on the live site. If the test stops early, delete any `Selenium Test 253` rows from `services` and their photos from `service-images`. |
 
 PowerShell example:
 
