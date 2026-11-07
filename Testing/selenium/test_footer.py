@@ -4,11 +4,12 @@ Drives a real Chrome browser against the running site to verify:
 - Brand logo link
 - Company links (About Us, Testimonials, Contact)
 - Services links (Our Services, Service Areas)
-- Contact protocols (tel: and mailto:)
+- Contact protocols (tel: and mailto:) with correct encoded values
 - Account links when signed out (Sign In, Create Account)
-- Account links when signed in as Customer (Dashboard -> /portal, Settings)
-- Account links when signed in as Admin (Dashboard -> /admin, Settings)
+- Account links when signed in as Customer (Dashboard -> /portal, Settings with content check)
+- Account links when signed in as Admin (Dashboard -> /admin, Settings with content check)
 """
+
 import os
 import pytest
 from selenium.webdriver.common.by import By
@@ -39,15 +40,15 @@ def sign_in(driver, open_page, wait, email, password):
     driver.find_element(*button("Sign In")).click()
 
 
-def click_footer_link(driver, locator):
-    """Scrolls to and clicks a footer link via JS to bypass sticky headers/interception."""
-    element = driver.find_element(*locator)
+def click_footer_link(driver, wait, locator):
+    """Scrolls to and clicks a footer link via JS to reliably bypass footer offset/sticky issues."""
+    element = wait.until(EC.presence_of_element_located(locator))
     driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
     driver.execute_script("arguments[0].click();", element)
 
 
 # ------------------------------------------------------------------------------
-# 1. Signed-Out Footer Links
+# 1. Signed-Out Footer Links & Contact Protocols
 # ------------------------------------------------------------------------------
 
 def test_footer_brand_logo_navigates_home(driver, open_page, wait):
@@ -55,7 +56,7 @@ def test_footer_brand_logo_navigates_home(driver, open_page, wait):
     open_page("/about")
     wait_for_path(wait, "/about")
 
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a.footer-brand-name"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a.footer-brand-name"))
     wait.until(lambda d: d.current_url.split("#")[0].rstrip("/") == BASE_URL)
 
 
@@ -64,17 +65,17 @@ def test_footer_company_column_links(driver, open_page, wait):
     open_page("/")
 
     # About Us
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/about']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/about']"))
     wait_for_path(wait, "/about")
 
     open_page("/")
     # Testimonials
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/testimonials']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/testimonials']"))
     wait_for_path(wait, "/testimonials")
 
     open_page("/")
     # Contact
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/contact']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/contact']"))
     wait_for_path(wait, "/contact")
 
 
@@ -83,12 +84,12 @@ def test_footer_services_column_links(driver, open_page, wait):
     open_page("/")
 
     # Our Services
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/services']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/services']"))
     wait_for_path(wait, "/services")
 
     open_page("/")
     # Service Areas
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/service-area']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/service-area']"))
     wait_for_path(wait, "/service-area")
 
 
@@ -97,33 +98,34 @@ def test_footer_signed_out_account_links(driver, open_page, wait):
     open_page("/")
 
     # Sign In
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/signin']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/signin']"))
     wait_for_path(wait, "/signin")
 
     open_page("/")
     # Create Account
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/signup']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/signup']"))
     wait_for_path(wait, "/signup")
 
 
-def test_footer_get_in_touch_protocols(driver, open_page, wait):
-    """Verifies that tel: and mailto: contact links are present inside the footer."""
+def test_footer_get_in_touch_protocols_exact_values(driver, open_page, wait):
+    """Verifies exact full href values for tel: and mailto: contact links inside the footer."""
     open_page("/")
 
     phone_link = driver.find_element(By.CSS_SELECTOR, "footer a[href^='tel:']")
-    assert phone_link.is_displayed()
+    assert phone_link.get_attribute("href") == "tel:+19166658474"
 
     email_link = driver.find_element(By.CSS_SELECTOR, "footer a[href^='mailto:']")
-    assert email_link.is_displayed()
+    # Browser encodes single quotes as %27 automatically
+    assert email_link.get_attribute("href") == "mailto:prasadscleaning@gmail.com?subject=Inquiry%20from%20Prasad%27s%20Cleaning%20website"
 
 
 # ------------------------------------------------------------------------------
-# 2. Logged-In Customer Footer Links
+# 2. Logged-In Customer Footer Links & Content Checks
 # ------------------------------------------------------------------------------
 
 @needs_customer_account
 def test_footer_customer_account_links(driver, open_page, wait):
-    """Verifies Account column when logged in as a customer: Dashboard (/portal) and Settings."""
+    """Verifies Account column when logged in as a customer: Dashboard (/portal) and Settings content."""
     sign_in(driver, open_page, wait, CUSTOMER_EMAIL, CUSTOMER_PASSWORD)
     wait_for_path(wait, "/portal")
 
@@ -131,22 +133,26 @@ def test_footer_customer_account_links(driver, open_page, wait):
 
     # Wait for customer portal dashboard link to render in footer
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "footer a[href='/portal']")))
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/portal']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/portal']"))
     wait_for_path(wait, "/portal")
 
-    # Click Settings in Footer
+    # Click Settings in Footer and verify Settings page content heading
+    open_page("/about")
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "footer a[href='/settings']")))
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/settings']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/settings']"))
     wait_for_path(wait, "/settings")
+    
+    settings_heading = wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Settings')]")))
+    assert settings_heading.is_displayed()
 
 
 # ------------------------------------------------------------------------------
-# 3. Logged-In Admin Footer Links
+# 3. Logged-In Admin Footer Links & Content Checks
 # ------------------------------------------------------------------------------
 
 @needs_admin_account
 def test_footer_admin_account_links(driver, open_page, wait):
-    """Verifies Account column when logged in as an admin: Dashboard (/admin) and Settings."""
+    """Verifies Account column when logged in as an admin: Dashboard (/admin) and Settings content."""
     sign_in(driver, open_page, wait, ADMIN_EMAIL, ADMIN_PASSWORD)
     wait_for_path(wait, "/admin")
 
@@ -154,10 +160,14 @@ def test_footer_admin_account_links(driver, open_page, wait):
 
     # Wait for the async admin role lookup to complete and render href='/admin' in the footer
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "footer a[href='/admin']")))
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/admin']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/admin']"))
     wait_for_path(wait, "/admin")
 
-    # Click Settings in Footer
+    # Click Settings in Footer and verify Settings page content heading
+    open_page("/about")
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "footer a[href='/settings']")))
-    click_footer_link(driver, (By.CSS_SELECTOR, "footer a[href='/settings']"))
+    click_footer_link(driver, wait, (By.CSS_SELECTOR, "footer a[href='/settings']"))
     wait_for_path(wait, "/settings")
+
+    settings_heading = wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Settings')]")))
+    assert settings_heading.is_displayed()

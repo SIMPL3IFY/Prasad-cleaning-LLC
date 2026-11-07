@@ -5,7 +5,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import Footer from '../../src/components/Footer'
 
 // Fake AuthContext
-const mockAuth = { user: null }
+const mockAuth = { user: null, loading: false }
 vi.mock('../../src/context/AuthContext', () => ({
   useAuth: () => mockAuth,
 }))
@@ -18,8 +18,8 @@ const { supabase } = vi.hoisted(() => ({
 }))
 vi.mock('../../src/lib/supabaseClient', () => ({ supabase }))
 
-function mockProfileRole(isAdmin) {
-  const maybeSingle = vi.fn().mockResolvedValue({ data: { is_admin: isAdmin }, error: null })
+function mockProfileRole(isAdmin, error = null) {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: { is_admin: isAdmin }, error })
   const eq = vi.fn(() => ({ maybeSingle }))
   const select = vi.fn(() => ({ eq }))
   supabase.from.mockReturnValue({ select })
@@ -50,6 +50,7 @@ describe('Footer Component (SCRUM-234)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAuth.user = null
+    mockAuth.loading = false
   })
 
   it('renders static navigation links when signed out', () => {
@@ -72,7 +73,6 @@ describe('Footer Component (SCRUM-234)', () => {
     expect(phoneLink).toHaveAttribute('href', 'tel:+19166658474')
 
     const emailLink = screen.getByRole('link', { name: /prasadscleaning@gmail.com/i })
-    // JavaScript encodeURIComponent leaves single quotes unencoded as '
     expect(emailLink).toHaveAttribute(
       'href',
       "mailto:prasadscleaning@gmail.com?subject=Inquiry%20from%20Prasad's%20Cleaning%20website"
@@ -104,7 +104,6 @@ describe('Footer Component (SCRUM-234)', () => {
     mockProfileRole(true)
     renderFooter()
 
-    // Use waitFor to wait until useEffect resolves and updates dashboardPath to /admin
     await waitFor(() => {
       expect(screen.getByRole('link', { name: /^dashboard$/i })).toHaveAttribute('href', '/admin')
     })
@@ -121,5 +120,30 @@ describe('Footer Component (SCRUM-234)', () => {
     await user.click(settingsLink)
 
     expect(await screen.findByText('Settings Page')).toBeInTheDocument()
+  })
+
+  it('handles slow profile lookup gracefully without premature routing', async () => {
+    mockAuth.user = { id: 'admin-slow' }
+    const delayedPromise = new Promise((resolve) => setTimeout(() => resolve({ data: { is_admin: true }, error: null }), 50))
+    const maybeSingle = vi.fn().mockReturnValue(delayedPromise)
+    const eq = vi.fn(() => ({ maybeSingle }))
+    const select = vi.fn(() => ({ eq }))
+    supabase.from.mockReturnValue({ select })
+
+    renderFooter()
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /^dashboard$/i })).toHaveAttribute('href', '/admin')
+    }, { timeout: 1000 })
+  })
+
+  it('handles failed profile lookup gracefully by defaulting safely', async () => {
+    mockAuth.user = { id: 'user-fail' }
+    mockProfileRole(false, { message: 'Database error' })
+    renderFooter()
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /^dashboard$/i })).toHaveAttribute('href', '/portal')
+    })
   })
 })

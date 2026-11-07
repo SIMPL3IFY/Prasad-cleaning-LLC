@@ -4,11 +4,11 @@
 
 Unit tests for the site Footer (`src/components/Footer.jsx`). 
 
-Supabase and `AuthContext` are mocked in unit tests to evaluate footer behavior across all authentication states (signed out, logged-in customer, logged-in admin), dynamic role-based dashboard redirection (`/portal` vs `/admin`), and the inclusion of the **Settings** link. These tests never touch the real database.
+Supabase and `AuthContext` are mocked in unit tests to evaluate footer behavior across all authentication states (signed out, logged-in customer, logged-in admin), dynamic role-based dashboard redirection (`/portal` vs `/admin`), asynchronous slow lookups, fallback error handling, and the inclusion of the **Settings** link. These tests never touch the real database.
 
 ## Test file
 
-`Testing/headerTest/testScrum234.jsx`
+`Testing/footerTest/testScrum234.jsx`
 
 ## How to run
 
@@ -33,10 +33,10 @@ npm run test:run -- Testing/footerTest
 You should see output like this:
 
 ```
- ✓ Testing/footerTest/testScrum234.jsx (6)
+✓ Testing/footerTest/testScrum234.jsx (8)
 
  Test Files  1 passed (1)
-      Tests  6 passed (6)
+      Tests  8 passed (8)
 ```
 
 ### Step 4 — Run all tests together (optional)
@@ -65,11 +65,13 @@ After it finishes, open `coverage/index.html` in your browser to see the full re
 | 4 | Customer Auth Links | Verifies Sign In / Create Account links are replaced with Dashboard (/portal) and Settings (/settings) when logged in as a customer |
 | 5 | Admin Auth Links | Verifies Dashboard routes to /admin and Settings (/settings) is rendered for admin users |
 | 6 | Settings Link Navigation | Verifies clicking Settings in the footer navigates the user to /settings |
+| 7 | Slow Profile Lookup | Verifies asynchronous slow role lookups are handled gracefully without premature incorrect routing |
+| 8 | Failed Profile Lookup | Verifies failed database role queries fall back safely to default routing (/portal) |
 
 ---
 
 ## How the mock works
 
-AuthContext: Fakes useAuth() to alternate between user = null (signed out) and populated user objects (signed in).
+AuthContext: Fakes useAuth() to alternate between user = null (signed out), loading, and populated user objects (signed in).
 
-Supabase Client: supabase.from('profiles').select().eq().maybeSingle() is mocked to asynchronously return profile data (is_admin: true/false), ensuring the footer dynamically points to /admin or /portal accordingly without hitting the live database.
+Supabase Client: supabase.from('profiles').select().eq().maybeSingle() is mocked to asynchronously return profile data (is_admin: true/false) or errors, ensuring the footer dynamically points to /admin or /portal accordingly without hitting the live database.
