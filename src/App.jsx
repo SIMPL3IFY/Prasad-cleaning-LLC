@@ -21,6 +21,8 @@ import ProtectedAdminRoute from './components/ProtectedAdminRoute'
 import ProtectedCustomerRoute from './components/ProtectedCustomerRoute'
 // SCRUM-119: Admin dashboard page
 import AdminDashboard from './pages/AdminDashboard'
+//Scrum 233: add 404 page not found error page
+import NotFound from './pages/NotFound'
 
 /* Scrum 39 for exporting the page */
 export default function App() {
@@ -67,7 +69,7 @@ function AppContent() {
           <Route element={<ProtectedAdminRoute />}>
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
-          <Route path="*" element={<h1>404 Page Not Found</h1>} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />

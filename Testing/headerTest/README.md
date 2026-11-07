@@ -4,9 +4,9 @@
 
 Unit tests for the site Header (`src/components/Header.jsx`). 
 
-Unit test for the App router to make sure that if a page does not exist, that a 404 error is displayed (`src/App.jsx`). 
+Unit tests for the 404 route handling using the real `NotFound` component (`src/pages/NotFound.jsx`). 
 
-Supabase and `AuthContext` are mocked to evaluate header behavior across all authentication states (signed out, logged-in customer, logged-in admin) and mobile menu responsiveness. These tests never touch the real database.
+Supabase and `AuthContext` are mocked to evaluate header behavior across all authentication states (signed out, logged-in customer, logged-in admin), mobile menu responsiveness, and auto-closure behavior upon user action. These tests never touch the real database.
 
 ## Test file
 
@@ -76,7 +76,7 @@ After it finishes, open `coverage/index.html` in your browser to see the full re
 | 13 | Mobile Sign In | Opening mobile menu and clicking Sign In redirects to /signin |
 | 14 | Mobile Customer Dashboard | Opening mobile menu and clicking Dashboard routes customer to /portal |
 | 15 | Mobile Sign Out | Opening mobile menu and clicking Sign Out logs user out and redirects to / Home Page |
-| 16 | 404 Page Test | Display 404 error if webpage is not found |
+| 16 | 404 Page Test | Verifies the real NotFound component renders correctly on unknown routes with a link back to home |
 
 ---
 

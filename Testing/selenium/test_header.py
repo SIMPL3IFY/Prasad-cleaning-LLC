@@ -3,12 +3,14 @@
 Drives a real Chrome browser against the running site to verify:
 - Navigation links (Services, About, Testimonials, Service Areas, Contact)
 - Header Logo link redirecting to Home
-- 404 handling for unknown routes
+- 404 handling for unknown routes showing proper heading content and home redirection link
 - Desktop and Mobile authentication flows (Signed-out, Customer, and Admin)
+- Sign out verification ensuring 'Sign In' reappears in the header DOM
 """
 import os
 import pytest
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 
 from conftest import BASE_URL, button, scroll_and_click, wait_for_path, wait_for_text
 
@@ -84,14 +86,21 @@ def test_header_sign_in_button_signed_out(driver, open_page, wait):
 
 
 # ------------------------------------------------------------------------------
-# 2. 404 Route Handling
+# 2. 404 Route Handling & Home Redirection Link
 # ------------------------------------------------------------------------------
 
-def test_invalid_url_shows_404_or_fallback(driver, open_page, wait):
-    """Navigating to a non-existent URL does not crash or leave a blank screen."""
+def test_invalid_url_shows_404_and_navigates_home(driver, open_page, wait):
+    """Navigating to a non-existent URL displays the 404 page and 'Back to Home' links back home."""
     open_page("/some-invalid-page-xyz")
-    # Verify the page header or container still renders properly
-    assert driver.find_element(By.TAG_NAME, "header").is_displayed()
+    
+    # Verify 404 header is present
+    h1 = wait.until(EC.presence_of_element_located((By.XPATH, "//h1[contains(text(), '404')]")))
+    assert "404" in h1.text
+
+    # Click the 'Back to Home' link and verify it returns to BASE_URL root
+    home_link = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Back to Home")))
+    home_link.click()
+    wait.until(lambda d: d.current_url.split("#")[0].rstrip("/") == BASE_URL)
 
 
 # ------------------------------------------------------------------------------
@@ -121,7 +130,7 @@ def test_mobile_hamburger_and_mobile_links(driver, open_page, wait):
 
 @needs_customer_account
 def test_header_customer_dashboard_and_sign_out(driver, open_page, wait):
-    """Tests Customer 'Dashboard' and 'Sign Out' buttons in the header."""
+    """Tests Customer 'Dashboard' and 'Sign Out' buttons in the header and verifies Sign In reappears."""
     sign_in(driver, open_page, wait, CUSTOMER_EMAIL, CUSTOMER_PASSWORD)
     wait_for_path(wait, "/portal")
 
@@ -136,8 +145,10 @@ def test_header_customer_dashboard_and_sign_out(driver, open_page, wait):
     open_page("/about")
     scroll_and_click(wait, button("Sign Out"))
 
-    # Should sign out and return to home page
+    # Should sign out, return to home page, and verify 'Sign In' button reappears in DOM
     wait.until(lambda d: d.current_url.split("#")[0].rstrip("/") == BASE_URL)
+    signin_link = wait.until(EC.visibility_of_element_located((By.LINK_TEXT, "Sign In")))
+    assert signin_link.is_displayed()
 
 
 # ------------------------------------------------------------------------------
@@ -146,7 +157,7 @@ def test_header_customer_dashboard_and_sign_out(driver, open_page, wait):
 
 @needs_admin_account
 def test_header_admin_dashboard_and_sign_out(driver, open_page, wait):
-    """Tests Admin 'Dashboard' and 'Sign Out' buttons in the header."""
+    """Tests Admin 'Dashboard' and 'Sign Out' buttons in the header and verifies Sign In reappears."""
     sign_in(driver, open_page, wait, ADMIN_EMAIL, ADMIN_PASSWORD)
     wait_for_path(wait, "/admin")
 
@@ -161,6 +172,7 @@ def test_header_admin_dashboard_and_sign_out(driver, open_page, wait):
     open_page("/about")
     scroll_and_click(wait, button("Sign Out"))
 
-    # Should sign out and return to home page
+    # Should sign out, return to home page, and verify 'Sign In' button reappears in DOM
     wait.until(lambda d: d.current_url.split("#")[0].rstrip("/") == BASE_URL)
-    
+    signin_link = wait.until(EC.visibility_of_element_located((By.LINK_TEXT, "Sign In")))
+    assert signin_link.is_displayed()

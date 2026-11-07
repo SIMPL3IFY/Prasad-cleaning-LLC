@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import Header from '../../src/components/Header'
+import NotFound from '../../src/pages/NotFound'
 
 // Fake AuthContext state
 const mockAuth = {
@@ -188,7 +189,7 @@ describe('Header Component - Complete Button & Link Testing (SCRUM-233)', () => 
   })
 
   // ---------------------------------------------------------------------------
-  // 4. Hamburger Toggle & Mobile Authentication Buttons
+  // 4. Hamburger Toggle & Mobile Authentication Buttons (Scoped via nav element)
   // ---------------------------------------------------------------------------
   it('toggles mobile menu open/close using hamburger button', async () => {
     const user = userEvent.setup()
@@ -204,63 +205,71 @@ describe('Header Component - Complete Button & Link Testing (SCRUM-233)', () => 
     expect(screen.getByRole('button', { name: /open menu/i })).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('navigates to /signin when clicking mobile menu "Sign In" button', async () => {
+  it('navigates to /signin when clicking mobile menu "Sign In" button and closes menu', async () => {
     const user = userEvent.setup()
     mockAuth.user = null
     renderHeader('/')
 
-    // Open mobile nav menu
-    await user.click(screen.getByRole('button', { name: /open menu/i }))
+    const hamburger = screen.getByRole('button', { name: /open menu/i })
+    await user.click(hamburger)
 
-    // Click mobile menu Sign In button
-    const mobileSignInBtn = screen.getAllByRole('button', { name: /^sign in$/i })[0]
+    // Scope lookup to the open navigation container and search for button role
+    const navElement = screen.getByRole('navigation', { name: /main/i })
+    const mobileSignInBtn = within(navElement).getByRole('button', { name: /^sign in$/i })
+    
     await user.click(mobileSignInBtn)
 
     expect(await screen.findByText('Sign In Page')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open menu/i })).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('navigates customer to /portal when clicking mobile menu "Dashboard" button', async () => {
+  it('navigates customer to /portal when clicking mobile menu "Dashboard" button and closes menu', async () => {
     const user = userEvent.setup()
     mockAuth.user = { id: 'customer-mobile-123' }
     mockProfileRole(false)
     renderHeader('/')
 
-    // Open mobile nav menu
-    await user.click(screen.getByRole('button', { name: /open menu/i }))
+    const hamburger = screen.getByRole('button', { name: /open menu/i })
+    await user.click(hamburger)
 
-    // Click first Dashboard button inside mobile list
-    const mobileDashboardBtn = screen.getAllByRole('button', { name: /^dashboard$/i })[0]
+    const navElement = screen.getByRole('navigation', { name: /main/i })
+    const mobileDashboardBtn = within(navElement).getAllByRole('button', { name: /^dashboard$/i })[0]
+    
     await user.click(mobileDashboardBtn)
 
     expect(supabase.from).toHaveBeenCalledWith('profiles')
     expect(await screen.findByText('Customer Portal Page')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open menu/i })).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('calls signOut when clicking mobile menu "Sign Out" button', async () => {
+  it('calls signOut when clicking mobile menu "Sign Out" button and closes menu', async () => {
     const user = userEvent.setup()
     mockAuth.user = { id: 'user-mobile-123' }
     renderHeader('/about')
 
-    // Open mobile nav menu
-    await user.click(screen.getByRole('button', { name: /open menu/i }))
+    const hamburger = screen.getByRole('button', { name: /open menu/i })
+    await user.click(hamburger)
 
-    // Click mobile menu Sign Out button
-    const mobileSignOutBtn = screen.getAllByRole('button', { name: /^sign out$/i })[0]
+    const navElement = screen.getByRole('navigation', { name: /main/i })
+    const mobileSignOutBtn = within(navElement).getAllByRole('button', { name: /^sign out$/i })[0]
+    
     await user.click(mobileSignOutBtn)
 
     expect(supabase.auth.signOut).toHaveBeenCalled()
     expect(await screen.findByText('Home Page')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open menu/i })).toHaveAttribute('aria-expanded', 'false')
   })
 
-  //tests that if a page is invalid, a 404 error is displayed on the screen
-  it('renders a 404 page not found message for unknown routes', async () => {
+  // 404 test checking the real NotFound component routing
+  it('renders the real NotFound 404 page for unknown routes', async () => {
     render(
-      <MemoryRouter initialEntries={['/random-bad-url']}>
+      <MemoryRouter initialEntries={['/some-bad-url']}>
         <Routes>
-          <Route path="*" element={<div>404 Page Not Found</div>} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </MemoryRouter>
     )
-    expect(await screen.findByText('404 Page Not Found')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /404/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to home/i })).toHaveAttribute('href', '/')
   })
 })

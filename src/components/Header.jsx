@@ -45,8 +45,12 @@ export default function Header() {
     setIsSigningOut(true)
     const { error } = await supabase.auth.signOut()
     setIsSigningOut(false)
-
-    if (!error) navigate('/', { replace: true })
+    if (!error) {
+      setMenuOpen(false)
+      navigate('/', { replace: true })
+    } else {
+      console.error('Error signing out:', error.message)
+    }
   }
 
   return (
