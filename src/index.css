@@ -2172,10 +2172,11 @@ ul {
   opacity: 0.6;
 }
 
-/* --- Inline notes under a card (edit / success / error) --- */
+/* SCRUM-243: Every status/update message is centered */
 .admin-note {
   margin-top: var(--space-md);
   font-size: var(--text-md);
+  text-align: center;
 }
 
 .admin-note--info { color: var(--color-primary-dark); }
