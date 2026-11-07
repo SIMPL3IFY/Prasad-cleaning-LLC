@@ -32,6 +32,7 @@ export default function AdminDashboard() {
      // SCRUM-85: Constants
     const [quotes, setQuotes] = useState([]) //Scrum 88
     const [acceptedQuotes, setAcceptedQuotes] = useState([]) //Scrum 88
+    const [quotesLoadError, setQuotesLoadError] = useState('') // Scrum-230: Visible error when the quotes query fails
     // SCRUM-215: Private completion metadata keeps accepted rows and review links intact.
     const [completedAppointments, setCompletedAppointments] = useState([])
     const [currentCompletedPage, setCurrentCompletedPage] = useState(1)
@@ -51,6 +52,7 @@ export default function AdminDashboard() {
     const [editedAppointment, setEditedAppointment] = useState({}) // Scrum 87: Tracks in-progress field edits
     const [pendingSync, setPendingSync] = useState(null) // SCRUM-184: { quoteId, previous, customerName } when an email sync failed and can be retried
     const [declinedQuotes, setDeclinedQuotes] = useState([])       // Scrum 149: Holds declined quotes fetched from the archive table
+    const [declinedLoadError, setDeclinedLoadError] = useState('') // SCRUM-230: Visible error when the declined_quotes query fails
     const [currentDeclinedPage, setCurrentDeclinedPage] = useState(1)   // Scrum 149: Current page for Declined Quotes pagination
     const [decliningQuoteId, setDecliningQuoteId] = useState(null) // Scrum 149: Which quote's reason prompt is open
     const [declineReason, setDeclineReason] = useState('')  // Scrum 149: In-progress text for the decline reason field
@@ -118,9 +120,11 @@ export default function AdminDashboard() {
         if (request !== quoteRequest.current) return
         if (error) {
             console.error('Error fetching quotes:', error.message)
+            setQuotesLoadError('Unable to load quotes. Please refresh and try again.') // SCRUM-230: tell the admin instead of looking empty
             return
         }
-        setQuotes(data)
+        setQuotesLoadError('') // SCRUM-230: clear an old error after a successful load (e.g. after Move to Manage Quotes)
+        setQuotes(data ?? []) // SCRUM-230: never set null, so the empty state still renders
     }
 
     // Scrum 149 method: fetches every declined quote from the archive table.
@@ -147,9 +151,11 @@ export default function AdminDashboard() {
         if (request !== declinedRequest.current) return
         if (error) {
             console.error('Error fetching declined quotes:', error.message)
+            setDeclinedLoadError('Unable to load declined quotes. Please refresh and try again.') // SCRUM-230
             return
         }
-        setDeclinedQuotes(data)
+        setDeclinedLoadError('') // SCRUM-230: clear an old error after a successful load
+        setDeclinedQuotes(data ?? []) // SCRUM-230: never set null
     }
 
 
@@ -1745,7 +1751,10 @@ export default function AdminDashboard() {
                     {quoteCreatedMessage && <p role="status" className="admin-note admin-note--success">{quoteCreatedMessage}</p>}
 
 
-                    {filteredQuotes.length === 0 ? (
+                    {/* SCRUM-230: A failed load shows an error, not "No quotes available." */}
+                    {quotesLoadError ? (
+                        <p role="alert" className="admin-note admin-note--danger">{quotesLoadError}</p>
+                    ) : filteredQuotes.length === 0 ? (
                         <p className="admin-empty">
                             {showSearchBar && searchQuery ? `No appointments found matching '${searchQuery}'.` : 'No quotes available.'}
                         </p>
@@ -1763,7 +1772,10 @@ export default function AdminDashboard() {
                         Declined Quotes
                     </h2>
 
-                    {filteredDeclinedQuotes.length === 0 ? (
+                     {/* SCRUM-230: A failed load shows an error, not "No declined quotes." */}
+                    {declinedLoadError ? (
+                        <p role="alert" className="admin-note admin-note--danger">{declinedLoadError}</p>
+                    ) : filteredDeclinedQuotes.length === 0 ? (
                         <p className="admin-empty">
                             {showSearchBar && searchQuery ? `No appointments found matching '${searchQuery}'.` : 'No declined quotes.'}
                         </p>
