@@ -24,7 +24,7 @@ export default function Contact() {
         </div>
       </section>
 
-      <section className="contact-main">
+      <section className="page-main">
         <div className="container contact-grid">
           {/* SCRUM-198: "How it works" and "What we offer" info cards */}
           <aside className="contact-info">

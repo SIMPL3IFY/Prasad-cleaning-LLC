@@ -62,10 +62,10 @@ export default function AppointmentReview() {
   }
 
   return (
-    <section className="appointment-review-page">
-      <div className="appointment-review-card">
-        <p className="appointment-review-eyebrow">Contact Us</p>
-        <h1>Write a Review</h1>
+    <section className="section signin-section">
+      <div className="signin-card appointment-review-card">
+        <p className="banner-eyebrow">Contact Us</p>
+        <h1 className="section-title">Write a Review</h1>
         {linkStatus === 'checking' ? (
           <p role="status">Checking your review link...</p>
         ) : linkStatus === 'invalid' ? (
@@ -116,7 +116,7 @@ export default function AppointmentReview() {
               required
             />
             {message && <p role="alert">{message}</p>}
-            <button type="submit" className="appointment-review-send" disabled={submitting}>
+            <button type="submit" className="button button-main button-big signin-btn" disabled={submitting}>
               {submitting ? 'Sending...' : 'Send'}
             </button>
             <Link className="appointment-review-cancel" to="/">Cancel</Link>
