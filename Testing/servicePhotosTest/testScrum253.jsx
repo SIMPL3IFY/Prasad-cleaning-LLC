@@ -218,6 +218,45 @@ describe('Replacing a photo', () => {
 
     expect(card.getByRole('img', { name: 'Deep Cleaning' })).toHaveAttribute('src', `https://example.com/${newPath}`)
     expect(card.getByText('No file chosen')).toBeInTheDocument()
+
+    // Other services keep their photo, and the popup is usable again
+    const windows = await findCard('Window Cleaning')
+    expect(windows.getByRole('img', { name: 'Window Cleaning' })).toHaveAttribute('src', 'https://example.com/window.jpg')
+    expect(windows.getByRole('button', { name: 'Show' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Add service' })).toBeEnabled()
+  })
+
+  it('shows Saving... on Save photo while the upload runs', async () => {
+    mockSupabase({ uploadResult: new Promise(() => {}) })
+    const user = setupUser()
+    renderManager()
+
+    const card = await chooseFile(user)
+    await user.click(card.getByRole('button', { name: 'Save photo' }))
+
+    expect(await card.findByRole('button', { name: 'Saving...' })).toBeDisabled()
+  })
+
+  it('releases the preview when another file replaces it', async () => {
+    mockSupabase()
+    const user = setupUser()
+    renderManager()
+
+    await chooseFile(user)
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+    await chooseFile(user, imageFile('other.png'))
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview')
+  })
+
+  it('only offers JPG, PNG, and WebP files', async () => {
+    mockSupabase()
+    renderManager()
+    const card = await findCard('Deep Cleaning')
+
+    const accepted = 'image/jpeg,image/png,image/webp'
+    expect(card.getByLabelText('New photo for Deep Cleaning')).toHaveAttribute('accept', accepted)
+    expect(screen.getByLabelText('Photo')).toHaveAttribute('accept', accepted)
   })
 
   it('stops if the upload fails and keeps the old photo', async () => {
@@ -273,6 +312,11 @@ describe('Showing and hiding a service', () => {
     expect(updateEq).toHaveBeenCalledWith('id', 's1')
     expect(card.getByText('Hidden')).toBeInTheDocument()
     expect(card.getByRole('button', { name: 'Show' })).toBeInTheDocument()
+
+    // Only this service changes
+    const windows = await findCard('Window Cleaning')
+    expect(windows.getByText('Hidden')).toBeInTheDocument()
+    expect(windows.getByRole('button', { name: 'Show' })).toBeInTheDocument()
   })
 
   it('shows a hidden service', async () => {
@@ -315,6 +359,9 @@ describe('Showing and hiding a service', () => {
     expect(windows.getByLabelText('Description')).toBeDisabled()
     expect(windows.getByLabelText('New photo for Window Cleaning')).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Add service' })).toBeDisabled()
+    expect(screen.getByLabelText('Service name')).toBeDisabled()
+    expect(screen.getByLabelText('Description (optional)')).toBeDisabled()
+    expect(screen.getByLabelText('Photo')).toBeDisabled()
   })
 })
 
@@ -360,6 +407,22 @@ describe('Editing a description', () => {
     expect(updateEq).toHaveBeenCalledWith('id', 's1')
     expect(description).toHaveValue('Every corner.')
     expect(saveButton(card)).toBeDisabled()
+
+    // Only this service changes
+    const windows = await findCard('Window Cleaning')
+    expect(windows.getByLabelText('Description')).toHaveValue('')
+  })
+
+  it('shows Saving... on Save description while it saves', async () => {
+    mockSupabase({ updateResult: new Promise(() => {}) })
+    const user = setupUser()
+    renderManager()
+    const card = await findCard('Deep Cleaning')
+
+    await user.type(card.getByLabelText('Description'), ' More')
+    await user.click(saveButton(card))
+
+    expect(await card.findByRole('button', { name: 'Saving...' })).toBeDisabled()
   })
 
   it('saves an emptied description as null so the default text is used', async () => {
@@ -449,6 +512,36 @@ describe('Deleting a service', () => {
     expect(remove).toHaveBeenCalledWith(['deep-old.jpg'])
     expect(screen.queryByText('Deep Cleaning', { selector: 'strong' })).not.toBeInTheDocument()
     expect(screen.getByText('Window Cleaning', { selector: 'strong' })).toBeInTheDocument()
+
+    // The popup is usable again
+    const windows = await findCard('Window Cleaning')
+    expect(windows.getByRole('button', { name: 'Delete' })).toBeEnabled()
+  })
+
+  it('shows Deleting... while the delete runs', async () => {
+    mockSupabase({ deleteResult: new Promise(() => {}) })
+    const user = setupUser()
+    renderManager()
+    const card = await findCard('Deep Cleaning')
+
+    await user.click(card.getByRole('button', { name: 'Delete' }))
+    await user.click(card.getByRole('button', { name: 'Yes, delete' }))
+
+    expect(await card.findByRole('button', { name: 'Deleting...' })).toBeDisabled()
+  })
+
+  it('releases a chosen preview when its service is deleted', async () => {
+    mockSupabase()
+    const user = setupUser()
+    renderManager()
+    const card = await findCard('Deep Cleaning')
+
+    await user.upload(card.getByLabelText('New photo for Deep Cleaning'), imageFile())
+    await user.click(card.getByRole('button', { name: 'Delete' }))
+    await user.click(card.getByRole('button', { name: 'Yes, delete' }))
+
+    await screen.findByText('Deep Cleaning was deleted.')
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview')
   })
 
   it('keeps the service and its photo when the delete is blocked', async () => {
@@ -583,6 +676,39 @@ describe('Adding a service', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Please enter a service name.')
     expect(screen.queryByText('Floor Waxing was added.')).not.toBeInTheDocument()
+  })
+
+  it('shows Adding... while the service is added', async () => {
+    mockSupabase({ insertResult: new Promise(() => {}) })
+    const user = setupUser()
+    renderManager()
+    await findCard('Deep Cleaning')
+
+    await user.type(nameField(), 'Floor Waxing')
+    await user.upload(photoField(), imageFile())
+    await user.click(addButton())
+
+    expect(await screen.findByRole('button', { name: 'Adding...' })).toBeDisabled()
+  })
+
+  it('limits a new description to 300 characters', async () => {
+    mockSupabase()
+    renderManager()
+    await findCard('Deep Cleaning')
+    expect(screen.getByLabelText('Description (optional)')).toHaveAttribute('maxlength', '300')
+  })
+
+  it('releases the preview when another file replaces it', async () => {
+    mockSupabase()
+    const user = setupUser()
+    renderManager()
+    await findCard('Deep Cleaning')
+
+    await user.upload(photoField(), imageFile())
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+    await user.upload(photoField(), imageFile('other.png'))
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview')
   })
 
   it('saves a blank description as null', async () => {

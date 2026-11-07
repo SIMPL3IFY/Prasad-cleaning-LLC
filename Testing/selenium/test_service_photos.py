@@ -1,9 +1,10 @@
 """SCRUM-253: Real-browser checks for the admin Edit Services popup.
 
-Default tests change nothing: they never press a button that saves. The one test that
-writes is opt-in because it adds a real service, which is briefly visible on the live
-site. It deletes the service itself; if it stops early, delete any "Selenium Test 253"
-rows from the services table and their photos from the service-images bucket.
+Default tests change nothing: they stop before any save, and the delete test blocks
+service and photo requests before it clicks Delete. The one test that writes is opt-in
+because it adds a real service, which is briefly visible on the live site. It deletes the
+service itself; if it stops early, delete any "Selenium Test 253" rows from the services
+table and their photos from the service-images bucket.
 """
 import base64
 import os
@@ -103,6 +104,23 @@ def alert_text(driver):
     return driver.find_element(By.CSS_SELECTOR, ".admin-modal [role='alert']").text
 
 
+def block_service_writes(driver):
+    """Blocks service and photo requests, and fails the test unless the block is working."""
+    driver.execute_cdp_cmd("Network.enable", {})
+    driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": ["*/rest/v1/services*", "*/storage/v1/object/*"]})
+    photo = driver.find_element(By.CSS_SELECTOR, ".admin-modal img.admin-photo-thumb").get_attribute("src")
+    origin = "/".join(photo.split("/")[:3])
+    # no-cors resolves for any reachable server, so only a blocked request rejects
+    reached = driver.execute_async_script(
+        """
+        const [url, done] = arguments;
+        fetch(url, { mode: 'no-cors' }).then(() => done(true), () => done(false));
+        """,
+        f"{origin}/rest/v1/services",
+    )
+    assert not reached, "Service requests aren't blocked, so this test won't click Delete"
+
+
 def test_popup_lists_services_and_closes(driver, popup, wait):
     names = service_names(driver)
     assert names
@@ -178,6 +196,8 @@ def test_description_edit_is_not_saved_until_asked(driver, popup, wait):
 
 
 def test_delete_asks_first_and_cancel_keeps_the_service(driver, popup, wait):
+    # If the confirmation ever broke, this click would delete a real service
+    block_service_writes(driver)
     names = service_names(driver)
     name = names[0]
     click(driver, card(driver, name).find_element(By.XPATH, ".//button[normalize-space()=\"Delete\"]"))
