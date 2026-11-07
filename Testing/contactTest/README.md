@@ -99,3 +99,39 @@ Each test can override either one, for example `mockSupabase({ insertResult: { e
 The browser blocks a submit when a required field is empty or the email isn't an email, so the tests that check our own messages call `submitQuoteForm()`, which submits the form directly.
 
 The address check is covered in more detail by the SCRUM-239 tests in `Testing/addressVerificationTest/`. These tests only check that it works as part of the Contact page.
+
+---
+
+## Selenium tests
+
+`Testing/selenium/test_contact_page.py` has 11 functional tests that drive the real site in Chrome. They are not part of `npm run test:run` and don't run in CI, so run them yourself before your PR.
+
+### How to run
+
+```bash
+pip install -r Testing/selenium/requirements.txt   # once
+npm run dev                                         # terminal 1
+python -m pytest Testing/selenium/test_contact_page.py -v   # terminal 2
+```
+
+To run without opening a browser window, set `HEADLESS=1`.
+
+### Tests included
+
+| # | Test | What it checks | Saves data? |
+|---|---|---|---|
+| 1 | Header | The heading, the form title and "All fields are required." show | No |
+| 2 | How it works | All 3 steps show | No |
+| 3 | What we offer | The four services are listed | No |
+| 4 | Service area link | "See the cities we serve" goes to `/service-area` | No |
+| 5 | Dropdowns | Both start on their placeholder and offer the right options | No |
+| 6 | State | The state starts on CA | No |
+| 7 | Button | "Get My Free Quote" stays disabled until every field is filled | No |
+| 8 | Bad email | `name@example` shows "Please enter a valid email address." | No |
+| 9 | Bad phone | A phone number without 10 digits shows the phone message | No |
+| 10 | Bad ZIP | A ZIP code without 5 digits shows the ZIP message | No |
+| 11 | Input kept | The typed values are still there after an error | No |
+
+### Why there is no successful-submit test
+
+The tests use the real Supabase project. A successful submit would save a real quote and call the real address check. Every form test here fills in at least one bad value, so the form's own validation stops it before anything is sent. A successful submit is covered by the unit tests above, which fake Supabase.
