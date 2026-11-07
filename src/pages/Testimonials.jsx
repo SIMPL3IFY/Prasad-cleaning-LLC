@@ -30,10 +30,13 @@ const formatReviewDate = (createdAt) => {
   }).format(date)
 }
 
+const REVIEW_CHAR_LIMIT = 150 // SCRUM-226: Truncate long reviews at 150 characters
+
 export default function Testimonials() {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setError] = useState('') // SCRUM-202: Added error state
+  const [expanded, setExpanded] = useState({}) // SCRUM-226: Track which reviews are expanded
 
   //SCRUM 90: Fetch reviews from Supabase database
   useEffect(() => {
@@ -71,10 +74,17 @@ export default function Testimonials() {
   }, [])
 
 return (
-  <section className="section">
+  <div className="testimonials-page">
+  <section className="banner banner-glow">
+    <div className="container banner-content">
+      <span className="banner-eyebrow">Customer reviews</span>
+      <h1 className="page-title">Customer Testimonials</h1>
+      <p className="page-subtitle">Real feedback from customers we've helped</p>
+    </div>
+  </section>
+
+  <section className="page-main">
     <div className="container">
-      <h1 className="page-title testimonials-page-title">Customer Testimonials</h1>
-      <p className="section-subtitle">Real feedback from customers we've helped</p>
 
       {loading ? (
         <p className="review-status" role="status">Loading reviews...</p>
@@ -87,11 +97,24 @@ return (
           No customer reviews area available at this time. Please check back soon.
         </p>
       ) : (
-        <ul className="testimonials-list testimonials-list--spaced">
+        <ul className="testimonials-list">
           {reviews.map((review) => (
             <li key={review.id} className="testimonial-card">
               <h2>{review.customer_name || 'Verified Customer'}</h2>
-              <p>{review.review}</p>
+              {/* SCRUM-226: Truncate long reviews with a Read More toggle */}
+              <p>
+                {review.review.length > REVIEW_CHAR_LIMIT && !expanded[review.id]
+                  ? `${review.review.slice(0, REVIEW_CHAR_LIMIT)}...`
+                  : review.review}
+              </p>
+              {review.review.length > REVIEW_CHAR_LIMIT && (
+                <button
+                  className="review-read-more"
+                  onClick={() => setExpanded(prev => ({ ...prev, [review.id]: !prev[review.id] }))}
+                >
+                  {expanded[review.id] ? 'Show Less' : 'Read More'}
+                </button>
+              )}
               
               {review.rating ? (
                 <p className="review-rating" aria-label={`${review.rating} out of 5 stars`}>
@@ -108,10 +131,15 @@ return (
         </ul>
       )}
 
-      <div className="testimonials-cta">
-        <Link className="button button-main" to="/contact">Book a cleaning</Link>
+      <div className="page-cta">
+        <div>
+          <h2 className="page-cta-title">Ready for a cleaner space?</h2>
+          <p className="page-cta-text">Tell us about your space and we'll get back to you shortly.</p>
+        </div>
+        <Link className="button button-main button-big" to="/contact">Book a cleaning</Link>
       </div>
     </div>
   </section>
+  </div>
   )
 }
