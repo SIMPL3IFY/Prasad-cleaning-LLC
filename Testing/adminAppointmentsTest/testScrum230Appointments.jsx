@@ -74,13 +74,14 @@ describe('SCRUM-230: Manage Appointments', () => {
             expect(box.getByText(maria.address)).toBeInTheDocument()
         })
 
-        it('shows an empty state and disables Update Appointment when there are none', async () => {
+        // SCRUM-243: Update Appointment only exists inside a card being edited
+        it('shows an empty state with no Update Appointment button when there are none', async () => {
             setupSupabase(supabase, { accepted_quotes: { rows: [] } })
             await renderDashboardAsAdmin()
             const box = getPanel('Manage Appointments')
 
             expect(await box.findByText('No appointments available.')).toBeInTheDocument()
-            expect(box.getByRole('button', { name: 'Update Appointment' })).toBeDisabled()
+            expect(box.queryByRole('button', { name: 'Update Appointment' })).not.toBeInTheDocument()
         })
 
         it('shows an error message when the appointments query fails', async () => {
@@ -102,11 +103,33 @@ describe('SCRUM-230: Manage Appointments', () => {
 
             expect(box.getByText('James Chen')).toBeInTheDocument()
             expect(box.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
-            expect(box.getByRole('button', { name: 'Update Appointment' })).toBeDisabled()
+            // SCRUM-243: out of edit mode, the card shows Mark Completed instead of Update Appointment
+            expect(box.getByRole('button', { name: 'Mark Completed' })).toBeInTheDocument()
+            expect(box.queryByRole('button', { name: 'Update Appointment' })).not.toBeInTheDocument()        
         })
     })
 
     describe('editing an appointment', () => {
+        // SCRUM-243: Edit swaps Mark Completed for Update Appointment, and Cancel swaps it back
+        it('shows Update Appointment in place of Mark Completed while editing', async () => {
+            const user = userEvent.setup()
+            setupSupabase(supabase, { accepted_quotes: { rows: [maria] } })
+            await renderDashboardAsAdmin()
+            const box = getPanel('Manage Appointments')
+
+            // Before editing: Mark Completed, no Update Appointment
+            expect(await box.findByRole('button', { name: 'Mark Completed' })).toBeInTheDocument()
+            expect(box.queryByRole('button', { name: 'Update Appointment' })).not.toBeInTheDocument()
+
+            await user.click(box.getByRole('button', { name: 'Edit' }))
+            expect(box.getByRole('button', { name: 'Update Appointment' })).toBeInTheDocument()
+            expect(box.queryByRole('button', { name: 'Mark Completed' })).not.toBeInTheDocument()
+
+            await user.click(box.getByRole('button', { name: 'Cancel' }))
+            expect(box.getByRole('button', { name: 'Mark Completed' })).toBeInTheDocument()
+            expect(box.queryByRole('button', { name: 'Update Appointment' })).not.toBeInTheDocument()
+        })
+        
         // SCRUM-142: nothing changed, so no database call
         it('blocks saving when nothing was changed', async () => {
             const user = userEvent.setup()
