@@ -1,4 +1,7 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabaseClient'
+import { useState, useEffect } from 'react'
 
 // SCRUM-225: Footer grouped into labeled columns.
 const PHONE = '(916) 665-8474'
@@ -6,33 +9,61 @@ const EMAIL = 'prasadscleaning@gmail.com'
 // SCRUM-223: pre-filled subject; the user can still edit it in their email app
 const EMAIL_SUBJECT = "Inquiry from Prasad's Cleaning website"
 
-const footerColumns = [
-  {
-    title: 'Company',
-    links: [
-      { to: '/about', label: 'About Us' },
-      { to: '/testimonials', label: 'Testimonials' },
-      { to: '/contact', label: 'Contact' },
-    ],
-  },
-  {
-    title: 'Services',
-    links: [
-      { to: '/services', label: 'Our Services' },
-      { to: '/service-area', label: 'Service Areas' },
-    ],
-  },
-  {
-    title: 'Account',
-    links: [
-      { to: '/signin', label: 'Sign In' },
-      { to: '/signup', label: 'Create Account' },
-    ],
-  },
-]
-
 export default function Footer() {
   const year = new Date().getFullYear()
+  const { user } = useAuth()
+  const [dashboardPath, setDashboardPath] = useState('/portal')
+
+  // SCRUM-234: Check user role to link to /admin or /portal dynamically when logged in
+  useEffect(() => {
+    let isMounted = true
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (isMounted) {
+            setDashboardPath(data?.is_admin === true ? '/admin' : '/portal')
+          }
+        })
+    }
+    return () => { isMounted = false }
+  }, [user])
+
+  // SCRUM-234: Add Settings link alongside Dashboard for logged-in users
+  const accountLinks = user
+    ? [
+        { to: dashboardPath, label: 'Dashboard' },
+        { to: '/settings', label: 'Settings' },
+      ]
+    : [
+        { to: '/signin', label: 'Sign In' },
+        { to: '/signup', label: 'Create Account' },
+      ]
+
+  const footerColumns = [
+    {
+      title: 'Company',
+      links: [
+        { to: '/about', label: 'About Us' },
+        { to: '/testimonials', label: 'Testimonials' },
+        { to: '/contact', label: 'Contact' },
+      ],
+    },
+    {
+      title: 'Services',
+      links: [
+        { to: '/services', label: 'Our Services' },
+        { to: '/service-area', label: 'Service Areas' },
+      ],
+    },
+    {
+      title: 'Account',
+      links: accountLinks,
+    },
+  ]
 
   return (
     <footer className="footer">
