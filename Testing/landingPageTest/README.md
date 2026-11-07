@@ -2,7 +2,7 @@
 
 ## What this tests
 
-Unit tests for the landing page (`src/pages/Home.jsx`) and the quote form it uses (`src/components/QuoteForm.jsx`).
+Unit tests for the landing page (`src/pages/Home.jsx`) and the quote form on the Contact page (`src/components/QuoteForm.jsx`).
 
 Supabase is fully mocked so these tests never touch the real database.
 
@@ -75,7 +75,7 @@ After it finishes, open `coverage/index.html` in your browser to see the full re
 
 ## How the mock works
 
-`mockSupabase()` fakes the three tables the landing page uses, each with the same chain of calls as the real code:
+`mockSupabase()` fakes the three tables these pages use, each with the same chain of calls as the real code:
 
 - `services`: `from().select().eq().order()`, plus `storage.from().getPublicUrl()` for the card images
 - `customer_reviews`: `from().select().eq().order().limit(3)`

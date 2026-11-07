@@ -1,0 +1,22 @@
+/* Keep the quote form readable without changing the dashboard card grids. */
+.admin-create-quote-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 1rem;
+}
+
+.admin-create-quote-grid .admin-field {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.admin-create-quote-grid .admin-label {
+  display: flex;
+  align-items: flex-end;
+  min-height: 3em;
+  line-height: 1.5;
+}
+
+.admin-create-quote-grid .admin-input {
+  width: 100%;
+  min-width: 0;
+}
