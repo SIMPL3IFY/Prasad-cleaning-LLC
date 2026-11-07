@@ -26,12 +26,23 @@ const REQUIRED_APPOINTMENT_FIELDS = {
     address: 'Address',
     phone: 'Phone number'
 }
+// SCRUM-243: How long success messages stay on screen
+const MESSAGE_TIMEOUT_MS = 30000
+// SCRUM-243: Clears a status message after a delay. Restarts if the message changes.
+const useAutoClear = (message, setMessage, delay = MESSAGE_TIMEOUT_MS) => {
+    useEffect(() => {
+        if (!message) return
+        const timer = setTimeout(() => setMessage(''), delay)
+        return () => clearTimeout(timer)
+    }, [message, setMessage, delay])
+}
 // SCRUM-119: Admin landing page shown after admin login
 export default function AdminDashboard() {
     const navigate = useNavigate()
      // SCRUM-85: Constants
     const [quotes, setQuotes] = useState([]) //Scrum 88
     const [acceptedQuotes, setAcceptedQuotes] = useState([]) //Scrum 88
+    const [quotesLoadError, setQuotesLoadError] = useState('') // Scrum-230: Visible error when the quotes query fails
     // SCRUM-215: Private completion metadata keeps accepted rows and review links intact.
     const [completedAppointments, setCompletedAppointments] = useState([])
     const [currentCompletedPage, setCurrentCompletedPage] = useState(1)
@@ -51,6 +62,7 @@ export default function AdminDashboard() {
     const [editedAppointment, setEditedAppointment] = useState({}) // Scrum 87: Tracks in-progress field edits
     const [pendingSync, setPendingSync] = useState(null) // SCRUM-184: { quoteId, previous, customerName } when an email sync failed and can be retried
     const [declinedQuotes, setDeclinedQuotes] = useState([])       // Scrum 149: Holds declined quotes fetched from the archive table
+    const [declinedLoadError, setDeclinedLoadError] = useState('') // SCRUM-230: Visible error when the declined_quotes query fails
     const [currentDeclinedPage, setCurrentDeclinedPage] = useState(1)   // Scrum 149: Current page for Declined Quotes pagination
     const [decliningQuoteId, setDecliningQuoteId] = useState(null) // Scrum 149: Which quote's reason prompt is open
     const [declineReason, setDeclineReason] = useState('')  // Scrum 149: In-progress text for the decline reason field
@@ -92,6 +104,13 @@ export default function AdminDashboard() {
     const [searchCategory, setSearchCategory] = useState('name') // 'name', 'city', 'service', 'property', 'date', 'time'
     const [showCategoryMenu, setShowCategoryMenu] = useState(false)
 
+    // SCRUM-243: Success messages disappear after 30 seconds
+    useAutoClear(deleteMessage, setDeleteMessage)
+    useAutoClear(completionMessage, setCompletionMessage)
+    useAutoClear(quoteCreatedMessage, setQuoteCreatedMessage)
+    useAutoClear(appointmentMessage, setAppointmentMessage)
+    useAutoClear(reviewMessage, setReviewMessage)
+
     // SCRUM-85: Manage Quotes box and supporting methods
     // EDITED from CSC 190-191:
     // Scrum 88: fetches quotes from the quotes table on Supabase
@@ -118,9 +137,11 @@ export default function AdminDashboard() {
         if (request !== quoteRequest.current) return
         if (error) {
             console.error('Error fetching quotes:', error.message)
+            setQuotesLoadError('Unable to load quotes. Please refresh and try again.') // SCRUM-230: tell the admin instead of looking empty
             return
         }
-        setQuotes(data)
+        setQuotesLoadError('') // SCRUM-230: clear an old error after a successful load (e.g. after Move to Manage Quotes)
+        setQuotes(data ?? []) // SCRUM-230: never set null, so the empty state still renders
     }
 
     // Scrum 149 method: fetches every declined quote from the archive table.
@@ -147,9 +168,11 @@ export default function AdminDashboard() {
         if (request !== declinedRequest.current) return
         if (error) {
             console.error('Error fetching declined quotes:', error.message)
+            setDeclinedLoadError('Unable to load declined quotes. Please refresh and try again.') // SCRUM-230
             return
         }
-        setDeclinedQuotes(data)
+        setDeclinedLoadError('') // SCRUM-230: clear an old error after a successful load
+        setDeclinedQuotes(data ?? []) // SCRUM-230: never set null
     }
 
 
@@ -1058,7 +1081,8 @@ export default function AdminDashboard() {
                 <p className="admin-value">{quote.email}</p>
                 <p className="admin-value admin-value--muted">{quote.phone}</p>
             </div>
-            <div className="admin-field-grid">
+            {/* SCRUM-243: Edit-mode column sizing so inputs fit inside the card */}
+            <div className={`admin-field-grid${editingAppointmentId === quote.id ? ' admin-field-grid--editing' : ''}`}>
                 <div>
                     <p className="admin-label">Service</p>
                     {editingAppointmentId === quote.id ? ( // Scrum 87: Editable service field
@@ -1135,8 +1159,17 @@ export default function AdminDashboard() {
             </div>
 
             {/* SCRUM-215: Manual completion also supports correcting a restored job. */}
-            {editingAppointmentId !== quote.id && (
-                <div className="admin-btn-row">
+            {/* SCRUM-243: Update Appointment lives inside the card being edited, in place of Mark Completed */}
+            <div className="admin-btn-row">
+                {editingAppointmentId === quote.id ? (
+                    <button
+                        type="button"
+                        className="admin-btn admin-btn--primary"
+                        onClick={() => handleUpdateAppointment(quote.id)}
+                    >
+                        Update Appointment
+                    </button>
+                ) : (
                     <button
                         type="button"
                         className="admin-btn admin-btn--primary"
@@ -1145,8 +1178,8 @@ export default function AdminDashboard() {
                     >
                         {completingAppointmentId === quote.id ? 'Cancel Completion' : 'Mark Completed'}
                     </button>
-                </div>
-            )}
+                )}
+            </div>
             {completingAppointmentId === quote.id && editingAppointmentId !== quote.id && (
                 <div className="admin-callout admin-callout--below">
                     <label className="admin-label" htmlFor={`complete-note-${quote.id}`}>Completion note (optional)</label>
@@ -1500,6 +1533,50 @@ export default function AdminDashboard() {
                     margin-top: auto !important;
                     padding-top: 1rem !important;
                 }
+                /* SCRUM-243: Service, Property, and Appointment always share one row */
+                .admin-field-grid {
+                    display: grid !important;
+                     grid-template-columns: minmax(min-content, 1fr) minmax(min-content, 1fr) max-content !important;
+                    column-gap: 0.5rem !important;
+                }
+                /* SCRUM-243: Values wrap between words only, never mid-word */
+                .admin-field-grid .admin-value {
+                    overflow-wrap: normal;
+                    word-break: normal;
+                }
+                /* SCRUM-243: Edit mode keeps 3 columns; Appointment gets a bit more room for the pickers */
+                .admin-field-grid--editing {
+                    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr) !important;
+                }
+                /* SCRUM-243: Inputs shrink to their column instead of stretching it */
+                .admin-field-grid--editing .admin-input {
+                    width: 100%;
+                    min-width: 0;
+                    box-sizing: border-box;
+                    padding: 0.35rem 0.4rem;
+                    font-size: 0.85rem;
+                }
+                /* SCRUM-243: Let the four main panels use the full page width */
+                .admin-grid {
+                    max-width: 1600px !important;
+                    width: 100% !important;
+                    margin-inline: auto !important;
+                    padding-inline: 1.5rem !important;
+                    box-sizing: border-box !important;
+                    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                    gap: 1.25rem !important;
+                }
+                /* SCRUM-243: Fall back to 2 columns on smaller screens, 1 on phones */
+                @media (max-width: 1100px) {
+                    .admin-grid {
+                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                    }
+                }
+                @media (max-width: 640px) {
+                    .admin-grid {
+                        grid-template-columns: 1fr !important;
+                    }
+                }
             `}</style>
 
             {/* SCRUM 172 / 187: admin masthead. Scrum 39 keeps the marketing
@@ -1527,7 +1604,7 @@ export default function AdminDashboard() {
                 </nav>
             </header>
 
-            <section className="section admin-section">
+            <section className="banner banner-glow admin-banner">
                 <div className="container admin-intro">
                     <p className="admin-eyebrow">
                         Admin Portal
@@ -1536,6 +1613,140 @@ export default function AdminDashboard() {
                     <p className="section-subtitle">
                         Admin Dashboard
                     </p>
+                </div>
+                <div className="admin-search-block">
+                    {/* Scrum 218: Toggleable Search Bar - Box only renders when search is toggled ON */}
+                    {!showSearchBar ? (
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <button
+                            type="button"
+                            onClick={() => setShowSearchBar(true)}
+                            className="admin-btn admin-btn--primary"
+                        >
+                            Search Quotes By
+                        </button>
+                    </div>
+                    ) : (
+                        <div className="admin-panel" style={{ padding: '1.25rem' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                                {/* Category Dropdown Toggle */}
+                                <div style={{ position: 'relative' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCategoryMenu(prev => !prev)}
+                                        className="admin-btn admin-btn--ghost"
+                                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}
+                                    >
+                                        Search By: <strong>{categoryLabels[searchCategory]}</strong> ▾
+                                    </button>
+
+                                    {/* Category Dropdown Menu */}
+                                    {showCategoryMenu && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            left: 0,
+                                            marginTop: '0.25rem',
+                                            backgroundColor: '#ffffff',
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '0.375rem',
+                                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                            zIndex: 50,
+                                            minWidth: '170px'
+                                        }}>
+                                            {Object.entries(categoryLabels).map(([key, label]) => (
+                                                <button
+                                                    key={key}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSearchCategory(key)
+                                                        setShowCategoryMenu(false)
+                                                    }}
+                                                    style={{
+                                                        display: 'block',
+                                                        width: '100%',
+                                                        textAlign: 'left',
+                                                        padding: '0.5rem 0.75rem',
+                                                        background: searchCategory === key ? '#f1f5f9' : 'transparent',
+                                                        border: 'none',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    {label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Scrum 218 / Scrum 219: Dynamic Search Field (Date Picker, Time Picker, or Text Input) */}
+                                <div style={{ position: 'relative', flex: '1 1 12rem' }}>
+                                    {searchCategory === 'date' ? (
+                                        <input
+                                            type="date"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="admin-input"
+                                            style={{ width: '100%', marginBottom: 0 }}
+                                        />
+                                    ) : searchCategory === 'time' ? ( /* Scrum 219: Time picker input for time filtering */
+                                        <input
+                                            type="time"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="admin-input"
+                                            style={{ width: '100%', marginBottom: 0 }}
+                                        />
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            placeholder={`Search by ${categoryLabels[searchCategory].toLowerCase()}...`}
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="admin-input"
+                                            style={{ width: '100%', marginBottom: 0, paddingRight: searchQuery ? '2.25rem' : '0.75rem' }}
+                                        />
+                                    )}
+
+                                    {/* Clear ("X") input button */}
+                                    {searchQuery && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSearchQuery('')}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '0.5rem',
+                                                top: '50%',
+                                                transform: 'translateY(-50%)',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                fontSize: '1rem',
+                                                color: '#64748b',
+                                                padding: '0.25rem 0.5rem'
+                                            }}
+                                            title="Clear text"
+                                            aria-label="Clear text"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Hide Search Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowSearchBar(false)
+                                        setSearchQuery('')
+                                    }}
+                                    className="admin-btn admin-btn--ghost"
+                                >
+                                    Hide Search
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -1551,139 +1762,6 @@ export default function AdminDashboard() {
                         {completionMessage && <p role="status" className="admin-note admin-note--success">{completionMessage}</p>}
                     </div>
                 )}
-                {/* Scrum 218: Toggleable Search Bar - Box only renders when search is toggled ON */}
-                {!showSearchBar ? (
-                <div style={{ gridColumn: '1 / -1', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
-                    <button
-                        type="button"
-                        onClick={() => setShowSearchBar(true)}
-                        className="admin-btn admin-btn--primary"
-                    >
-                        Search Quotes By
-                    </button>
-                </div>
-                ) : (
-                    <div className="admin-panel" style={{ gridColumn: '1 / -1', padding: '1.25rem' }}>
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                            {/* Category Dropdown Toggle */}
-                            <div style={{ position: 'relative' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCategoryMenu(prev => !prev)}
-                                    className="admin-btn admin-btn--ghost"
-                                    style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}
-                                >
-                                    Search By: <strong>{categoryLabels[searchCategory]}</strong> ▾
-                                </button>
-
-                                {/* Category Dropdown Menu */}
-                                {showCategoryMenu && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '100%',
-                                        left: 0,
-                                        marginTop: '0.25rem',
-                                        backgroundColor: '#ffffff',
-                                        border: '1px solid #e2e8f0',
-                                        borderRadius: '0.375rem',
-                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                        zIndex: 50,
-                                        minWidth: '170px'
-                                    }}>
-                                        {Object.entries(categoryLabels).map(([key, label]) => (
-                                            <button
-                                                key={key}
-                                                type="button"
-                                                onClick={() => {
-                                                    setSearchCategory(key)
-                                                    setShowCategoryMenu(false)
-                                                }}
-                                                style={{
-                                                    display: 'block',
-                                                    width: '100%',
-                                                    textAlign: 'left',
-                                                    padding: '0.5rem 0.75rem',
-                                                    background: searchCategory === key ? '#f1f5f9' : 'transparent',
-                                                    border: 'none',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                {label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Scrum 218 / Scrum 219: Dynamic Search Field (Date Picker, Time Picker, or Text Input) */}
-                            <div style={{ position: 'relative', flex: 1 }}>
-                                {searchCategory === 'date' ? (
-                                    <input
-                                        type="date"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="admin-input"
-                                        style={{ width: '100%', marginBottom: 0 }}
-                                    />
-                                ) : searchCategory === 'time' ? ( /* Scrum 219: Time picker input for time filtering */
-                                    <input
-                                        type="time"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="admin-input"
-                                        style={{ width: '100%', marginBottom: 0 }}
-                                    />
-                                ) : (
-                                    <input
-                                        type="text"
-                                        placeholder={`Search by ${categoryLabels[searchCategory].toLowerCase()}...`}
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="admin-input"
-                                        style={{ width: '100%', marginBottom: 0, paddingRight: searchQuery ? '2.25rem' : '0.75rem' }}
-                                    />
-                                )}
-
-                                {/* Clear ("X") input button */}
-                                {searchQuery && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearchQuery('')}
-                                        style={{
-                                            position: 'absolute',
-                                            right: '0.5rem',
-                                            top: '50%',
-                                            transform: 'translateY(-50%)',
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            fontSize: '1rem',
-                                            color: '#64748b',
-                                            padding: '0.25rem 0.5rem'
-                                        }}
-                                        title="Clear text"
-                                        aria-label="Clear text"
-                                    >
-                                        ✕
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Hide Search Button */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setShowSearchBar(false)
-                                    setSearchQuery('')
-                                }}
-                                className="admin-btn admin-btn--ghost"
-                            >
-                                Hide Search
-                            </button>
-                        </div>
-                    </div>
-                )}
-
                 {/* SCRUM-215: Completed jobs precede active appointments and share the same card pagination. */}
                 <div className="admin-panel admin-panel--appointments">
                     <h2 className="admin-panel-title">Completed Appointments</h2>
@@ -1720,15 +1798,6 @@ export default function AdminDashboard() {
                             {renderPagination(currentAppointmentPage, filteredAcceptedQuotes.length, APPOINTMENTS_PER_PAGE, handleAppointmentPage)}
                         </>
                     )}
-
-                    {/* Update Appointment Button */}
-                    <button
-                        onClick={() => editingAppointmentId && handleUpdateAppointment(editingAppointmentId)} // Scrum 87: Update whichever appointment is being edited
-                        disabled={!editingAppointmentId} // Scrum 87: Only enabled when an appointment is in edit mode
-                        className="admin-btn admin-btn--pill"
-                    >
-                        Update Appointment
-                    </button>
                 </div>
 
                 {/* SCRUM-241: Admin entry bypasses the public customer form. */}
@@ -1744,7 +1813,10 @@ export default function AdminDashboard() {
                     {quoteCreatedMessage && <p role="status" className="admin-note admin-note--success">{quoteCreatedMessage}</p>}
 
 
-                    {filteredQuotes.length === 0 ? (
+                    {/* SCRUM-230: A failed load shows an error, not "No quotes available." */}
+                    {quotesLoadError ? (
+                        <p role="alert" className="admin-note admin-note--danger">{quotesLoadError}</p>
+                    ) : filteredQuotes.length === 0 ? (
                         <p className="admin-empty">
                             {showSearchBar && searchQuery ? `No appointments found matching '${searchQuery}'.` : 'No quotes available.'}
                         </p>
@@ -1762,7 +1834,10 @@ export default function AdminDashboard() {
                         Declined Quotes
                     </h2>
 
-                    {filteredDeclinedQuotes.length === 0 ? (
+                     {/* SCRUM-230: A failed load shows an error, not "No declined quotes." */}
+                    {declinedLoadError ? (
+                        <p role="alert" className="admin-note admin-note--danger">{declinedLoadError}</p>
+                    ) : filteredDeclinedQuotes.length === 0 ? (
                         <p className="admin-empty">
                             {showSearchBar && searchQuery ? `No appointments found matching '${searchQuery}'.` : 'No declined quotes.'}
                         </p>
@@ -1774,8 +1849,6 @@ export default function AdminDashboard() {
                     )}
                 </div>
 
-                {/* SCRUM-220: Customer Reviews + Service Photos share one grid column */}
-                <div className="admin-panel-stack">
                     {/* Customer Reviews Trigger */}
                     <div className="admin-panel admin-panel--reviews admin-panel--compact">
                         <h2 className="admin-panel-title">
@@ -1810,7 +1883,6 @@ export default function AdminDashboard() {
                             Manage Services
                         </button>
                     </div>
-                </div>
                 </div>
 
             {showCreateQuote && <AdminQuoteForm

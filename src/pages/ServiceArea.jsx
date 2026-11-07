@@ -26,7 +26,8 @@ export default function ServiceArea() {
   // SCRUM-203: Clicking a city focuses the map on it; clicking it again goes back to the overview
   const handleCityClick = (city) => {
     setSelectedCity((prev) => (prev === city ? null : city))
-    mapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Only scrolls if the map is out of view, which happens once the layout stacks on phones
+    mapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 
   // Scrum 29 methods
@@ -40,7 +41,10 @@ export default function ServiceArea() {
         aria-pressed={selectedCity === city}
         onClick={() => handleCityClick(city)}
       >
-        {city}
+        <svg className="city-pin" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
+        </svg>
+        <span>{city}</span>
       </button>
     </li>
   )
@@ -55,86 +59,77 @@ export default function ServiceArea() {
     }
 
     return (
-      <div className="city-section">
-        <h2 className="section-title">Cities We Serve</h2>
+      <aside className="city-panel">
+        <h2 className="contact-info-title">Cities We Serve</h2>
         {/* SCRUM-203: Hint that the cities are clickable */}
-        <p className="section-subtitle" style={{ marginBottom: 0 }}>
-          Click a city to see it on the map.
-        </p>
+        <p className="city-panel-hint">Click a city to see it on the map.</p>
         <ul className="city-grid">
           {cities.map((city) => renderCityCard(city))}
         </ul>
-      </div>
+      </aside>
     )
   }
   // Renders embedded Google Map
   const renderMap = () => (
-    <div
-        ref={mapRef}
-        style={{
-          width: '100%',
-          maxWidth: '860px',
-          margin: 'var(--space-2xl) auto 0',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          border: '2px solid var(--color-border, #e5e7eb)',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-      }}
-    >
-      <iframe
-        title="Prasad's Cleaning Service Area Map"
-        width="100%"
-        height="450"
-        style={{ display: 'block', border: 0 }}
-        loading="lazy"
-        allowFullScreen
-        referrerPolicy="no-referrer-when-downgrade"
-        src={selectedCity ? getCityMapSrc(selectedCity) : OVERVIEW_MAP_SRC}
-          />
-        {/* SCRUM-203: Shows the selected city with a link back to the overview */}
-        {selectedCity && (
-          <div className="map-selection-bar">
+    <div ref={mapRef} className="area-map">
+      {/* SCRUM-203: Shows the selected city with a link back to the overview */}
+      <div className="map-selection-bar" aria-live="polite">
+        {selectedCity ? (
+          <>
             <span>Showing <strong>{selectedCity}</strong></span>
             <button type="button" className="map-reset" onClick={() => setSelectedCity(null)}>
               Show full service area
             </button>
-          </div>
+          </>
+        ) : (
+          <span>Showing the <strong>full service area</strong></span>
         )}
-        </div>
+      </div>
+      <iframe
+        title="Prasad's Cleaning Service Area Map"
+        className="area-map-frame"
+        loading="lazy"
+        allowFullScreen
+        referrerPolicy="no-referrer-when-downgrade"
+        src={selectedCity ? getCityMapSrc(selectedCity) : OVERVIEW_MAP_SRC}
+      />
+    </div>
   )
   
   return (
-    <section className="section">
-      <div className="container">
-        <h1 className="page-title" style={{ textAlign: 'center' }}>Service Area</h1>
-        <p className="section-subtitle">
+    <div className="service-area-page">
+      <section className="banner banner-glow">
+        <div className="container banner-content">
+          <span className="banner-eyebrow">Northern California</span>
+          <h1 className="page-title">Service Area</h1>
+          <p className="page-subtitle">
           We provide cleaning services to most of Northern California — including the Bay Area and Central Valley.
-        </p>
+          </p>
+        </div>
+      </section>
 
-       {renderMap()}
-       {renderCitiesGrid()}
+      <section className="page-main">
+      <div className="container">
+
+        <div className="area-explorer">
+          {renderMap()}
+          {renderCitiesGrid()}
+        </div>
 
         {/* Callout note */}
-        <p
-          className="section-subtitle"
-          style={{ marginTop: 'var(--space-2xl)', textAlign: 'center' }}
-        >
-          Don't see your city? Reach out — we may still be able to help!
-        </p>
-
-        <div style={{ textAlign: 'center', marginTop: 'var(--space-xl)' }}>
-          <a className="button button-main" href="/contact">
-            Get a Free Quote
-          </a>
-        </div>
-
         {/* SCRUM-22: Sign In button for existing customers */}
-        <div style={{ textAlign: 'center', marginTop: 'var(--space-md)' }}>
-          <Link className="button button-main" to="/signin">
-            Sign In
-          </Link>
+        <div className="page-cta">
+          <div>
+            <h2 className="page-cta-title">Don't see your city?</h2>
+            <p className="page-cta-text">Reach out — we may still be able to help!</p>
+          </div>
+          <div className="page-cta-actions">
+            <Link className="button button-main button-big" to="/contact">Get a Free Quote</Link>
+            <Link className="button button-alt button-big" to="/signin">Sign In</Link>
+          </div>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   )
 }
