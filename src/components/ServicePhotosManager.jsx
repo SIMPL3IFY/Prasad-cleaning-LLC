@@ -416,6 +416,7 @@ export default function ServicePhotosManager({ onClose }) {
                                             <button
                                                 type="button"
                                                 onClick={() => deleteService(service)}
+                                                disabled={busy !== null}
                                                 className="admin-btn admin-btn--danger"
                                             >
                                                 Yes, delete
@@ -423,6 +424,7 @@ export default function ServicePhotosManager({ onClose }) {
                                             <button
                                                 type="button"
                                                 onClick={() => setConfirmingDeleteId(null)}
+                                                disabled={busy !== null}
                                                 className="admin-btn admin-btn--ghost"
                                             >
                                                 Cancel

@@ -418,6 +418,22 @@ describe('Deleting a service', () => {
     expect(del).not.toHaveBeenCalled()
   })
 
+  it('disables an open confirmation while another save is running', async () => {
+    const { del } = mockSupabase({ updateResult: new Promise(() => {}) })
+    const user = setupUser()
+    renderManager()
+    const deep = await findCard('Deep Cleaning')
+    const windows = await findCard('Window Cleaning')
+
+    await user.click(deep.getByRole('button', { name: 'Delete' }))
+    await user.click(windows.getByRole('button', { name: 'Show' }))
+
+    expect(await windows.findByRole('button', { name: 'Saving...' })).toBeDisabled()
+    expect(deep.getByRole('button', { name: 'Yes, delete' })).toBeDisabled()
+    expect(deep.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    expect(del).not.toHaveBeenCalled()
+  })
+
   it('deletes the row first, then its photo', async () => {
     const { calls, deleteEq, remove } = mockSupabase()
     const user = setupUser()

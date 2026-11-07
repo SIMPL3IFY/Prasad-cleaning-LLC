@@ -194,10 +194,11 @@ def test_add_service_requires_a_name(driver, popup, wait):
     wait_for_text(wait, "Please enter a service name.")
 
 
-def test_add_service_rejects_a_duplicate_name(driver, popup, wait, png_file):
+def test_add_service_rejects_a_duplicate_name(driver, popup, wait):
+    # No photo on purpose: if the duplicate check broke, this stops at the photo check
+    # instead of adding a real service to the live site
     name = first_service(driver)
     driver.find_element(By.ID, "new-service-name").send_keys(name.upper())
-    driver.find_element(By.ID, "new-service-photo").send_keys(png_file)
     click(driver, add_form_button(driver))
 
     # The message contains quote marks, which wait_for_text can't search for
