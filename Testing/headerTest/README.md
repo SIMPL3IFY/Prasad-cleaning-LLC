@@ -35,10 +35,10 @@ npm run test:run -- Testing/headerTest
 You should see output like this:
 
 ```
-✓ Testing/headerTest/testScrum233.jsx (16)
+✓ Testing/headerTest/testScrum233.jsx (18)
 
  Test Files  1 passed (1)
-      Tests  16 passed (16)
+      Tests  18 passed (18)
 ```
 
 ### Step 4 — Run all tests together (optional)
@@ -72,11 +72,13 @@ After it finishes, open `coverage/index.html` in your browser to see the full re
 | 9 | Desktop Customer Dashboard | Clicking desktop Dashboard as customer checks role and routes to /portal |
 | 10 | Desktop Admin Dashboard | Clicking desktop Dashboard as admin checks role and routes to /admin |
 | 11 | Desktop Sign Out | Clicking desktop Sign Out calls supabase.auth.signOut() and redirects to / Home Page |
-| 12 | Hamburger Button | Clicking toggles aria-expanded and opens/closes mobile menu |
-| 13 | Mobile Sign In | Opening mobile menu and clicking Sign In redirects to /signin |
-| 14 | Mobile Customer Dashboard | Opening mobile menu and clicking Dashboard routes customer to /portal |
-| 15 | Mobile Sign Out | Opening mobile menu and clicking Sign Out logs user out and redirects to / Home Page |
-| 16 | 404 Page Test | Verifies the real NotFound component renders correctly on unknown routes with a link back to home |
+| 12 | Sign-Out Error Handling | Verifies the app does not falsely redirect home if sign-out returns an error |
+| 13 | Hamburger Button | Clicking toggles aria-expanded and opens/closes mobile menu |
+| 14 | Mobile Sign In | Opening mobile menu, clicking Sign In redirects to /signin, and closes the mobile menu |
+| 15 | Mobile Customer Dashboard | Opening mobile menu, clicking Dashboard routes customer to /portal, and closes the mobile menu |
+| 16 | Mobile Admin Dashboard | Opening mobile menu, clicking Dashboard routes admin to /admin, and closes the mobile menu |
+| 17 | Mobile Sign Out | Opening mobile menu, clicking Sign Out logs user out, redirects to / Home Page, and closes the mobile menu |
+| 18 | 404 Page Test | Verifies the real NotFound component renders correctly on unknown routes with a link back to home |
 
 ---
 

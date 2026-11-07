@@ -16,6 +16,7 @@ vi.mock('../../src/context/AuthContext', () => ({
 }))
 
 // Fake Supabase Client
+const mockSignOut = vi.fn().mockResolvedValue({ error: null })
 const { supabase } = vi.hoisted(() => ({
   supabase: {
     auth: {
@@ -24,6 +25,7 @@ const { supabase } = vi.hoisted(() => ({
     from: vi.fn(),
   },
 }))
+supabase.auth.signOut = mockSignOut
 
 vi.mock('../../src/lib/supabaseClient', () => ({ supabase }))
 
@@ -60,7 +62,7 @@ describe('Header Component - Complete Button & Link Testing (SCRUM-233)', () => 
     vi.clearAllMocks()
     mockAuth.user = null
     mockAuth.loading = false
-    supabase.auth.signOut.mockResolvedValue({ error: null })
+    mockSignOut.mockResolvedValue({ error: null })
   })
 
   // ---------------------------------------------------------------------------
@@ -137,7 +139,7 @@ describe('Header Component - Complete Button & Link Testing (SCRUM-233)', () => 
   })
 
   // ---------------------------------------------------------------------------
-  // 3. Desktop Authentication Buttons
+  // 3. Desktop Authentication Buttons & Edge Cases
   // ---------------------------------------------------------------------------
   it('navigates to /signin when clicking desktop "Sign In" button', async () => {
     const user = userEvent.setup()
@@ -188,8 +190,21 @@ describe('Header Component - Complete Button & Link Testing (SCRUM-233)', () => 
     expect(await screen.findByText('Home Page')).toBeInTheDocument()
   })
 
+  it('does NOT redirect home if sign-out returns an error', async () => {
+    const user = userEvent.setup()
+    mockAuth.user = { id: 'user-789' }
+    mockSignOut.mockResolvedValueOnce({ error: { message: 'Sign out failed' } })
+    renderHeader('/about')
+
+    const signOutBtn = screen.getByRole('button', { name: /^sign out$/i })
+    await user.click(signOutBtn)
+
+    expect(mockSignOut).toHaveBeenCalled()
+    expect(screen.getByText('About Page')).toBeInTheDocument()
+  })
+
   // ---------------------------------------------------------------------------
-  // 4. Hamburger Toggle & Mobile Authentication Buttons (Scoped via nav element)
+  // 4. Hamburger Toggle & Mobile Authentication Buttons (Scoped via `within()`)
   // ---------------------------------------------------------------------------
   it('toggles mobile menu open/close using hamburger button', async () => {
     const user = userEvent.setup()
@@ -213,7 +228,7 @@ describe('Header Component - Complete Button & Link Testing (SCRUM-233)', () => 
     const hamburger = screen.getByRole('button', { name: /open menu/i })
     await user.click(hamburger)
 
-    // Scope lookup to the open navigation container and search for button role
+    // Scope lookup to the open navigation container
     const navElement = screen.getByRole('navigation', { name: /main/i })
     const mobileSignInBtn = within(navElement).getByRole('button', { name: /^sign in$/i })
     
@@ -233,12 +248,31 @@ describe('Header Component - Complete Button & Link Testing (SCRUM-233)', () => 
     await user.click(hamburger)
 
     const navElement = screen.getByRole('navigation', { name: /main/i })
-    const mobileDashboardBtn = within(navElement).getAllByRole('button', { name: /^dashboard$/i })[0]
+    const mobileDashboardBtn = within(navElement).getByRole('button', { name: /^dashboard$/i })
     
     await user.click(mobileDashboardBtn)
 
     expect(supabase.from).toHaveBeenCalledWith('profiles')
     expect(await screen.findByText('Customer Portal Page')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open menu/i })).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('navigates admin to /admin when clicking mobile menu "Dashboard" button and closes menu', async () => {
+    const user = userEvent.setup()
+    mockAuth.user = { id: 'admin-mobile-999' }
+    mockProfileRole(true)
+    renderHeader('/')
+
+    const hamburger = screen.getByRole('button', { name: /open menu/i })
+    await user.click(hamburger)
+
+    const navElement = screen.getByRole('navigation', { name: /main/i })
+    const mobileAdminDashboardBtn = within(navElement).getByRole('button', { name: /^dashboard$/i })
+    
+    await user.click(mobileAdminDashboardBtn)
+
+    expect(supabase.from).toHaveBeenCalledWith('profiles')
+    expect(await screen.findByText('Admin Dashboard Page')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /open menu/i })).toHaveAttribute('aria-expanded', 'false')
   })
 
@@ -251,7 +285,7 @@ describe('Header Component - Complete Button & Link Testing (SCRUM-233)', () => 
     await user.click(hamburger)
 
     const navElement = screen.getByRole('navigation', { name: /main/i })
-    const mobileSignOutBtn = within(navElement).getAllByRole('button', { name: /^sign out$/i })[0]
+    const mobileSignOutBtn = within(navElement).getByRole('button', { name: /^sign out$/i })
     
     await user.click(mobileSignOutBtn)
 
