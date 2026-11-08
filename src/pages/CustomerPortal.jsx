@@ -326,6 +326,7 @@ export default function CustomerPortal() {
                          {[1, 2, 3, 4, 5].map((star) => (
                                 <span
                                 key={star}
+                                data-testid={`review-rating-${star}`} // SCRUM-246: lets the tests select a specific star reliably, does not change how the form works
                                 onClick={() => handleStars(star)}
                                 style={{
                                 fontSize: '1.75rem',
