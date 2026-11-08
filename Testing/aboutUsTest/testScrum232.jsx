@@ -16,38 +16,54 @@ function renderAbout() {
 }
 
 describe('About Page (SCRUM-232)', () => {
-  it('renders the main banner and eyebrow text', () => {
-    renderAbout()
-    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
-  })
-
-  it('renders company background section (Who We Are)', () => {
-    renderAbout()
-    expect(screen.getByRole('heading', { name: /who we are/i })).toBeInTheDocument()
-  })
-
-  it('renders service offerings list (What We Offer) structurally', () => {
+  
+  it('renders the main banner with h1 page title and eyebrow text', () => {
     renderAbout()
     
-    // Find the section heading
-    const offerHeading = screen.getByRole('heading', { name: /what we offer/i })
-    expect(offerHeading).toBeInTheDocument()
+    // Explicitly verify the h1 title text to catch title breaks
+    const title = screen.getByRole('heading', { level: 1, name: /about us/i })
+    expect(title).toBeInTheDocument()
+    expect(screen.getByText(/locally owned & operated/i)).toBeInTheDocument()
+    expect(screen.getByText(/reliable, high-quality cleaning for homes and businesses/i)).toBeInTheDocument()
+  })
 
-    // Find the list container element and check that list items exist inside it
+  it('renders company background section (Who We Are) with complete narrative text', () => {
+    renderAbout()
+    
+    expect(screen.getByRole('heading', { level: 2, name: /who we are/i })).toBeInTheDocument()
+    
+    // Verify specific paragraph content so hiding paragraphs causes a failure
+    expect(screen.getByText(/Prasad's Cleaning Services LLC is a locally owned cleaning company/i)).toBeInTheDocument()
+    expect(screen.getByText(/Owned and operated by Nigel Prasad/i)).toBeInTheDocument()
+    expect(screen.getByText(/We take pride in professionalism, attention to detail/i)).toBeInTheDocument()
+  })
+
+  it('renders service offerings list (What We Offer) dynamically', () => {
+    renderAbout()
+    
+    expect(screen.getByRole('heading', { level: 2, name: /what we offer/i })).toBeInTheDocument()
+
     const list = screen.getByRole('list')
     const listItems = within(list).getAllByRole('listitem')
+    
+    // Flexibly verifies that list items render without hardcoding the total count
     expect(listItems.length).toBeGreaterThan(0)
+    
+    // Verifies key core services exist within the list
+    expect(within(list).getByText(/commercial cleaning/i)).toBeInTheDocument()
+    expect(within(list).getByText(/carpet cleaning/i)).toBeInTheDocument()
   })
 
-  it('renders value proposition cards (Why Clients Choose Us) structurally', () => {
+  it('renders value proposition cards (Why Clients Choose Us) with specific card titles', () => {
     renderAbout()
     
-    // Find the section heading
-    expect(screen.getByRole('heading', { name: /why clients choose us/i })).toBeInTheDocument()
+    const valuesSectionHeading = screen.getByRole('heading', { level: 2, name: /why clients choose us/i })
+    expect(valuesSectionHeading).toBeInTheDocument()
 
-    // Query article elements (value cards) rather than specific text
-    const valueCards = document.querySelectorAll('article.about-value-card')
-    expect(valueCards.length).toBeGreaterThan(0)
+    // Query value card titles explicitly using level 3 headings inside cards
+    expect(screen.getByRole('heading', { level: 3, name: /^reliable$/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: /^detail-oriented$/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: /^professional$/i })).toBeInTheDocument()
   })
 
   it('navigates to contact page when CTA button is clicked', async () => {
