@@ -326,10 +326,7 @@ describe('Saving an address', () => {
     expect(upsert.mock.calls[0][0]).not.toHaveProperty('phone_number')
   })
 
-  // KNOWN BUG: handleSave ignores the false that saveAddress returns when saving fails, so the page shows
-  // "Address updated." instead of the error. it.fails keeps the suite green while the bug exists and starts
-  // failing once it is fixed. When that happens, change it.fails back to it.
-  it.fails('shows the error from Supabase and no success message when saving fails', async () => {
+  it('shows the error from Supabase and no success message when saving fails', async () => {
     mockSupabase({ upsertResult: { error: { message: 'Could not save address.' } } })
     await renderLoadedSettings()
 

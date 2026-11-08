@@ -82,20 +82,12 @@ After it finishes, open `coverage/index.html` in your browser to see the full re
 | 17 | Bad phone number | A phone number without 10 digits shows "Enter a valid 10-digit US phone number." and isn't saved |
 | 18 | Phone save error | Supabase's error shows, with no success message or popup |
 | 19 | New address | The trimmed address is saved, "Address updated." shows, and the phone number isn't sent |
-| 20 | Address save error | Supabase's error shows and no success message does (**known bug**, see below) |
+| 20 | Address save error | Supabase's error shows and no success message does |
 | 21 | New password | The password goes to `updateUser` and "Password updated." shows |
 | 22 | Passwords differ | "Passwords do not match." shows and nothing is sent |
 | 23 | Password error | Supabase's error shows, with no success message |
 | 24 | Show and hide | Each eye button changes only its own field, and its label switches between "Show password" and "Hide password" |
 | 25 | While saving | The button reads "Saving..." and is disabled until the save finishes |
-
----
-
-## Known bug
-
-Test 20 is marked `it.fails`. When saving the address fails, `handleSave` in `Settings.jsx` ignores the `false` that `saveAddress` returns. The page then shows "Address updated." and hides the error.
-
-`it.fails` keeps the suite green while the bug exists. Once the bug is fixed, test 20 will start failing. When it does, change `it.fails` back to `it` in `testScrum250.jsx`.
 
 ---
 
