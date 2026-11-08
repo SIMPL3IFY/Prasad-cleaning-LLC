@@ -57,7 +57,8 @@ def scroll_and_click(wait, locator):
     """Scroll an element into view and click it, retrying while the page is still settling."""
     def _click(driver):
         element = driver.find_element(*locator)
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center'})", element)
+        # Instant: the site scrolls smoothly, and restarting that on each retry keeps the element moving
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'})", element)
         try:
             element.click()
             return True
