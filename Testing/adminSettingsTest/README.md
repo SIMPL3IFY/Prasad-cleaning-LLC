@@ -113,3 +113,47 @@ Each test can override any of them, for example `mockSupabase({ upsertResult: { 
 `renderLoadedSettings()` waits for the saved values to load before the test starts. Until then the Save button reads "Saving..." and is disabled.
 
 The "Account Updated!" popup redirects to the portal after 2 seconds. The tests check the popup text and don't wait for the redirect.
+
+---
+
+## Selenium tests
+
+`Testing/selenium/test_settings_page.py` has 11 functional tests that drive the real site in Chrome. They are not part of `npm run test:run` and don't run in CI, so run them yourself before your PR.
+
+### How to run
+
+```bash
+pip install -r Testing/selenium/requirements.txt   # once
+npm run dev                                         # terminal 1
+```
+
+The signed-in tests need a real account and are skipped without one. In terminal 2:
+
+```powershell
+$env:TEST_CUSTOMER_EMAIL = 'you@example.com'; $env:TEST_CUSTOMER_PASSWORD = '...'
+python -m pytest Testing/selenium/test_settings_page.py -v
+```
+
+To run without opening a browser window, set `HEADLESS=1`.
+
+### Tests included
+
+| # | Test | What it checks | Needs account? | Saves data? |
+|---|---|---|---|---|
+| 1 | Signed out | A visitor who isn't signed in is sent to the sign-in page | No | No |
+| 2 | Page layout | The heading, all five fields, Save and a Cancel link to `/portal` show | Yes | No |
+| 3 | Saved email | The email field shows the signed-in email | Yes | No |
+| 4 | No changes | Save with nothing changed shows "Make a change before saving." | Yes | No |
+| 5 | Email edit | The email is read-only until clicked, and "Cancel email edit" restores it | Yes | No |
+| 6 | Empty email | "Email is required." shows | Yes | No |
+| 7 | Invalid email | "Please enter a valid email address." shows | Yes | No |
+| 8 | Bad phone | A phone number without 10 digits shows "Enter a valid 10-digit US phone number." | Yes | No |
+| 9 | Passwords differ | "Passwords do not match." shows | Yes | No |
+| 10 | Show and hide | Each eye button changes only its own password field | Yes | No |
+| 11 | Cancel | The Cancel link goes to `/portal` | Yes | No |
+
+### Why there are no save tests
+
+The tests use the real Supabase project. Saving would change the account's real email, phone number, address or password. Every form test here either only looks at the page or fills in a bad value, so the page's own validation stops it before anything is sent. Successful saves, and the errors Supabase can return, are covered by the unit tests above, which fake Supabase.
+
+The unit tests also cover the "You must be signed in" message. A real signed-out visitor never sees it, because the site sends them to the sign-in page first (test 1).
