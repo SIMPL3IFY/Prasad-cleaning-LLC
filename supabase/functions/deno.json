@@ -1,0 +1,6 @@
+{
+  "lock": false,
+  "tasks": {
+    "test": "deno test --config deno.json --import-map ../../Testing/emailNotificationsTest/import_map.json --allow-env --allow-read=.,../../Testing/emailNotificationsTest ../../Testing/emailNotificationsTest/"
+  }
+}

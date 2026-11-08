@@ -1,13 +1,14 @@
 # Testing Guide
 
-This project has two kinds of tests:
+This project has three kinds of tests:
 
 | Kind | Tool | What it checks | Where |
 |---|---|---|---|
 | **Unit tests** | Vitest + React Testing Library | One page or component at a time, with Supabase faked | `Testing/` or next to the file in `src/` |
+| **Email notification tests** | `deno test` | The emails our Supabase Edge Functions send, with Resend, Supabase and fetch faked | [`Testing/emailNotificationsTest/`](emailNotificationsTest/) |
 | **Functional tests** | Selenium + pytest (Python) | The whole running site in real Chrome, with real Supabase | [`Testing/selenium/`](selenium/README.md) |
 
-Unit tests run automatically on every pull request (see [CI](#ci-automatic-tests-on-pull-requests)).
+Unit tests and email notification tests run automatically on every pull request (see [CI](#ci-automatic-tests-on-pull-requests)).
 
 ## Quick start
 
@@ -108,6 +109,46 @@ For a line-by-line view, open `coverage/index.html` in a browser after running i
 
 Only unit tests count toward coverage. Selenium tests run in a separate browser, so they aren't measured.
 
+## Email notification tests
+
+These test the emails sent by the functions in `supabase/functions/`: who gets them, the subject, reply-to, Pacific date/time, HTML escaping and the `.ics` invite. They need [Deno](https://docs.deno.com/runtime/getting_started/installation/), not `npm install`:
+
+```
+cd supabase/functions
+deno task test                                 # run all of them
+deno task test --filter "escaped"              # only tests with this in the name
+```
+
+No real email is sent and no real database is touched. `emailNotificationsTest/import_map.json` swaps in fakes for `serve` and `@supabase/supabase-js`, `emailNotificationsTest/helpers.ts` replaces `fetch`, and the task isn't allowed to use the network, so a missed fake fails the test.
+
+Test files go in `Testing/emailNotificationsTest/` and must end in `.test.ts`. A typical test:
+
+```ts
+import { assertEquals } from "@std/assert"
+import { APPOINTMENT, CUSTOMER_EMAIL, db, resend, setup } from "./helpers.ts"
+
+Deno.test("sends the customer an email", async () => {
+  // Loads a fresh copy of the function. Use env to change or remove (undefined) a setting.
+  const call = await setup("sync-appointment", { env: { ADMIN_NOTIFY_EMAIL: "someone@example.com" } })
+
+  // Sign someone in, and decide what the fake database returns
+  db.sessions["token"] = { id: "user-id" }
+  db.respond = (query) => query.table === "profiles"
+    ? { data: { is_admin: true }, error: null }
+    : { data: APPOINTMENT, error: null }
+
+  const res = await call({ headers: { Authorization: "Bearer token" }, body: { quoteId: APPOINTMENT.id, mode: "schedule" } })
+  assertEquals(res.status, 200)
+
+  // Check what was emailed
+  assertEquals(resend.emailTo(CUSTOMER_EMAIL).subject, "...")
+})
+```
+
+- **A failing Resend:** set `resend.respond = () => new Response("nope", { status: 500 })`.
+- **Time windows:** pass `now` to `setup` to freeze `Date.now()`.
+- **`RESEND_API_KEY` and other `_shared/email.ts` settings:** that file reads them once on import, so `env` can't change them mid-file. Call `useSharedEnv` at the top of a separate test file, like [`missing_resend_key.test.ts`](emailNotificationsTest/missing_resend_key.test.ts).
+
 ## Functional tests (Selenium)
 
 See [`selenium/README.md`](selenium/README.md). In short:
@@ -122,12 +163,13 @@ New Selenium test files go in `Testing/selenium/` and must be named `test_*.py`.
 
 ## CI: automatic tests on pull requests
 
-[`.github/workflows/tests.yml`](../.github/workflows/tests.yml) runs `npm run test:run` on every pull request and every push to `main`. If any unit test fails, the PR shows a red ❌. Click **Details** to see which test failed, fix it, and push again.
+[`.github/workflows/tests.yml`](../.github/workflows/tests.yml) runs `npm run test:run` and the email notification tests on every pull request and every push to `main`. If any test fails, the PR shows a red ❌. Click **Details** to see which test failed, fix it, and push again.
 
-Only unit tests run in CI. Selenium tests need the site running and a real account, so run those yourself before your PR.
+Selenium tests don't run in CI. They need the site running and a real account, so run those yourself before your PR.
 
 ## Before you open a PR
 
 1. `npm run test:run` passes.
-2. You added or updated tests for the code you changed.
-3. If you changed sign in or another flow with Selenium tests, run them with the dev server running.
+2. If you changed `supabase/functions/`, `deno task test` passes in that folder.
+3. You added or updated tests for the code you changed.
+4. If you changed sign in or another flow with Selenium tests, run them with the dev server running.

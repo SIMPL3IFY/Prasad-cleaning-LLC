@@ -35,3 +35,20 @@ jobs:
           # Placeholders so importing the Supabase client doesn't throw. Tests fake Supabase, so these are never used.
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-key
+
+  email-notification-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Show Deno version
+        run: deno --version
+
+      # Resend, Supabase and fetch are faked, and the task doesn't grant network access, so no real email or database is touched.
+      - name: Run email notification tests
+        run: deno task test
+        working-directory: supabase/functions
