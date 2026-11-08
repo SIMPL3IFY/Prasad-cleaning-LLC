@@ -28,6 +28,7 @@ export default function ServicePhotosManager({ onClose }) {
     const [services, setServices] = useState([])
     const [loading, setLoading] = useState(true)
     const [selectedFiles, setSelectedFiles] = useState({}) // service id -> { file, previewUrl }
+    const [fileInputKeys, setFileInputKeys] = useState({}) // service id -> number, bumped to clear the file input
     const [busy, setBusy] = useState(null) // { id, action } while a save is running
     const [confirmingDeleteId, setConfirmingDeleteId] = useState(null)
     const [newServiceName, setNewServiceName] = useState('')
@@ -91,6 +92,7 @@ export default function ServicePhotosManager({ onClose }) {
         const fileError = validateImage(file)
         if (fileError) {
             setError(fileError)
+            setFileInputKeys((prev) => ({ ...prev, [serviceId]: (prev[serviceId] || 0) + 1 }))
             return
         }
 
@@ -250,6 +252,8 @@ export default function ServicePhotosManager({ onClose }) {
     // SCRUM-204: Upload the photo, then add the service at the end of the list
     const addService = async (event) => {
         event.preventDefault()
+        setMessage('')
+        setError('')
 
         const name = newServiceName.trim()
 
@@ -366,7 +370,7 @@ export default function ServicePhotosManager({ onClose }) {
                                             <label className="admin-btn admin-btn--ghost admin-file-btn">
                                                 Choose photo
                                                 <input
-                                                    key={service.image_path}
+                                                    key={`${service.image_path}-${fileInputKeys[service.id] || 0}`}
                                                     type="file"
                                                     accept={ALLOWED_TYPES.join(',')}
                                                     onChange={(e) => handleFileChange(service.id, e.target.files[0])}
@@ -412,6 +416,7 @@ export default function ServicePhotosManager({ onClose }) {
                                             <button
                                                 type="button"
                                                 onClick={() => deleteService(service)}
+                                                disabled={busy !== null}
                                                 className="admin-btn admin-btn--danger"
                                             >
                                                 Yes, delete
@@ -419,6 +424,7 @@ export default function ServicePhotosManager({ onClose }) {
                                             <button
                                                 type="button"
                                                 onClick={() => setConfirmingDeleteId(null)}
+                                                disabled={busy !== null}
                                                 className="admin-btn admin-btn--ghost"
                                             >
                                                 Cancel
