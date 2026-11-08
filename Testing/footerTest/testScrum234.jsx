@@ -39,7 +39,7 @@ function renderFooter(initialEntry = '/') {
         <Route path="/signin" element={<div>Sign In Page</div>} />
         <Route path="/signup" element={<div>Sign Up Page</div>} />
         <Route path="/portal" element={<div>Customer Portal Page</div>} />
-        <Route path="/settings" element={<div>Settings Page</div>} />
+        <Route path="/settings" element={<div>Change User Settings</div>} />
         <Route path="/admin" element={<div>Admin Dashboard Page</div>} />
       </Routes>
     </MemoryRouter>
@@ -85,46 +85,67 @@ describe('Footer Component (SCRUM-234)', () => {
     expect(screen.getByText(new RegExp(`© ${currentYear} Prasad's Cleaning LLC`, 'i'))).toBeInTheDocument()
   })
 
-  it('shows Dashboard and Settings links and hides Sign In / Create Account when logged in as customer', async () => {
-    mockAuth.user = { id: 'customer-123' }
-    mockProfileRole(false)
+  it('hides account links while auth context is loading', () => {
+    mockAuth.user = null
+    mockAuth.loading = true
     renderFooter()
 
     expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /^create account$/i })).not.toBeInTheDocument()
-
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: /^dashboard$/i })).toHaveAttribute('href', '/portal')
-    })
-    expect(screen.getByRole('link', { name: /^settings$/i })).toHaveAttribute('href', '/settings')
+    expect(screen.queryByRole('link', { name: /^dashboard$/i })).not.toBeInTheDocument()
   })
 
-  it('shows Dashboard and Settings links and routes admin to /admin when logged in', async () => {
+  it('shows Dashboard and Settings links, hides Sign In / Create Account, and navigates to Customer Portal when clicked', async () => {
+    const user = userEvent.setup()
+    mockAuth.user = { id: 'customer-123' }
+    mockProfileRole(false)
+    renderFooter('/about')
+
+    expect(screen.queryByRole('link', { name: /^sign in$/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /^create account$/i })).not.toBeInTheDocument()
+
+    const dashboardLink = await screen.findByRole('link', { name: /^dashboard$/i })
+    expect(dashboardLink).toHaveAttribute('href', '/portal')
+    expect(screen.getByRole('link', { name: /^settings$/i })).toHaveAttribute('href', '/settings')
+
+    await user.click(dashboardLink)
+    expect(await screen.findByText('Customer Portal Page')).toBeInTheDocument()
+  })
+
+  it('shows Dashboard link, hides Settings link, and navigates to Admin Dashboard when clicked as admin', async () => {
+    const user = userEvent.setup()
     mockAuth.user = { id: 'admin-123' }
     mockProfileRole(true)
-    renderFooter()
+    renderFooter('/about')
 
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: /^dashboard$/i })).toHaveAttribute('href', '/admin')
-    })
-    expect(screen.getByRole('link', { name: /^settings$/i })).toHaveAttribute('href', '/settings')
+    const dashboardLink = await screen.findByRole('link', { name: /^dashboard$/i })
+    expect(dashboardLink).toHaveAttribute('href', '/admin')
+
+    // Admin footer should NOT include customer Settings link
+    expect(screen.queryByRole('link', { name: /^settings$/i })).not.toBeInTheDocument()
+
+    await user.click(dashboardLink)
+    expect(await screen.findByText('Admin Dashboard Page')).toBeInTheDocument()
   })
 
-  it('navigates to Settings page when clicking Settings in footer', async () => {
+  it('navigates customer to Settings page when clicking Settings in footer', async () => {
     const user = userEvent.setup()
     mockAuth.user = { id: 'user-123' }
     mockProfileRole(false)
-    renderFooter()
+    renderFooter('/about')
 
-    const settingsLink = screen.getByRole('link', { name: /^settings$/i })
+    const settingsLink = await screen.findByRole('link', { name: /^settings$/i })
     await user.click(settingsLink)
 
-    expect(await screen.findByText('Settings Page')).toBeInTheDocument()
+    expect(await screen.findByText('Change User Settings')).toBeInTheDocument()
   })
 
-  it('handles slow profile lookup gracefully without premature routing', async () => {
+  it('hides Dashboard link during slow profile lookup to prevent incorrect routing', async () => {
     mockAuth.user = { id: 'admin-slow' }
-    const delayedPromise = new Promise((resolve) => setTimeout(() => resolve({ data: { is_admin: true }, error: null }), 50))
+    let resolvePromise
+    const delayedPromise = new Promise((resolve) => {
+      resolvePromise = resolve
+    })
     const maybeSingle = vi.fn().mockReturnValue(delayedPromise)
     const eq = vi.fn(() => ({ maybeSingle }))
     const select = vi.fn(() => ({ eq }))
@@ -132,18 +153,13 @@ describe('Footer Component (SCRUM-234)', () => {
 
     renderFooter()
 
+    // Dashboard link should NOT be present while waiting (prevents admin defaulting to /portal)
+    expect(screen.queryByRole('link', { name: /^dashboard$/i })).not.toBeInTheDocument()
+
+    resolvePromise({ data: { is_admin: true }, error: null })
+
     await waitFor(() => {
       expect(screen.getByRole('link', { name: /^dashboard$/i })).toHaveAttribute('href', '/admin')
-    }, { timeout: 1000 })
-  })
-
-  it('handles failed profile lookup gracefully by defaulting safely', async () => {
-    mockAuth.user = { id: 'user-fail' }
-    mockProfileRole(false, { message: 'Database error' })
-    renderFooter()
-
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: /^dashboard$/i })).toHaveAttribute('href', '/portal')
     })
   })
 })

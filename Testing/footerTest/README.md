@@ -4,7 +4,7 @@
 
 Unit tests for the site Footer (`src/components/Footer.jsx`). 
 
-Supabase and `AuthContext` are mocked in unit tests to evaluate footer behavior across all authentication states (signed out, logged-in customer, logged-in admin), dynamic role-based dashboard redirection (`/portal` vs `/admin`), asynchronous slow lookups, fallback error handling, and the inclusion of the **Settings** link. These tests never touch the real database.
+Supabase and `AuthContext` are mocked in unit tests to evaluate footer behavior across all authentication states (signed out, loading, logged-in customer, logged-in admin), dynamic role-based dashboard redirection (`/portal` vs `/admin`), asynchronous slow lookups, fallback error handling, customer-only **Settings** link rendering, and admin settings link omission. These tests never touch the real database.
 
 ## Test file
 
@@ -62,11 +62,11 @@ After it finishes, open `coverage/index.html` in your browser to see the full re
 | 1 | Signed-Out Links | Verifies default column links (/about, /testimonials, /contact, /services, /service-area, /signin, /signup) render correctly |
 | 2 | Phone & Email Protocols | Verifies phone link uses tel:+19166658474 and email uses mailto: with pre-filled subject line |
 | 3 | Dynamic Copyright Year | Checks that the copyright line dynamically formats using new Date().getFullYear() |
-| 4 | Customer Auth Links | Verifies Sign In / Create Account links are replaced with Dashboard (/portal) and Settings (/settings) when logged in as a customer |
-| 5 | Admin Auth Links | Verifies Dashboard routes to /admin and Settings (/settings) is rendered for admin users |
-| 6 | Settings Link Navigation | Verifies clicking Settings in the footer navigates the user to /settings |
-| 7 | Slow Profile Lookup | Verifies asynchronous slow role lookups are handled gracefully without premature incorrect routing |
-| 8 | Failed Profile Lookup | Verifies failed database role queries fall back safely to default routing (/portal) |
+| 4 | Auth Loading State | Verifies account links are hidden while loading from useAuth() is true |
+| 5 | Customer Auth Links | Verifies Sign In / Create Account links are replaced with Dashboard (/portal) and Settings (/settings) when logged in as a customer, and clicking Dashboard opens the Customer Portal |
+| 6 | Admin Auth Links | Verifies Dashboard routes to /admin, ensures the customer Settings link is omitted for admin users, and clicking Dashboard opens the Admin Dashboard |
+| 7 | Settings Link Navigation | Verifies clicking Settings in the footer navigates customer users to /settings |
+| 8 | Slow Profile Lookup | Verifies Dashboard link is suppressed until profile role lookup resolves, preventing incorrect premature routing |
 
 ---
 

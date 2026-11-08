@@ -11,8 +11,9 @@ const EMAIL_SUBJECT = "Inquiry from Prasad's Cleaning website"
 
 export default function Footer() {
   const year = new Date().getFullYear()
-  const { user } = useAuth()
-  const [dashboardPath, setDashboardPath] = useState('/portal')
+  const { user, loading } = useAuth()
+  const [dashboardPath, setDashboardPath] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // SCRUM-234: Check user role to link to /admin or /portal dynamically when logged in
   useEffect(() => {
@@ -25,23 +26,41 @@ export default function Footer() {
         .maybeSingle()
         .then(({ data }) => {
           if (isMounted) {
-            setDashboardPath(data?.is_admin === true ? '/admin' : '/portal')
+            const adminStatus = data?.is_admin === true
+            setIsAdmin(adminStatus)
+            // Ensure admin defaults specifically to /admin, not /portal
+            setDashboardPath(adminStatus ? '/admin' : '/portal')
           }
         })
+        .catch(() => {
+          if (isMounted) {
+            setIsAdmin(false)
+            setDashboardPath('/portal')
+          }
+        })
+    } else {
+      setIsAdmin(false)
+      setDashboardPath(null)
     }
     return () => { isMounted = false }
   }, [user])
 
-  // SCRUM-234: Add Settings link alongside Dashboard for logged-in users
-  const accountLinks = user
-    ? [
-        { to: dashboardPath, label: 'Dashboard' },
-        { to: '/settings', label: 'Settings' },
-      ]
-    : [
+  let accountLinks = []
+  if (!loading) {
+    if (user) {
+      if (dashboardPath) {
+        accountLinks.push({ to: dashboardPath, label: 'Dashboard' })
+      }
+      if (!isAdmin) {
+        accountLinks.push({ to: '/settings', label: 'Settings' })
+      }
+    } else {
+      accountLinks = [
         { to: '/signin', label: 'Sign In' },
         { to: '/signup', label: 'Create Account' },
       ]
+    }
+  }
 
   const footerColumns = [
     {
