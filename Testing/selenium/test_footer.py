@@ -1,0 +1,167 @@
+"""Functional (black-box) tests for the Site Footer (SCRUM-234).
+
+Drives a real Chrome browser against the running site to verify:
+- Brand logo link
+- Company links (About Us, Testimonials, Contact)
+- Services links (Our Services, Service Areas)
+- Contact protocols (tel: and mailto:) with correct encoded values
+- Account links when signed out (Sign In, Create Account)
+- Account links when signed in as Customer (Dashboard -> /portal, Settings page content)
+- Account links when signed in as Admin (Dashboard -> /admin opens Admin Dashboard, Settings omitted)
+"""
+
+import os
+import pytest
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from conftest import BASE_URL, button, scroll_and_click, wait_for_path
+
+# Account credentials from environment variables
+CUSTOMER_EMAIL = os.environ.get("TEST_CUSTOMER_EMAIL")
+CUSTOMER_PASSWORD = os.environ.get("TEST_CUSTOMER_PASSWORD")
+needs_customer_account = pytest.mark.skipif(
+    not (CUSTOMER_EMAIL and CUSTOMER_PASSWORD),
+    reason="Set TEST_CUSTOMER_EMAIL and TEST_CUSTOMER_PASSWORD to run customer footer tests",
+)
+
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD")
+needs_admin_account = pytest.mark.skipif(
+    not (ADMIN_EMAIL and ADMIN_PASSWORD),
+    reason="Set TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD to run admin footer tests",
+)
+
+
+def sign_in(driver, open_page, wait, email, password):
+    """Helper function to log in to the site."""
+    open_page("/signin")
+    wait.until(lambda d: d.find_element(By.ID, "email")).send_keys(email)
+    driver.find_element(By.ID, "password").send_keys(password)
+    driver.find_element(*button("Sign In")).click()
+
+
+# ------------------------------------------------------------------------------
+# 1. Signed-Out Footer Links & Contact Protocols
+# ------------------------------------------------------------------------------
+
+def test_footer_brand_logo_navigates_home(driver, open_page, wait):
+    """Clicking the brand name in the footer returns the user to the home page."""
+    open_page("/about")
+    wait_for_path(wait, "/about")
+
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a.footer-brand-name"))
+    wait.until(lambda d: d.current_url.split("#")[0].rstrip("/") == BASE_URL)
+
+
+def test_footer_company_column_links(driver, open_page, wait):
+    """Verifies Company column links: About Us, Testimonials, Contact."""
+    open_page("/")
+
+    # About Us
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/about']"))
+    wait_for_path(wait, "/about")
+
+    open_page("/")
+    # Testimonials
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/testimonials']"))
+    wait_for_path(wait, "/testimonials")
+
+    open_page("/")
+    # Contact
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/contact']"))
+    wait_for_path(wait, "/contact")
+
+
+def test_footer_services_column_links(driver, open_page, wait):
+    """Verifies Services column links: Our Services, Service Areas."""
+    open_page("/")
+
+    # Our Services
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/services']"))
+    wait_for_path(wait, "/services")
+
+    open_page("/")
+    # Service Areas
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/service-area']"))
+    wait_for_path(wait, "/service-area")
+
+
+def test_footer_signed_out_account_links(driver, open_page, wait):
+    """Verifies Account column links when signed out: Sign In, Create Account."""
+    open_page("/")
+
+    # Sign In
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/signin']"))
+    wait_for_path(wait, "/signin")
+
+    open_page("/")
+    # Create Account
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/signup']"))
+    wait_for_path(wait, "/signup")
+
+
+def test_footer_get_in_touch_protocols_exact_values(driver, open_page, wait):
+    """Verifies exact full href values for tel: and mailto: contact links inside the footer."""
+    open_page("/")
+
+    phone_link = driver.find_element(By.CSS_SELECTOR, "footer a[href^='tel:']")
+    assert phone_link.get_attribute("href") == "tel:+19166658474"
+
+    email_link = driver.find_element(By.CSS_SELECTOR, "footer a[href^='mailto:']")
+    # Browser encodes single quotes as %27 automatically
+    assert email_link.get_attribute("href") == "mailto:prasadscleaning@gmail.com?subject=Inquiry%20from%20Prasad%27s%20Cleaning%20website"
+
+
+# ------------------------------------------------------------------------------
+# 2. Logged-In Customer Footer Links & Content Checks
+# ------------------------------------------------------------------------------
+
+@needs_customer_account
+def test_footer_customer_account_links(driver, open_page, wait):
+    """Verifies Account column when logged in as a customer: Dashboard (/portal) and Settings content."""
+    sign_in(driver, open_page, wait, CUSTOMER_EMAIL, CUSTOMER_PASSWORD)
+    wait_for_path(wait, "/portal")
+
+    open_page("/about")
+
+    # Wait for customer portal dashboard link to render in footer and open it using scroll_and_click
+    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "footer a[href='/portal']")))
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/portal']"))
+    wait_for_path(wait, "/portal")
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, "main")))
+
+    # Click Settings in Footer and verify Settings page content heading strictly inside main (Point 3 fix)
+    open_page("/about")
+    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "footer a[href='/settings']")))
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/settings']"))
+    wait_for_path(wait, "/settings")
+
+    settings_heading = wait.until(
+        EC.presence_of_element_located((By.XPATH, "//main//*[contains(text(), 'Change User Settings')]"))
+    )
+    assert settings_heading.is_displayed()
+
+
+# ------------------------------------------------------------------------------
+# 3. Logged-In Admin Footer Links & Content Checks
+# ------------------------------------------------------------------------------
+
+@needs_admin_account
+def test_footer_admin_account_links(driver, open_page, wait):
+    """Verifies Account column when logged in as an admin: Dashboard opens /admin and Settings is omitted."""
+    sign_in(driver, open_page, wait, ADMIN_EMAIL, ADMIN_PASSWORD)
+    wait_for_path(wait, "/admin")
+
+    open_page("/about")
+
+    # Wait for the async admin role lookup to complete and render href='/admin' in the footer
+    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "footer a[href='/admin']")))
+    scroll_and_click(wait, (By.CSS_SELECTOR, "footer a[href='/admin']"))
+    wait_for_path(wait, "/admin")
+    wait.until(EC.presence_of_element_located((By.TAG_NAME, "main")))
+
+    # Confirm customer Settings link is NOT rendered in the footer for admin users
+    open_page("/about")
+    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "footer a[href='/admin']")))
+    admin_settings_links = driver.find_elements(By.CSS_SELECTOR, "footer a[href='/settings']")
+    assert len(admin_settings_links) == 0

@@ -1,4 +1,7 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabaseClient'
+import { useState, useEffect } from 'react'
 
 // SCRUM-225: Footer grouped into labeled columns.
 const PHONE = '(916) 665-8474'
@@ -6,33 +9,80 @@ const EMAIL = 'prasadscleaning@gmail.com'
 // SCRUM-223: pre-filled subject; the user can still edit it in their email app
 const EMAIL_SUBJECT = "Inquiry from Prasad's Cleaning website"
 
-const footerColumns = [
-  {
-    title: 'Company',
-    links: [
-      { to: '/about', label: 'About Us' },
-      { to: '/testimonials', label: 'Testimonials' },
-      { to: '/contact', label: 'Contact' },
-    ],
-  },
-  {
-    title: 'Services',
-    links: [
-      { to: '/services', label: 'Our Services' },
-      { to: '/service-area', label: 'Service Areas' },
-    ],
-  },
-  {
-    title: 'Account',
-    links: [
-      { to: '/signin', label: 'Sign In' },
-      { to: '/signup', label: 'Create Account' },
-    ],
-  },
-]
-
 export default function Footer() {
   const year = new Date().getFullYear()
+  const { user, loading } = useAuth()
+  const [dashboardPath, setDashboardPath] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // SCRUM-234: Check user role to link to /admin or /portal dynamically when logged in
+  useEffect(() => {
+    let isMounted = true
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (isMounted) {
+            const adminStatus = data?.is_admin === true
+            setIsAdmin(adminStatus)
+            // Ensure admin defaults specifically to /admin, not /portal
+            setDashboardPath(adminStatus ? '/admin' : '/portal')
+          }
+        })
+        .catch(() => {
+          if (isMounted) {
+            setIsAdmin(false)
+            setDashboardPath('/portal')
+          }
+        })
+    } else {
+      setIsAdmin(false)
+      setDashboardPath(null)
+    }
+    return () => { isMounted = false }
+  }, [user])
+
+  let accountLinks = []
+  if (!loading) {
+    if (user) {
+      if (dashboardPath) {
+        accountLinks.push({ to: dashboardPath, label: 'Dashboard' })
+      }
+      if (!isAdmin) {
+        accountLinks.push({ to: '/settings', label: 'Settings' })
+      }
+    } else {
+      accountLinks = [
+        { to: '/signin', label: 'Sign In' },
+        { to: '/signup', label: 'Create Account' },
+      ]
+    }
+  }
+
+  const footerColumns = [
+    {
+      title: 'Company',
+      links: [
+        { to: '/about', label: 'About Us' },
+        { to: '/testimonials', label: 'Testimonials' },
+        { to: '/contact', label: 'Contact' },
+      ],
+    },
+    {
+      title: 'Services',
+      links: [
+        { to: '/services', label: 'Our Services' },
+        { to: '/service-area', label: 'Service Areas' },
+      ],
+    },
+    {
+      title: 'Account',
+      links: accountLinks,
+    },
+  ]
 
   return (
     <footer className="footer">
