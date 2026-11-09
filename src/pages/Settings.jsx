@@ -232,7 +232,7 @@ export default function Settings() {
 
             // Scrum 63: Only writes the address to the database if it changed and is not blank.
             if (addressChanged && formData.address.trim()) {
-                await saveAddress()
+                if (!(await saveAddress())) return
                 successMessages.push('Address updated.')
             }
             if (passwordChanged) {
