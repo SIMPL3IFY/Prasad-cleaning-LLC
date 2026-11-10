@@ -37,6 +37,11 @@ export async function sendEmail(
 ): Promise<EmailResult> {
   const files = (attachments ?? []).filter((a): a is EmailAttachment => Boolean(a))
   if (!to) return { sent: false, skipped: true, error: "no recipient" }
+  // Security fix: exactly one address. Resend also accepts a list, which would let one
+  // request email many people.
+  if (typeof to !== "string" || !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(to)) {
+    return { sent: false, skipped: true, error: "invalid recipient" }
+  }
   if (!RESEND_API_KEY) {
     console.warn("SCRUM-184: RESEND_API_KEY not set, skipping email to", to)
     return { sent: false, skipped: true, error: "RESEND_API_KEY not set" }
