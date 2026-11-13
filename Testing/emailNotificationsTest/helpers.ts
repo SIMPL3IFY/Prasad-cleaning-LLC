@@ -9,6 +9,7 @@ export const ADMIN_EMAIL = "admin@example.com"
 export const CUSTOMER_EMAIL = "customer@example.com"
 export const CRON_SECRET = "cron-secret"
 export const LINK_SECRET = "link-secret"
+export const WEBHOOK_SECRET = "webhook-secret"
 export const QUOTE_ID = "11111111-1111-4111-8111-111111111111"
 
 const BASE_ENV: Record<string, string> = {
@@ -20,6 +21,7 @@ const BASE_ENV: Record<string, string> = {
   REVIEW_CRON_SECRET: CRON_SECRET,
   REVIEW_LINK_SECRET: LINK_SECRET,
   REVIEW_SITE_URL: "https://site.example.com/",
+  WEBHOOK_SECRET,
 }
 
 const ALL_VARS = [...Object.keys(BASE_ENV), "NIGEL_EMAIL", "RESEND_FROM_EMAIL", "REVIEW_TEST_EMAIL"]
@@ -113,10 +115,14 @@ export async function setup(name: FunctionName, options: { env?: EnvOverrides; n
   const handler = served.handler as Handler | null // TypeScript can't see the import above setting this
   assert(handler, `${name} did not call serve()`)
 
+  // Calls send the webhook secret like the real database webhook does; a test can
+  // override or remove it (set it to "") to check that unauthorized calls are rejected.
   return async ({ headers, body }: RequestOptions = {}) => {
+    const allHeaders = { "x-webhook-secret": WEBHOOK_SECRET, ...headers }
+    if (allHeaders["x-webhook-secret"] === "") delete (allHeaders as Record<string, string>)["x-webhook-secret"]
     return await handler(new Request(`https://fake.supabase.co/functions/v1/${name}`, {
       method: "POST",
-      headers,
+      headers: allHeaders,
       body: body === undefined ? undefined : JSON.stringify(body),
     }))
   }
