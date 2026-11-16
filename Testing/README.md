@@ -1,12 +1,13 @@
 # Testing Guide
 
-This project has three kinds of tests:
+This project has four kinds of tests:
 
 | Kind | Tool | What it checks | Where |
 |---|---|---|---|
 | **Unit tests** | Vitest + React Testing Library | One page or component at a time, with Supabase faked | `Testing/` or next to the file in `src/` |
 | **Email notification tests** | `deno test` | The emails our Supabase Edge Functions send, with Resend, Supabase and fetch faked | [`Testing/emailNotificationsTest/`](emailNotificationsTest/) |
 | **Functional tests** | Selenium + pytest (Python) | The whole running site in real Chrome, with real Supabase | [`Testing/selenium/`](selenium/README.md) |
+| **Security attack tests** | pytest + requests (Python) | SQL injection, access control, forged tokens and other attacks against the live backend. Run by hand, not in CI | [`Testing/securityTest/`](securityTest/README.md) |
 
 Unit tests and email notification tests run automatically on every pull request (see [CI](#ci-automatic-tests-on-pull-requests)).
 
