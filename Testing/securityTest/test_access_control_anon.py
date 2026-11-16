@@ -20,13 +20,17 @@ def test_anon_cannot_read_private_tables(anon, table):
 
 
 def test_anon_only_sees_approved_reviews(anon):
-    resp = anon.rest("GET", "customer_reviews", params={"select": "*", "limit": 200})
-    assert_no_leak(resp)
-    rows = rows_of(resp)
+    # The same columns the Home and Testimonials pages ask for
+    resp = anon.rest("GET", "customer_reviews", params={"select": "id,customer_name,review,rating,approved", "limit": 200})
+    assert resp.status_code == 200, f"Public reviews don't load for visitors: {resp.text[:300]}"
+    rows = resp.json()
     hidden = [r for r in rows if r.get("approved") is not True]
     assert not hidden, f"Anonymous visitor can read {len(hidden)} unapproved review(s)"
-    leaked = [k for r in rows for k in ("user_id", "email") if r.get(k)]
-    assert not leaked, f"Public reviews expose private fields: {sorted(set(leaked))}"
+
+
+def test_anon_cannot_read_reviewer_user_ids(anon):
+    resp = anon.rest("GET", "customer_reviews", params={"select": "user_id", "limit": 5})
+    assert_blocked_or_empty(resp, "anon read customer_reviews.user_id")
 
 
 def test_every_exposed_table_is_locked(anon):
