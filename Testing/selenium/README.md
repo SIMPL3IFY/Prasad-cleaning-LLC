@@ -70,3 +70,17 @@ Remove-Item Env:ALLOW_DATA_CHANGES
 It ends with the quote back in Manage Quotes, so you can run it again.
 Each run sends real emails: the quote-accepted email to you, and the cancellation email
 to you **and to the business admin address**.
+## Security tests
+
+`test_security.py` holds the security checks that need a real browser. The raw-HTTP attack suite is in [`Testing/securityTest/`](../securityTest/README.md).
+
+| Test | What it checks | Saves data? |
+|---|---|---|
+| Script in a quote does not run | A quote full of `<script>` / `onerror` payloads shows as plain text on the admin dashboard and nothing runs | One `SELTEST-` quote, deleted afterwards |
+| Script in the URL does not run | Payloads in the path, query string and `#` part of five pages | No |
+| Demo flag does not open the dashboard | A visitor setting `prasad-admin-demo-access` in localStorage is still sent to sign in | No |
+| Customer cannot fake admin | A customer who edits their saved session to claim admin is still denied `/admin` | No |
+| Back button after sign out | The session is removed from the browser and Back never shows the dashboard | No |
+| Site cannot be framed | Another page that puts the **deployed** site (`SITE_URL`, default `https://prasadscleaning.com`) in an iframe gets a blocked frame | No |
+
+This file also reads the test accounts and Supabase keys from the project's `.env`, so they don't have to be set in the shell. If the run stops before cleanup, delete any `SELTEST-` rows from `quotes`.
