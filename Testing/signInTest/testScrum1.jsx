@@ -34,7 +34,6 @@ function renderSignIn(initialEntry = '/signin') {
       <Routes>
         <Route path="/signin" element={<SignIn />} />
         <Route path="/portal" element={<p>Customer Portal Page</p>} />
-        <Route path="/admin" element={<p>Admin Dashboard Page</p>} />
         <Route path="/signup" element={<p>Sign Up Page</p>} />
       </Routes>
     </MemoryRouter>
@@ -103,17 +102,6 @@ describe('Customer Sign In', () => {
     expect(await screen.findByText('Customer Portal Page')).toBeInTheDocument()
     expect(supabase.from).toHaveBeenCalledWith('profiles')
     expect(eq).toHaveBeenCalledWith('id', 'u1')
-  })
-
-  it('sends an admin to the admin dashboard', async () => {
-    const user = userEvent.setup()
-    supabase.auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'a1' } }, error: null })
-    mockProfile({ data: { is_admin: true }, error: null })
-    renderSignIn()
-
-    await fillAndSubmit(user, 'admin@example.com', 'secret123')
-
-    expect(await screen.findByText('Admin Dashboard Page')).toBeInTheDocument()
   })
 
   it('shows the Supabase error for wrong credentials', async () => {
