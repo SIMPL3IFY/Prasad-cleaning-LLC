@@ -57,8 +57,15 @@ def test_sign_up_rejects_short_passwords(password):
 
 
 @pytest.mark.quota
-def test_password_brute_force_gets_rate_limited():
+def test_password_brute_force_gets_rate_limited(request):
     """Locks YOUR IP out of signing in for about 5 minutes. Uses a made-up email, so no real account is locked."""
+    # Sign the test accounts in BEFORE the lockout. Their fixtures are session-scoped,
+    # so later tests reuse these sessions instead of signing in while locked out.
+    for name in ("customer", "admin"):
+        try:
+            request.getfixturevalue(name)
+        except pytest.skip.Exception:
+            pass
     email = f"bruteforce-{RUN_ID}@example.invalid"
     codes = []
     for i in range(40):
