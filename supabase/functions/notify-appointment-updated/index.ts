@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 // SCRUM-137: Attaches an updated .ics for the same event, so the customer's calendar moves to the new time
 // (and new address) and the old time is removed.
 import { buildIcsAttachment, clientEventTitle, customerSubject, emailHeading, escapeHtml, formatPacific, renderEmailLayout, sendEmail } from "../_shared/email.ts"
+import { isFromWebhook, unauthorized } from "../_shared/webhook.ts"
 
 // SCRUM-199: Only these columns count as a customer-facing change (AC #2)
 const WATCHED_FIELDS = ["appointment_date", "appointment_time", "address"] as const
@@ -28,6 +29,9 @@ function changeRow(label: string, before: string, after: string): string {
 }
 
 serve(async (req) => {
+  // Security fix: only the accepted_quotes UPDATE webhook may trigger these emails
+  if (!isFromWebhook(req)) return unauthorized()
+
   try {
     const payload = await req.json()
     // On UPDATE, Supabase sends { type, table, record, old_record, schema }
@@ -107,6 +111,6 @@ serve(async (req) => {
   } catch (err) {
     // SCRUM-199: Always 200, same as SCRUM-151 — the edit already happened, failures are only logged (AC #4)
     console.error("SCRUM-199: notify-appointment-updated crashed", err)
-    return new Response(JSON.stringify({ sent: false, error: String(err) }), { status: 200 })
+    return new Response(JSON.stringify({ sent: false }), { status: 200 })
   }
 })

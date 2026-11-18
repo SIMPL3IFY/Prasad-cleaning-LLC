@@ -5,6 +5,7 @@
 // SCRUM-144: If the quote already has a date/time, show it plus an "Add to Google Calendar" button.
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 import { BUSINESS_TIMEZONE, customerSubject, escapeHtml, formatPacific, jobDetailsHtml, renderEmailLayout, sendEmail, emailHeading } from "../_shared/email.ts"
+import { isFromWebhook, unauthorized } from "../_shared/webhook.ts"
 const ADMIN_NOTIFY_EMAIL = Deno.env.get("ADMIN_NOTIFY_EMAIL") || Deno.env.get("NIGEL_EMAIL") || ""
 
 // SCRUM-144: No end time is stored, so assume a 2-hour appointment
@@ -33,6 +34,9 @@ function buildGoogleCalendarUrl(record: Record<string, unknown>): string | null 
 }
 
 serve(async (req) => {
+  // Security fix: only the accepted_quotes webhook may trigger these emails
+  if (!isFromWebhook(req)) return unauthorized()
+
   try {
     const payload = await req.json()
     const record = payload.record // Supabase sends { type, table, record, schema, old_record }
@@ -86,6 +90,6 @@ serve(async (req) => {
     return new Response(JSON.stringify({ clientEmail, adminEmail }), { status: 200 })
   } catch (err) {
     console.error('SCRUM-151: notify-quote-accepted crashed', err)
-    return new Response(JSON.stringify({ sent: false, error: String(err) }), { status: 200 })
+    return new Response(JSON.stringify({ sent: false }), { status: 200 })
   }
 })
