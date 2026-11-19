@@ -7,6 +7,7 @@
 // Answer:    { result: { status, reason?, standardized?, parts?, accuracy?, accuracyType? } }
 //   status: verified | suggestion ("Did you mean ...?") | invalid (block) | unavailable (save anyway)
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
+import { createClient } from "@supabase/supabase-js"
 import {
   classifyGeocodeError,
   classifyGeocodeResponse,
@@ -20,11 +21,15 @@ const GEOCODIO_URL = "https://api.geocod.io/v2.1/geocode"
 const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean)
 
 const TIMEOUT_MS = 5000
-// Best-effort limit per IP, kept in memory (resets when Supabase restarts the function).
-// Protects the free 2,500 lookups/day from someone hammering the form.
+// Limit per IP, protecting the free 2,500 lookups/day from someone hammering the form.
+// Counted in the database (edge_rate_limit_hits) so every copy of this function shares one count.
+// The in-memory map is only a fallback if the database call fails.
 const RATE_LIMIT = 10
 const RATE_WINDOW_MS = 60 * 1000
 const callsByIp = new Map<string, number[]>()
+const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", {
+  auth: { persistSession: false },
+})
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? ""
@@ -44,8 +49,35 @@ function json(req: Request, body: unknown, status = 200) {
   })
 }
 
-function overRateLimit(req: Request): boolean {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown"
+// The caller controls the FIRST X-Forwarded-For entry, so rotating it used to reset the limit.
+// Use the IP set by Supabase's Cloudflare edge, or else the LAST X-Forwarded-For entry (added by the proxy).
+function clientIp(req: Request): string {
+  const cfIp = req.headers.get("cf-connecting-ip")?.trim()
+  if (cfIp) return cfIp
+  const forwarded = (req.headers.get("x-forwarded-for") ?? "").split(",").map((p) => p.trim()).filter(Boolean)
+  return forwarded.at(-1) || "unknown"
+}
+
+// The IP is hashed before it is stored, so the table never holds raw IPs.
+async function ipBucket(ip: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip))
+  const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("")
+  return `validate-address:${hex}`
+}
+
+async function overRateLimit(req: Request): Promise<boolean> {
+  const ip = clientIp(req)
+  const { data, error } = await admin.rpc("edge_rate_limit_hit", {
+    p_bucket: await ipBucket(ip),
+    p_limit: RATE_LIMIT,
+    p_window_seconds: RATE_WINDOW_MS / 1000,
+  })
+  if (!error && typeof data === "boolean") return !data
+  console.error("validate-address: shared rate limit unavailable, using in-memory fallback", error?.code ?? "unknown")
+  return overMemoryRateLimit(ip)
+}
+
+function overMemoryRateLimit(ip: string): boolean {
   const now = Date.now()
   const recent = (callsByIp.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS)
   if (recent.length >= RATE_LIMIT) return true
@@ -103,7 +135,7 @@ serve(async (req) => {
     if (typeof body.website === "string" && body.website.trim()) return json(req, { error: "Invalid request" }, 400)
     const parts = cleanParts(body.address)
     if (!parts) return json(req, { error: "Invalid address" }, 400)
-    if (overRateLimit(req)) return json(req, { error: "Too many requests. Please wait a minute and try again." }, 429)
+    if (await overRateLimit(req)) return json(req, { error: "Too many requests. Please wait a minute and try again." }, 429)
 
     return json(req, { result: await geocode(parts) })
   } catch (err) {
