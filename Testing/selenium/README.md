@@ -84,3 +84,33 @@ to you **and to the business admin address**.
 | Site cannot be framed | Another page that puts the **deployed** site (`SITE_URL`, default `https://prasadscleaning.com`) in an iframe gets a blocked frame | No |
 
 This file also reads the test accounts and Supabase keys from the project's `.env`, so they don't have to be set in the shell. If the run stops before cleanup, delete any `SELTEST-` rows from `quotes`.
+
+## SCRUM-228 sign-up browser tests
+
+`test_sign_up.py` uses the in-memory Supabase mock in
+`Testing/selenium/mockSupabaseClient.js`. It checks a valid registration, form
+validation, and a registration-service error without creating real accounts or
+sending confirmation emails.
+
+Start the mock-configured local Vite server from the repository root:
+
+```bash
+npm run dev -- --config Testing/selenium/vite.config.js --host 127.0.0.1 --port 5173 --strictPort
+```
+
+In a second terminal, run only the sign-up browser tests:
+
+```bash
+BASE_URL=http://127.0.0.1:5173 HEADLESS=1 python3 -m pytest Testing/selenium/test_sign_up.py -v
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:BASE_URL = "http://127.0.0.1:5173"
+$env:HEADLESS = "1"
+py -m pytest Testing/selenium/test_sign_up.py -v
+```
+
+These tests must use the local mock server. Do not point them at the deployed
+site or a real Supabase project.
