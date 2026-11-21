@@ -29,23 +29,24 @@ vi.mock('../../src/lib/supabaseClient', () => ({ supabase }))
 const ROOT = path.resolve(__dirname, '../..')
 const css = readFileSync(path.join(ROOT, 'src/index.css'), 'utf8')
 const indexHtml = readFileSync(path.join(ROOT, 'index.html'), 'utf8')
+const adminDashboard = readFileSync(path.join(ROOT, 'src/pages/AdminDashboard.jsx'), 'utf8')
 
 // Returns the text inside every `@media (<query>) { ... }` block, matching braces so nested rules are kept
-function mediaBlocks(query) {
+function mediaBlocks(query, source = css) {
   const blocks = []
   const start = `@media (${query}) {`
   let from = 0
   while (true) {
-    const at = css.indexOf(start, from)
+    const at = source.indexOf(start, from)
     if (at === -1) break
     let depth = 1
     let i = at + start.length
-    while (depth > 0 && i < css.length) {
-      if (css[i] === '{') depth++
-      if (css[i] === '}') depth--
+    while (depth > 0 && i < source.length) {
+      if (source[i] === '{') depth++
+      if (source[i] === '}') depth--
       i++
     }
-    blocks.push(css.slice(at + start.length, i - 1))
+    blocks.push(source.slice(at + start.length, i - 1))
     from = i
   }
   return blocks
@@ -183,7 +184,7 @@ describe('Phone menu (mobile view)', () => {
 })
 
 // jsdom doesn't apply stylesheets, so these read the CSS itself to check the rules the phone layout depends on
-describe('Phone layout rules (src/index.css and index.html)', () => {
+describe('Phone layout rules (src/index.css, index.html and the admin dashboard styles)', () => {
   it('tells the browser to use the device width', () => {
     expect(indexHtml).toContain('<meta name="viewport" content="width=device-width, initial-scale=1.0" />')
   })
@@ -211,5 +212,15 @@ describe('Phone layout rules (src/index.css and index.html)', () => {
 
   it('has a smaller layout for narrow phones', () => {
     expect(mediaBlocks('max-width: 480px').length).toBeGreaterThan(0)
+  })
+
+  it('puts the admin dashboard boxes in one column at 640px and below', () => {
+    const phoneGrid = mediaBlocks('max-width: 640px', adminDashboard).join('\n')
+    expect(ruleBody(phoneGrid, '.admin-grid')).toMatch(/grid-template-columns:\s*1fr/)
+  })
+
+  it('puts the admin dashboard boxes in two columns at 1100px and below', () => {
+    const tabletGrid = mediaBlocks('max-width: 1100px', adminDashboard).join('\n')
+    expect(ruleBody(tabletGrid, '.admin-grid')).toMatch(/repeat\(2,/)
   })
 })

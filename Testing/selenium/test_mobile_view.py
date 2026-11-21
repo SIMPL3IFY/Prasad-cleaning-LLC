@@ -2,13 +2,33 @@
 
 Drives a real Chrome browser against the running site, set up as a phone (375 x 812).
 Chrome's phone emulation is used instead of resizing the window, because a desktop Chrome
-window can't get as narrow as a phone. Only public pages are visited and nothing is submitted,
-so these tests don't need an account and don't save anything.
+window can't get as narrow as a phone. Nothing is ever saved: the public page tests don't sign in,
+and the signed-in tests only look at the pages (the settings form and the admin password popup are
+opened but never submitted).
+
+The signed-in tests need a real account (TEST_CUSTOMER_EMAIL and TEST_CUSTOMER_PASSWORD for the
+customer pages, TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD for the admin dashboard) and are skipped without one.
 """
+import os
+
 import pytest
 from selenium.webdriver.common.by import By
 
-from conftest import scroll_and_click, wait_for_path, wait_for_text
+from conftest import button, scroll_and_click, wait_for_path, wait_for_text
+
+CUSTOMER_EMAIL = os.environ.get("TEST_CUSTOMER_EMAIL")
+CUSTOMER_PASSWORD = os.environ.get("TEST_CUSTOMER_PASSWORD")
+needs_customer_account = pytest.mark.skipif(
+    not (CUSTOMER_EMAIL and CUSTOMER_PASSWORD),
+    reason="Set TEST_CUSTOMER_EMAIL and TEST_CUSTOMER_PASSWORD to run the customer tests",
+)
+
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD")
+needs_admin_account = pytest.mark.skipif(
+    not (ADMIN_EMAIL and ADMIN_PASSWORD),
+    reason="Set TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD to run the admin tests",
+)
 
 PHONE_WIDTH = 375
 PHONE_HEIGHT = 812
@@ -133,3 +153,129 @@ def test_menu_switches_to_desktop_links_above_the_breakpoint(driver, open_page, 
     set_screen(driver, 1024, 768)
     wait.until(lambda d: d.find_element(*NAV).is_displayed())
     assert not driver.find_element(*HAMBURGER).is_displayed()
+
+
+# ------------------------------------------------------------------------------
+# Signed-in pages
+# ------------------------------------------------------------------------------
+
+def sign_in(phone, open_page, wait, email, password):
+    open_page("/signin")
+    wait.until(lambda d: d.find_element(By.ID, "email")).send_keys(email)
+    phone.find_element(By.ID, "password").send_keys(password)
+    phone.find_element(*button("Sign In")).click()
+    wait.until(lambda d: "/signin" not in d.current_url)
+
+
+def sticks_out(driver, elements):
+    """Names of the elements that aren't completely inside the screen."""
+    names = []
+    for element in elements:
+        box = driver.execute_script("return arguments[0].getBoundingClientRect()", element)
+        if box["left"] < 0 or box["right"] > PHONE_WIDTH:
+            names.append(element.get_attribute("name") or element.get_attribute("id") or element.text)
+    return names
+
+
+@pytest.fixture
+def customer_phone(phone, open_page, wait):
+    sign_in(phone, open_page, wait, CUSTOMER_EMAIL, CUSTOMER_PASSWORD)
+    wait_for_path(wait, "/portal")
+    return phone
+
+
+@pytest.fixture
+def admin_phone(phone, open_page, wait):
+    sign_in(phone, open_page, wait, ADMIN_EMAIL, ADMIN_PASSWORD)
+    wait_for_path(wait, "/admin")
+    wait_for_text(wait, "Admin Portal")
+    return phone
+
+
+@needs_customer_account
+def test_customer_portal_fits_the_screen(customer_phone, wait):
+    wait_for_text(wait, "Welcome back!")
+    content, screen = page_width(customer_phone)
+    assert content <= screen, f"/portal is {content}px wide on a {screen}px screen"
+
+
+@needs_customer_account
+def test_settings_page_fits_the_screen(customer_phone, open_page, wait):
+    open_page("/settings")
+    wait_for_text(wait, "Change User Settings")
+    # The button reads "Saving..." until the saved values have loaded
+    wait.until(lambda d: d.find_element(*button("Save")).is_enabled())
+
+    content, screen = page_width(customer_phone)
+    assert content <= screen, f"/settings is {content}px wide on a {screen}px screen"
+
+    fields = customer_phone.find_elements(By.CSS_SELECTOR, "form input")
+    assert fields
+    assert sticks_out(customer_phone, fields) == []
+    assert sticks_out(customer_phone, [customer_phone.find_element(*button("Save"))]) == []
+
+
+@needs_customer_account
+def test_signed_in_menu_has_dashboard_and_sign_out(customer_phone, open_page, wait):
+    open_page("/")
+    open_menu(customer_phone, wait)
+    assert customer_phone.find_element(By.XPATH, '//nav//button[normalize-space()="Dashboard"]').is_displayed()
+    assert customer_phone.find_element(By.XPATH, '//nav//button[normalize-space()="Sign Out"]').is_displayed()
+    assert not customer_phone.find_elements(By.XPATH, '//nav//button[normalize-space()="Sign In"]')
+
+
+@needs_customer_account
+def test_menu_dashboard_button_opens_the_portal(customer_phone, open_page, wait):
+    open_page("/")
+    open_menu(customer_phone, wait)
+
+    scroll_and_click(wait, (By.XPATH, '//nav//button[normalize-space()="Dashboard"]'))
+    wait_for_path(wait, "/portal")
+    wait.until(lambda d: not d.find_element(*NAV).is_displayed())
+
+
+@needs_customer_account
+def test_menu_sign_out_button_signs_out(customer_phone, open_page, wait):
+    open_page("/")
+    open_menu(customer_phone, wait)
+
+    scroll_and_click(wait, (By.XPATH, '//nav//button[normalize-space()="Sign Out"]'))
+    open_menu(customer_phone, wait)
+    wait.until(lambda d: d.find_elements(By.XPATH, '//nav//button[normalize-space()="Sign In"]'))
+
+
+@needs_admin_account
+def test_admin_dashboard_fits_the_screen(admin_phone):
+    content, screen = page_width(admin_phone)
+    assert content <= screen, f"/admin is {content}px wide on a {screen}px screen"
+
+
+@needs_admin_account
+def test_admin_dashboard_boxes_stack_in_one_column(admin_phone):
+    grid = admin_phone.find_element(By.CSS_SELECTOR, ".admin-grid")
+    columns = admin_phone.execute_script("return getComputedStyle(arguments[0]).gridTemplateColumns", grid)
+    assert len(columns.split()) == 1, f"The boxes are in {len(columns.split())} columns: {columns}"
+
+
+@needs_admin_account
+def test_admin_top_buttons_fit_the_screen(admin_phone):
+    nav = admin_phone.find_element(By.CSS_SELECTOR, "nav.admin-nav")
+    buttons = nav.find_elements(By.CSS_SELECTOR, "a, button")
+    assert [b.text for b in buttons] == ["Home", "Admin Settings", "Sign Out"]
+    assert sticks_out(admin_phone, buttons) == []
+
+
+@needs_admin_account
+def test_admin_settings_popup_fits_the_screen_and_closes(admin_phone, wait):
+    scroll_and_click(wait, button("Admin Settings"))
+    wait_for_text(wait, "Change Admin Password")
+
+    box = admin_phone.find_element(By.CSS_SELECTOR, ".admin-modal-box")
+    assert sticks_out(admin_phone, [box]) == []
+    fields = box.find_elements(By.CSS_SELECTOR, "input")
+    assert len(fields) == 2
+    assert sticks_out(admin_phone, fields) == []
+
+    # Cancel closes it without saving anything
+    scroll_and_click(wait, button("Cancel"))
+    wait.until(lambda d: not d.find_elements(By.CSS_SELECTOR, ".admin-modal-box"))
