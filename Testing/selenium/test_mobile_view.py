@@ -231,7 +231,8 @@ def test_menu_dashboard_button_opens_the_portal(customer_phone, open_page, wait)
 
     scroll_and_click(wait, (By.XPATH, '//nav//button[normalize-space()="Dashboard"]'))
     wait_for_path(wait, "/portal")
-    wait.until(lambda d: not d.find_element(*NAV).is_displayed())
+    # The portal has its own header, so the site menu is gone from the page
+    assert not customer_phone.find_elements(*NAV)
 
 
 @needs_customer_account
@@ -240,6 +241,8 @@ def test_menu_sign_out_button_signs_out(customer_phone, open_page, wait):
     open_menu(customer_phone, wait)
 
     scroll_and_click(wait, (By.XPATH, '//nav//button[normalize-space()="Sign Out"]'))
+    # The site closes the menu again when the sign out finishes, so wait for that before reopening it
+    wait.until(lambda d: not d.execute_script("return Object.keys(localStorage).some(key => key.endsWith('-auth-token'))"))
     open_menu(customer_phone, wait)
     wait.until(lambda d: d.find_elements(By.XPATH, '//nav//button[normalize-space()="Sign In"]'))
 
