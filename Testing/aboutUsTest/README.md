@@ -30,6 +30,12 @@ npm install
 npm run test:run -- Testing/aboutUsTest  
 ```
 
+### Alternatively use npx 
+
+```bash
+npx vitest run Testing/aboutUsTest/testScrum232.jsx
+```
+
 You should see output like this:
 
 ```
@@ -71,3 +77,48 @@ After it finishes, open `coverage/index.html` in your browser to see the full re
 ## Importing Company Logo
 
 The About component imports a static logo asset (/assets/logo.png). React Testing Library handles static asset paths naturally during unit testing by checking for the presence of the <img> element and its attributes without needing network or file system mocks.
+
+---
+
+## Functional tests (Selenium)
+
+These open real Chrome and click through the running site.
+
+### Step 1 — Install Selenium (first time only)
+
+```bash
+pip install -r Testing/selenium/requirements.txt
+```
+
+### Step 2 — Start the site (terminal 1)
+
+```bash
+npm run dev
+```
+
+### Step 3 — Run the tests (terminal 2)
+
+```bash
+python -m pytest Testing/selenium/test_about_us_page.py -v
+```
+
+If the project has a `.venv` folder, use its Python instead so it finds the Selenium you installed there (quotes and `&` are needed because the folder path has a space):
+
+```powershell
+& ".venv\Scripts\python.exe" -m pytest Testing/selenium/test_about_us_page.py -v
+```
+
+Add `$env:HEADLESS="1"` first to run without opening a Chrome window.
+
+Because the About Us Page is an informational page accessible for all types of users, the tests are conducted by simulating a signed out user. There is no need to add login credentials in order to conduct the test. 
+
+### Selenium tests included
+
+| # | Test | What it checks |
+|---|---|---|
+| 1 | Main heading & Text | Navigating to /about renders the scoped h1.page-title ("About Us") and .banner-eyebrow text |
+| 2 | Owner & locations narrative | Verifies "Who We Are", owner name ("Nigel Prasad"), and service region ("Northern California") render inside .about-card |
+| 3 | Services list | Verifies "What We Offer" heading and dynamically checks that service list items ("Commercial Cleaning", "Carpet Cleaning") render inside .about-offer-card |
+| 4 | Core value pillars | Verifies "Why Clients Choose Us" and checks h3 headings inside .about-value-card ("Reliable", "Detail-Oriented", "Professional") |
+
+---
