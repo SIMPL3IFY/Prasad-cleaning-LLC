@@ -73,7 +73,8 @@ def click_in_panel(wait, title, label):
     def _click(d):
         try:
             element = panel(d, title).find_element(By.XPATH, f".//button[normalize-space()=\"{label}\"]")
-            d.execute_script("arguments[0].scrollIntoView({block: 'center'})", element)
+            # Instant: the site scrolls smoothly, and restarting that on each retry keeps the button moving
+            d.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'instant'})", element)
             element.click()
             return True
         except (NoSuchElementException, StaleElementReferenceException, ElementClickInterceptedException):
