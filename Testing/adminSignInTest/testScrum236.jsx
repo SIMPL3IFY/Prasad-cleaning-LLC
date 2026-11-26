@@ -20,6 +20,7 @@ const { supabase } = vi.hoisted(() => ({
 }))
 
 vi.mock('../../src/lib/supabaseClient', () => ({ supabase }))
+vi.mock('../../src/context/AuthContext', () => ({ useAuth: () => ({ loading: false }) }))
 
 const SIGNED_OUT_MESSAGE = 'Please sign in with an administrator account.'
 const FORBIDDEN_MESSAGE = 'Access denied. This account is not an administrator.'

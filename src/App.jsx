@@ -59,6 +59,7 @@ function AppContent() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/reset-password/continue" element={<ResetConfirmation />} />
+          <Route path="/continue" element={<ResetConfirmation />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/service-area" element={<ServiceArea />} />
           <Route element={<ProtectedCustomerRoute />}>

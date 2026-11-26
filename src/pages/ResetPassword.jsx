@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { recoveryLinkAccessToken, recoveryLinkError, supabase } from '../lib/supabaseClient'
+import { isRecoverySession, markPasswordRecovery } from '../lib/passwordRecovery'
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('')
@@ -20,7 +21,8 @@ export default function ResetPassword() {
       if (isMounted) {
         // A regular signed-in session must never make an unverified reset link usable.
         setIsReady(!recoveryLinkError && !error && Boolean(recoveryEventReceived ||
-          (recoveryLinkAccessToken && session?.access_token === recoveryLinkAccessToken)))
+          (recoveryLinkAccessToken && session?.access_token === recoveryLinkAccessToken) ||
+          isRecoverySession(session)))
         setIsCheckingLink(false)
       }
     }
@@ -30,6 +32,7 @@ export default function ResetPassword() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (isMounted && !recoveryLinkError && event === 'PASSWORD_RECOVERY' && session) {
         recoveryEventReceived = true
+        markPasswordRecovery(session.access_token)
         setIsReady(true)
         setIsCheckingLink(false)
       }

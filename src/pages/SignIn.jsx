@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
-import { useNavigate, Link , useLocation } from "react-router-dom"
+import { useNavigate, Link , useLocation, useSearchParams } from "react-router-dom"
 import { supabase } from "../lib/supabaseClient"
+import { clearPasswordRecovery } from '../lib/passwordRecovery'
 
 
 export default function SignIn() {
@@ -10,7 +11,16 @@ export default function SignIn() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(location.state?.message || '') // Scrum 168: Initial error message from location state
   const [isLoading, setIsLoading] = useState(false) // Scrum 168: Tracks the state of the sign-in request
-  const [showForgotPassword, setShowForgotPassword] = useState(false) // Scrum 71: Controls which form is visible
+  const [searchParams, setSearchParams] = useSearchParams()
+  const showForgotPassword = searchParams.get('mode') === 'forgot'
+  const setShowForgotPassword = visible => {
+    setSearchParams(previous => {
+      const next = new URLSearchParams(previous)
+      if (visible) next.set('mode', 'forgot')
+      else next.delete('mode')
+      return next
+    }, { replace: true })
+  }
   const [resetEmail, setResetEmail] = useState('') // Scrum 71: Email input for forgot password form
   const [resetMessage, setResetMessage] = useState('') // Scrum 71: Confirmation message after submission
   const [resetError, setResetError] = useState('') // Scrum 168: Tracks errors for the forgot password form
@@ -89,6 +99,7 @@ export default function SignIn() {
       return
     }
 
+    clearPasswordRecovery()
     setIsLoading(false)
 
     if (profile.is_admin === true) {

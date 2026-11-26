@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { useHideAccountLinks } from '../lib/passwordRecovery'
 
 const navLinks = [
   { to: '/services', label: 'Services' },
@@ -15,13 +16,14 @@ export default function Header() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { user, loading } = useAuth()
+  const hideAccountLinks = useHideAccountLinks()
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [isOpeningDashboard, setIsOpeningDashboard] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
   // SCRUM 172: Check the account role before opening the correct dashboard.
   const handleDashboard = async () => {
-    if (!user) return
+    if (!user || hideAccountLinks) return
 
     setIsOpeningDashboard(true)
 
@@ -81,14 +83,14 @@ export default function Header() {
               <li className="nav-mobile-auth">
                 {user ? (
                   <>
-                    <button
+                    {!hideAccountLinks && <button
                       type="button"
                       className="button button-alt"
                       onClick={() => { handleDashboard(); setMenuOpen(false) }}
                       disabled={isOpeningDashboard}
                     >
                       {isOpeningDashboard ? 'Opening...' : 'Dashboard'}
-                    </button>
+                    </button>}
                     <button
                       type="button"
                       className="button button-alt"
@@ -116,14 +118,14 @@ export default function Header() {
           {!loading && (
             user ? (
               <>
-                <button
+                {!hideAccountLinks && <button
                   type="button"
                   className="button button-alt"
                   onClick={handleDashboard}
                   disabled={isOpeningDashboard}
                 >
                   {isOpeningDashboard ? 'Opening...' : 'Dashboard'}
-                </button>
+                </button>}
 
                 <button
                   type="button"

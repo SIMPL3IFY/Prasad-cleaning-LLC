@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation, } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { usePasswordRecovery } from '../lib/passwordRecovery'
+import { useAuth } from '../context/AuthContext'
 
 export default function ProtectedAdminRoute() {
     const location = useLocation()
+    const { loading } = useAuth()
+    const recovering = usePasswordRecovery()
     const [status, setStatus] = useState('checking')
 
     useEffect(() => {
         let isMounted = true
+        if (loading || recovering) return () => { isMounted = false }
         
         const verifyAdmin = async () => {
             const { data: { user }, error: userError, } = await supabase.auth.getUser()
@@ -40,9 +45,13 @@ export default function ProtectedAdminRoute() {
         return () => {
             isMounted = false
         }
-    }, [])
+    }, [loading, recovering])
 
-    if (status == 'checking') {
+    if (recovering) {
+        return <Navigate to="/reset-password" replace />
+    }
+
+    if (loading || status == 'checking') {
         return (
             <p
                 role="status"

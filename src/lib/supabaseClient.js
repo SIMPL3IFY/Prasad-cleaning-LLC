@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { markPasswordRecovery, trackPasswordRecovery } from './passwordRecovery'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -9,6 +10,10 @@ export const recoveryLinkAccessToken = recoveryParams.get('type') === 'recovery'
   ? recoveryParams.get('access_token')
   : null
 export const recoveryLinkError = recoveryParams.get('error')
+
+// Restrict navigation before the client consumes the URL or restores its session.
+if (recoveryLinkAccessToken) markPasswordRecovery(recoveryLinkAccessToken)
+trackPasswordRecovery({ access_token: recoveryParams.get('access_token') })
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
@@ -23,4 +28,12 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
+})
+
+// Register before React mounts so an early recovery event cannot be missed.
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY' && session) {
+    markPasswordRecovery(session.access_token)
+  }
+  trackPasswordRecovery(session)
 })
