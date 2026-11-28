@@ -1,28 +1,84 @@
-# Manage Quotes unit tests (SCRUM-230)
+# SCRUM-230: Testing — Manage Quotes
 
-Tests the **Manage Quotes** box in `AdminDashboard.jsx` with Vitest and React Testing Library.
-Supabase is faked with `Testing/adminTestUtils/supabaseMock.js`, so no test touches the real database.
+## What this tests
 
-## What it checks
+Unit tests for the **Manage Quotes** box in the admin dashboard (`src/pages/AdminDashboard.jsx`): how quotes are listed, and what happens when the admin declines or accepts one.
 
-| Test |
-|---|---|
-| Shows each quote's name and phone, paging through quotes | 3 |
-| Shows "No quotes available." when the query returns no rows | 4 |
-| Shows an error message when the query fails | 5 |
-| Decline with no reason, or only spaces, shows a message and saves nothing | 7 |
-| Decline with a reason saves to `declined_quotes` and removes the quote | 8 |
-| A failed decline insert keeps the quote | extra |
-| Accept, then Cancel in the popup, saves nothing | extra |
-| Accept, then Yes, saves to `accepted_quotes` and removes the quote | 9 |
+Supabase is faked with `Testing/adminTestUtils/supabaseMock.js`. These tests never touch the real database and never change a real quote.
+
+## Test file
+
+`Testing/adminQuotesTest/testScrum230Quotes.jsx`
 
 ## How to run
 
-From the project root:
-
-```
-npx vitest run Testing/adminQuotesTest   # just this folder
-npm run test:run                         # every unit test
-```
-
 No dev server or `.env` is needed. These tests also run in CI on every pull request.
+
+### Step 1 — Make sure you are in the project root
+
+```bash
+cd path/to/Prasad-cleaning-LLC
+```
+
+### Step 2 — Install dependencies (first time only)
+
+```bash
+npm install
+```
+
+### Step 3 — Run just the Manage Quotes tests
+
+```bash
+npx vitest run Testing/adminQuotesTest
+```
+
+You should see output like this:
+
+```
+✓ Testing/adminQuotesTest/testScrum230.jsx (8 tests)
+
+Test Files  1 passed (1)
+     Tests  8 passed (8)
+```
+
+### Step 4 — Run all tests together (optional)
+
+```bash
+npm run test:run
+```
+
+### Step 5 — View coverage report (optional)
+
+```bash
+npm run test:coverage
+```
+
+After it finishes, open `coverage/index.html` in your browser to see the full report.
+
+---
+
+## Tests included
+
+| # | Test | What it checks |
+|---|---|---|
+| 1 | Quote details | Each quote's name and phone number show, and the admin can page through the quotes (AC 3) |
+| 2 | No quotes | "No quotes available." shows when the query returns no rows (AC 4) |
+| 3 | Load error | An error message shows when the query fails (AC 5) |
+| 4 | Decline, no reason | Declining with no reason, or only spaces, shows a message and saves nothing (AC 7) |
+| 5 | Decline with reason | Declining with a reason saves the quote to `declined_quotes` and removes it from the list (AC 8) |
+| 6 | Decline insert fails | A failed decline insert keeps the quote (extra) |
+| 7 | Accept, then Cancel | Accept, then Cancel in the popup, saves nothing (extra) |
+| 8 | Accept, then Yes | Accept, then Yes, saves the quote to `accepted_quotes` and removes it from the list (AC 9) |
+
+---
+
+## How the mock works
+
+`Testing/adminTestUtils/supabaseMock.js` fakes everything the Manage Quotes box talks to:
+
+- The quotes query, to load the list (or fail)
+- The insert into `declined_quotes`, to save a declined quote (or fail)
+- The insert into `accepted_quotes`, to save an accepted quote
+- The delete from `quotes`, to remove the quote once it is declined or accepted
+
+Each test can override any of them, for example to make the query return no rows or the decline insert return an error.
