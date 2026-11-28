@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import { usePasswordRecovery } from '../lib/passwordRecovery'
 
 export default function ProtectedCustomerRoute() {
   const { session, user, loading } = useAuth()
+  const recovering = usePasswordRecovery()
   const location = useLocation()
   const [status, setStatus] = useState('checking')
 
   useEffect(() => {
     let isMounted = true
 
-    if (loading) return () => { isMounted = false }
+    if (loading || recovering) return () => { isMounted = false }
 
     if (!session || !user) {
       setStatus('signed-out')
@@ -40,7 +42,11 @@ export default function ProtectedCustomerRoute() {
     verifySession()
 
     return () => { isMounted = false }
-  }, [loading, session, user])
+  }, [loading, session, user, recovering])
+
+  if (recovering) {
+    return <Navigate to="/reset-password" replace />
+  }
 
   if (loading || status === 'checking') {
     return <p className="auth-status">Loading your account...</p>

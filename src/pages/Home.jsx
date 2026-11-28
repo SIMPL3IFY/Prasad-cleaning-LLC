@@ -78,7 +78,7 @@ export default function Home() {
       <section className="banner banner-glow">
         <div className="container banner-content">
           <span className="banner-eyebrow">Serving Northern California</span>
-          <h1 className="page-title">Professional Cleaning Services</h1>
+          <h1 className="page-title">Prasad's Cleaning Services</h1>
           <p className="page-subtitle">Trusted, reliable cleaning for your home or business. Get a free quote today.</p>
           <div className="banner-buttons">
             <Link to="/contact" className="button button-main button-big">Book Now</Link>

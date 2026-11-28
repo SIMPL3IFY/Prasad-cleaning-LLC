@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { useState, useEffect } from 'react'
+import { useHideAccountLinks } from '../lib/passwordRecovery'
 
 // SCRUM-225: Footer grouped into labeled columns.
 const PHONE = '(916) 665-8474'
@@ -12,13 +13,14 @@ const EMAIL_SUBJECT = "Inquiry from Prasad's Cleaning website"
 export default function Footer() {
   const year = new Date().getFullYear()
   const { user, loading } = useAuth()
+  const hideAccountLinks = useHideAccountLinks()
   const [dashboardPath, setDashboardPath] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
 
   // SCRUM-234: Check user role to link to /admin or /portal dynamically when logged in
   useEffect(() => {
     let isMounted = true
-    if (user) {
+    if (user && !hideAccountLinks) {
       supabase
         .from('profiles')
         .select('is_admin')
@@ -43,15 +45,15 @@ export default function Footer() {
       setDashboardPath(null)
     }
     return () => { isMounted = false }
-  }, [user])
+  }, [user, hideAccountLinks])
 
   let accountLinks = []
   if (!loading) {
     if (user) {
-      if (dashboardPath) {
+      if (dashboardPath && !hideAccountLinks) {
         accountLinks.push({ to: dashboardPath, label: 'Dashboard' })
       }
-      if (!isAdmin) {
+      if (!isAdmin && !hideAccountLinks) {
         accountLinks.push({ to: '/settings', label: 'Settings' })
       }
     } else {
